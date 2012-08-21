@@ -63,42 +63,43 @@ MenuAction_VoteCancel	A vote sequence has been cancelled (param1=NativeVotes_Fai
  */
 enum NativesVotesType
 {
-	NativesVotesType_ChgCampaign,	/**< L4D/L4D2: Yes/No, argument is campaign name */
-	NativesVotesType_ReturnToLobby,	/**< L4D/L4D2: Yes/No, argument ignored */
-	NativesVotesType_ChgDifficulty,	/**< L4D/L4D2: Yes/No, argument is difficulty level */
-	NativesVotesType_Alltalk,		/**< L4D2: Yes/No, argument ignored (handled internally by extension) */
-	NativesVotesType_Custom_YesNo,	/**< Yes/No, argument is vote text. */
-	NativesVotesType_Restart,		/**< Yes/No, argument ignored */
-	NativesVotesType_ChangeLevel,	/**< Yes/No, argument is level number in L4D/L4D2 or map name in TF2 */
-	NativesVotesType_Kick,			/**< Yes/No, argument is player userid */
-	NativesVotesType_KickIdle,		/**< TF2/CS:GO: Yes/No, argument is player userid */
-	NativesVotesType_KickScamming,	/**< TF2/CS:GO: Yes/No, argument is player userid */
-	NativesVotesType_KickCheating,	/**< TF2/CS:GO: Yes/No, argument is player userid */
-	NativesVotesType_NextLevel,		/**< TF2/CS:GO: Yes/No, argument is map name */
-	NativesVotesType_NextLevelMult,	/**< TF2/CS:GO: Multiple-choice, argument ignored */
-	NativesVotesType_ScrambleNow,	/**< TF2/CS:GO: Yes/No, argument ignored */
-	NativesVotesType_ScrambleEnd,	/**< TF2/CS:GO: Yes/No, argument ignored */
-	NativesVotesType_Custom_Mult,	/**< TF2/CS:GO: Multiple-choice, argument is vote text. */
+	NativeVotesType_Custom_YesNo,	/**< Yes/No, argument is vote text. */
+	NativeVotesType_Custom_Mult,	/**< TF2/CS:GO: Multiple-choice, argument is vote text. */
+	NativeVotesType_ChgCampaign,	/**< L4D/L4D2: Yes/No, argument is campaign name */
+	NativeVotesType_ChgDifficulty,	/**< L4D/L4D2/TF2: Yes/No, argument is difficulty number in L4D/L4D2 and mission name in TF2 */
+	NativeVotesType_ReturnToLobby,	/**< L4D/L4D2: Yes/No, argument ignored */
+	NativeVotesType_Alltalk,		/**< L4D2: Yes/No, argument ignored (handled internally by extension) */
+	NativeVotesType_Restart,		/**< Yes/No, argument ignored */
+	NativeVotesType_Kick,			/**< Yes/No, argument is player userid */
+	NativeVotesType_KickIdle,		/**< TF2/CS:GO: Yes/No, argument is player userid */
+	NativeVotesType_KickScamming,	/**< TF2/CS:GO: Yes/No, argument is player userid */
+	NativeVotesType_KickCheating,	/**< TF2/CS:GO: Yes/No, argument is player userid */
+	NativeVotesType_ChangeLevel,	/**< Yes/No, argument is level number in L4D/L4D2 or map name in TF2 */
+	NativeVotesType_NextLevel,		/**< TF2/CS:GO: Yes/No, argument is map name */
+	NativeVotesType_NextLevelMult,	/**< TF2/CS:GO: Multiple-choice, argument ignored */
+	NativeVotesType_ScrambleNow,	/**< TF2/CS:GO: Yes/No, argument ignored */
+	NativeVotesType_ScrambleEnd,	/**< TF2: Yes/No, argument ignored */
+	NativeVotesType_SwapTeams		/**< CS:GO: Yes/No, argument ignored */
 }
 
 enum NativeVotesPassType
 {
+	NativeVotesPass_Custom,				/**< Argument is custom pass message */
 	NativeVotesPass_ChgCampaign,		/**< L4D/L4D2: Argument is campaign name */
+	NativeVotesPass_ChgDifficulty,		/**< L4D/L4D2/TF2: Argument is difficulty number in L4D/L4D2 and mission name in TF2 */
 	NativeVotesPass_ReturnToLobby,      /**< L4D/L4D2: Argument ignored */
-	NativeVotesPass_ChgDifficulty,		/**< L4D/L4D2: Argument is difficulty number? */
 	NativeVotesPass_AlltalkOn,			/**< L4D2: Argument ignored */
 	NativeVotesPass_AlltalkOff,			/**< L4D2: Argument ignored */
-	NativeVotesPass_Custom,				/**< Argument is custom pass message */
 	NativeVotesPass_Restart,			/**< Argument ignored */
-	NativeVotesPass_ChangeLevel,		/**< Argument is level number in L4D/L4D2 or map name in TF2/CS:GO */
 	NativeVotesPass_Kick,				/**< Argument is player userid */
-	NativeVotesPass_KickIdle,			/**< OB: Argument is player userid */
-	NativeVotesPass_KickScamming,		/**< OB: Argument is player userid */
-	NativeVotesPass_KickCheating,		/**< OB: Argument is player userid */
-	NativeVotesPass_NextLevel,			/**< OB: Argument is map name */
-	NativeVotesPass_Extend,				/**< OB: Argument ignored */
-	NativeVotesPass_ScrambleNow,		/**< OB: Argument ignored */
-	NativeVotesPass_ScrambleRound,		/**< OB: Argument ignored */
+	NativeVotesPass_KickIdle,			/**< TF2/CS:GO: Argument is player userid */
+	NativeVotesPass_KickScamming,		/**< TF2/CS:GO: Argument is player userid */
+	NativeVotesPass_KickCheating,		/**< TF2/CS:GO: Argument is player userid */
+	NativeVotesPass_ChangeLevel,		/**< Argument is level number in L4D/L4D2 or map name in TF2/CS:GO */
+	NativeVotesPass_NextLevel,			/**< TF2/CS:GO: Argument is map name */
+	NativeVotesPass_Extend,				/**< TF2/CS:GO: Argument ignored */
+	NativeVotesPass_Scramble,			/**< TF2/CS:GO: Argument ignored */
+	NativeVotesPass_SwapTeams			/**< CS:GO: Argument ignored */
 }
 
 /**
@@ -444,9 +445,9 @@ native bool:NativeVotes_RedrawClientVote(client, bool:revotes=true);
 native NativesVotesType:NativeVotes_GetType(Handle:vote);
 
 /**
- * Set the team this vote is for, or BUILTINVOTES_ALL_TEAMS for all teams.
+ * Set the team this vote is for, or NATIVEVOTES_ALL_TEAMS for all teams.
  * 
- * Defaults to BUILTINVOTES_ALL_TEAMS if not explicitly set.
+ * Defaults to NATIVEVOTES_ALL_TEAMS if not explicitly set.
  * 
  * @param vote				NativeVotes Handle.
  * @param team				Team number this vote is for

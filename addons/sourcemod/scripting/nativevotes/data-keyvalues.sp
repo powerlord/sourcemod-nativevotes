@@ -41,7 +41,7 @@
 #define INFO "item_info"
 #define DISPLAY "item_display"
 
-stock bool:Data_GetItemInfo(Handle:vote, item, String:choice[], choiceSize)
+bool:Data_GetItemInfo(Handle:vote, item, String:choice[], choiceSize)
 {
 	Handle:array = KvGetNum(vote, INFO, INVALID_HANDLE);
 
@@ -53,7 +53,7 @@ stock bool:Data_GetItemInfo(Handle:vote, item, String:choice[], choiceSize)
 	GetArrayString(array, item, choice, choiceSize);
 }
 
-stock bool:Data_GetItemDisplay(Handle:vote, item, String:choice[], choiceSize)
+bool:Data_GetItemDisplay(Handle:vote, item, String:choice[], choiceSize)
 {
 	Handle:array = KvGetNum(vote, DISPLAY, INVALID_HANDLE);
 
@@ -65,7 +65,43 @@ stock bool:Data_GetItemDisplay(Handle:vote, item, String:choice[], choiceSize)
 	GetArrayString(array, item, choice, choiceSize);
 }
 
-public Function:Data_GetHandler(Handle:vote, &Handle:plugin, &Function:callback)
+Data_GetTeam(Handle:vote)
+{
+	return KvGetNum(vote, "team", NATIVEVOTES_ALL_TEAMS);
+}
+
+Data_SetTeam(Handle:vote, team)
+{
+	KvSetNum(vote, "team", team);
+}
+
+Data_GetInitiator(Handle:vote)
+{
+	return KvGetNum(vote, "initiator", NATIVEVOTES_SERVER_INDEX);
+}
+
+Data_SetInitiator(Handle:vote, initiator)
+{
+	KvSetNum(vote, "initiator", initiator);
+}
+
+Data_GetArgument(Handle:vote, String:argument[], maxlength)
+{
+	KvGetString(vote, "argument", argument, maxlength);
+}
+
+Data_SetArgument(Handle:vote, const String:argument[])
+{
+	KvSetString(vote, "argument", argument);
+}
+
+NativeVotesType:Data_GetType(Handle:vote)
+{
+	return NativeVotesType:KvGetNum(vote, "vote_type", _:NativeVotesType_Custom_YesNo);
+	
+}
+
+Function:Data_GetHandler(Handle:vote, &Handle:plugin, &Function:callback)
 {
 	if (vote == INVALID_HANDLE)
 		return;
@@ -74,7 +110,7 @@ public Function:Data_GetHandler(Handle:vote, &Handle:plugin, &Function:callback)
 	callback = Function:KvGetNum(vote, "handler_callback");
 }
 
-public Data_GetResultCallback(Handle:vote, &Handle:plugin, &Function:callback)
+Data_GetResultCallback(Handle:vote, &Handle:plugin, &Function:callback)
 {
 	if (vote == INVALID_HANDLE)
 		return;
@@ -83,7 +119,7 @@ public Data_GetResultCallback(Handle:vote, &Handle:plugin, &Function:callback)
 	callback = Function:KvGetNum(vote, "result_callback");
 }
 
-public Data_SetResultCallback(Handle:vote, Handle:plugin, Function:callback)
+Data_SetResultCallback(Handle:vote, Handle:plugin, Function:callback)
 {
 	if (vote == INVALID_HANDLE || plugin == INVALID_HANDLE || callback == INVALID_FUNCTION)
 		return;
@@ -98,9 +134,12 @@ Handle:Data_CreateVote(Handle:plugin, MenuHandler:handler, NativeVotesType:voteT
 	KvSetNum(vote, "handler_plugin", _:plugin);
 	KvSetNum(vote, "handler_callback", _:handler);
 	KvSetNum(vote, "vote_type", _:voteType);
+	KvSetString(vote, "argument", "");
 	KvSetNum(vote, "actions", _:actions);
 	KvSetNum(vote, "result_plugin", _:INVALID_HANDLE);
 	KvSetNum(vote, "result_callback", _:INVALID_FUNCTION);
+	KvSetNum(vote, "initiator", NATIVEVOTES_SERVER_INDEX);
+	KvSetNum(vote, "team", NATIVEVOTES_ALL_TEAMS);
 	
 	KvSetNum(vote, INFO, _:CreateArray(ByteCountToCells(INFO_LENGTH)));
 	KvSetNum(vote, DISPLAY, _:CreateArray(ByteCountToCells(INFO_LENGTH)));

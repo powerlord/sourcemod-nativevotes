@@ -36,6 +36,8 @@
 #define _nativevotes_vote_included
 
 #include <sourcemod>
+// Temporary, for auto-complete
+//#include "../include/nativevotes.inc"
 
 // User vote to kick user.
 #define TRANSLATION_TF2_VOTE_KICK_IDLE_START			"#TF_vote_kick_player_idle"
@@ -63,6 +65,10 @@
 #define TRANSLATION_TF2_VOTE_SCRAMBLE_ROUNDEND_START	"#TF_vote_should_scramble_round"
 #define TRANSLATION_TF2_VOTE_SCRAMBLE_PASSED 			"#TF_vote_passed_scramble_teams"
 
+// User vote to change MvM mission
+#define TRANSLATION_TF2_VOTE_CHANGEDIFFICULTY_START		"#TF_vote_changechallenge"
+#define TRANSLATION_TF2_VOTE_CHANGEDIFFICULTY_PASSED	"#TF_vote_passed_changechallenge"
+
 // While not a vote string, it works just as well.
 #define TRANSLATION_TF2_VOTE_CUSTOM						"#TF_playerid_noteam"
 
@@ -70,10 +76,32 @@ bool:Game_CheckVoteType(NativeVotesType:voteType)
 {
 	switch(voteType)
 	{
-		case NativesVotesType_Custom_YesNo, NativesVotesType_Restart, NativesVotesType_ChangeLevel,
-		NativesVotesType_Kick, NativesVotesType_KickIdle, NativesVotesType_KickScamming,
-		NativesVotesType_KickCheating, NativesVotesType_NextLevel, NativesVotesType_NextLevelMult,
-		NativesVotesType_ScrambleNow, NativesVotesType_ScrambleEnd, NativesVotesType_Custom_Mult:
+		case NativeVotesType_ChgDifficulty, NativeVotesType_Custom_YesNo, NativeVotesType_Restart,
+		NativeVotesType_ChangeLevel, NativeVotesType_Kick, NativeVotesType_KickIdle,
+		NativeVotesType_KickScamming, NativeVotesType_KickCheating, NativeVotesType_NextLevel,
+		NativeVotesType_NextLevelMult, NativeVotesType_ScrambleNow, NativeVotesType_ScrambleEnd,
+		NativeVotesType_Custom_Mult:
+		{
+			return true;
+		}
+		
+		default:
+		{
+			return false;
+		}
+	}
+	
+	return false;
+}
+
+bool:Game_CheckVotePassType(NativeVotesPass:passType)
+{
+	switch(passType)
+	{
+		case NativeVotesPass_ChgDifficulty, NativeVotesPass_Custom, NativeVotesPass_Restart,
+		NativeVotesPass_ChangeLevel, NativeVotesPass_Kick, NativeVotesPass_KickIdle,
+		NativeVotesPass_KickScamming, NativeVotesPass_KickCheating, NativeVotesPass_NextLevel,
+		NativeVotesPass_Extend, NativeVotesPass_ScrambleNow, NativeVotesPass_ScrambleRound:
 		{
 			return true;
 		}
@@ -92,10 +120,29 @@ Game_GetMaxItems()
 	return 5;
 }
 
-public Action:Game_VoteParser(client, const String:command[], argc)
+bool:Game_ParseVote(const String:vote[], &item)
 {
-	// Vote Processing logic here
+	if (strlen(vote) != 7)
+	{
+		item = -1;
+		return false;
+	}
 	
-	return Plugin_Continue;
+	item = StringToInt(vote[6]);
+	
+	// Valid options are 1-5, 0 means we had an error
+	if (item == 0)
+	{
+		item = -1;
+		return false;
+	}
+	
+	item--;
+	return true;
+}
+
+ClientSelectedItem(client, item)
+{
+	
 }
 
