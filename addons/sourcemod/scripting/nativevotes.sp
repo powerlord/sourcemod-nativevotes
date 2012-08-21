@@ -49,20 +49,20 @@
 
 #if SDK_VERSION == SOURCE_SDK_EPISODE2VALVE
 	#define PLUGIN_NAME "NativeVotes TF2"
-	#include "include/nativevotes/game-tf2.inc"
+	#include "nativevotes/game-tf2.sp"
 #elseif SDK_VERSION == SOURCE_SDK_LEFT4DEAD
 	#define PLUGIN_NAME "NativeVotes L4D"
-	#include "include/nativevotes/game-left4dead.inc"
+	#include "nativevotes/game-left4dead.sp"
 #elseif SDK_VERSION == SOURCE_SDK_LEFT4DEAD2
 	#define PLUGIN_NAME "NativeVotes L4D2"
-	#include "include/nativevotes/game-left4dead2.inc"
+	#include "nativevotes/game-left4dead2.sp"
 #elseif SDK_VERSION == SOURCE_SDK_CSGO
 	#define PLUGIN_NAME "NativeVotes CS:GO"
-	#include "include/nativevotes/game-csgo.inc"
+	#include "nativevotes/game-csgo.sp"
 #endif
 
 // As long as it uses a Handle, you can switch out the data handling class here
-#include "include/nativevotes/data-keyvalues.inc"
+#include "nativevotes/data-keyvalues.sp"
 
 #define VERSION "0.1 alpha"
 
