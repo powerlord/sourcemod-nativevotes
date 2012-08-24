@@ -82,6 +82,8 @@ new Handle:g_Cvar_VoteChat;
 new Handle:g_Cvar_VoteConsole;
 new Handle:g_Cvar_VoteClientConsole;
 
+new Handle:g_Forward_VoteResults;
+
 // These variables are only used during a vote
 // These would normally be stored in an object/struct
 new Handle:g_CurVote;
@@ -202,7 +204,7 @@ public Action:Command_Vote(client, const String:command[], argc)
 	
 	// More voting logic
 	
-	
+	Game_ClientSelectedItem(client, item);
 	
 	
 	return Plugin_Handled;
@@ -210,23 +212,16 @@ public Action:Command_Vote(client, const String:command[], argc)
 
 OnVoteStart(Handle:vote)
 {
-	new Handle:plugin;
-	new Function:handler;
-	Data_GetHandler(g_CurVote, plugin, handler);
+	new Handle:handler = Data_GetHandler(g_CurVote);
 	
-	if (plugin == INVALID_HANDLE || handler == INVALID_FUNCTION)
-	{
-		return;
-	}
-	
-	Call_StartFunction(plugin, handler);
+	Call_StartForward(handler);
 	Call_PushCell(g_CurVote);
 	Call_PushCell(MenuAction_Start);
 	Call_PushCell(0);
 	Call_PushCell(0);
 	Call_Finish();
 	
-	Call_StartFunction(plugin, handler);
+	Call_StartForward(handler);
 	Call_PushCell(g_CurVote);
 	Call_PushCell(MenuAction_VoteStart);
 	Call_PushCell(0);
@@ -237,16 +232,9 @@ OnVoteStart(Handle:vote)
 
 OnVoteCancel(Handle:vote, NativeVotesFailType:reason)
 {
-	new Handle:plugin;
-	new Function:handler;
-	Data_GetHandler(g_CurVote, plugin, handler);
+	new Handle:handler = Data_GetHandler(g_CurVote);
 	
-	if (plugin == INVALID_HANDLE || handler == INVALID_FUNCTION)
-	{
-		return;
-	}
-	
-	Call_StartFunction(plugin, handler);
+	Call_StartForward(handler);
 	Call_PushCell(vote);
 	Call_PushCell(MenuAction_VoteCancel);
 	Call_PushCell(reason);
@@ -256,10 +244,6 @@ OnVoteCancel(Handle:vote, NativeVotesFailType:reason)
 
 OnVoteEnd(Handle:vote)
 {
-	new Handle:plugin;
-	new Function:handler;
-	Data_GetHandler(g_CurVote, plugin, handler);
-	
 	if (g_NumVotes == 0)
 	{
 		OnVoteCancel(vote, NativeVotesFail_NotEnoughVotes);
@@ -288,14 +272,9 @@ OnVoteEnd(Handle:vote)
 		
 		if (!SendResultCallback(vote, num_votes, num_items, votes))
 		{
-			Data_GetHandler(g_CurVote, plugin, handler);
+			new Handle:handler = Data_GetHandler(g_CurVote, plugin, handler);
 			
-			if (plugin == INVALID_HANDLE || handler == INVALID_FUNCTION)
-			{
-				return;
-			}
-			
-			Call_StartFunction(plugin, handler);
+			Call_StartForward(handler);
 			Call_PushCell(g_CurVote);
 			Call_PushCell(MenuAction_VoteEnd);
 			Call_PushCell(votes[0][VOTEINFO_ITEM_INDEX]);
@@ -304,14 +283,11 @@ OnVoteEnd(Handle:vote)
 		}
 	}
 	
-	
 }
 
 bool:SendResultCallback(Handle:vote, num_votes, num_items, votes[][])
 {
-	new Handle:plugin;
-	new Function:handler;
-	Data_GetResultCallback(g_CurVote, plugin, handler);
+	new Handle:voteResults = Data_GetResultCallback(g_CurVote, plugin, handler);
 	if (plugin == INVALID_HANDLE || handler == INVALID_FUNCTION)
 	{
 		return false;
@@ -342,7 +318,7 @@ bool:SendResultCallback(Handle:vote, num_votes, num_items, votes[][])
 		}
 	}
 	
-	Call_StartFunction(plugin, handler);
+	Call_StartForward(voteResults);
 	Call_PushCell(vote);
 	Call_PushCell(num_votes);
 	Call_PushCell(num_clients);
@@ -451,14 +427,26 @@ public Native_Create(Handle:plugin, numParams)
 	new NativeVotesType:voteType = GetNativeCell(2);
 	new MenuAction:actions = GetNativeCell(3);
 	
+	if (handler == INVALID_FUNCTION)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Menuandler handle %x is invalid", handler);
+	}
+	
+	new Handle:vote;
 	if (Game_CheckVoteType(voteType))
 	{
-		return _:Data_CreateVote(plugin, handler, voteType, actions);
+		vote = Data_CreateVote(voteType, actions);
 	}
 	else
 	{
 		return _:INVALID_HANDLE;
 	}
+	
+	new Handle:menuForward = Data_GetHandler(vote);
+	
+	AddToForward(menuForward, plugin, handler);
+	
+	return _:vote;
 }
 
 public Native_Close(Handle:plugin, numParams)
@@ -470,15 +458,19 @@ public Native_Close(Handle:plugin, numParams)
 		return;
 	}
 	
-	if (g_CurVote == vote && g_VoteTimer != INVALID_HANDLE)
-	{
-		KillTimer(g_VoteTimer);
-		g_VoteTimer = INVALID_HANDLE;
-	}
-	
 	Data_CloseVote(vote);
 	
-	g_CurVote = INVALID_HANDLE;
+	if (g_CurVote == vote)
+	{
+		g_CurVote = INVALID_HANDLE;
+		
+		if (g_VoteTimer != INVALID_HANDLE)
+		{
+			KillTimer(g_VoteTimer);
+			g_VoteTimer = INVALID_HANDLE;
+		}
+	}
+	
 }
 
 public Native_Display(Handle:plugin, numParams)
@@ -500,7 +492,7 @@ public Native_AddItem(Handle:plugin, numParams)
 	GetNativeString(2, info, sizeof(info));
 	GetNativeString(3, display, sizeof(display));
 	
-	Data_AddItem(vote, info, display);
+	return Data_AddItem(vote, info, display);
 }
 
 public Native_InsertItem(Handle:plugin, numParams)
@@ -509,8 +501,24 @@ public Native_InsertItem(Handle:plugin, numParams)
 	if (vote == INVALID_HANDLE)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
-		return;
+		return false;
 	}
+
+	new position = GetNativeCell(2);
+	
+	if (position < 0)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Vote index can't be negative: %d", position);
+		return false;
+	}
+	
+	decl String:info[256];
+	decl String:display[256];
+	GetNativeString(3, info, sizeof(info));
+	GetNativeString(4, display, sizeof(display));
+	
+	return Data_InsertItem(vote, position, info, display);
+	
 }
 
 public Native_RemoveItem(Handle:plugin, numParams)
@@ -521,7 +529,7 @@ public Native_RemoveItem(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
 		return;
 	}
-	
+	//TODO
 }
 
 public Native_RemoveAllItems(Handle:plugin, numParams)
@@ -532,7 +540,7 @@ public Native_RemoveAllItems(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
 		return;
 	}
-	
+	//TODO
 }
 
 public Native_GetItem(Handle:plugin, numParams)
@@ -543,7 +551,7 @@ public Native_GetItem(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
 		return;
 	}
-	
+	//TODO
 }
 
 public Native_GetItemCount(Handle:plugin, numParams)
@@ -554,7 +562,6 @@ public Native_GetItemCount(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
 		return;
 	}
-	
 }
 
 public Native_GetArgument(Handle:plugin, numParams)
@@ -608,7 +615,7 @@ public Native_GetOptionFlags(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
 		return;
 	}
-	
+	//TODO
 }
 
 public Native_SetOptionFlags(Handle:plugin, numParams)
@@ -619,7 +626,7 @@ public Native_SetOptionFlags(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
 		return;
 	}
-	
+	//TODO
 }
 
 public Native_SetResultCallback(Handle:plugin, numParams)
@@ -631,6 +638,18 @@ public Native_SetResultCallback(Handle:plugin, numParams)
 		return;
 	}
 	
+	new NativeVotes_VoteHandler:function = GetNativeCell(2);
+	
+	if (function == INVALID_FUNCTION)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes_VoteHandler function %x is invalid", function);
+		return;
+	}
+	
+	new Handle:voteResults = Data_GetResultCallback(vote);
+	
+	RemoveAllFromForward(voteResults, plugin);
+	AddToForward(voteResults, plugin, function);
 }
 
 public Native_CheckVoteDelay(Handle:plugin, numParams)
@@ -641,7 +660,7 @@ public Native_CheckVoteDelay(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
 		return;
 	}
-	
+	//TODO
 }
 
 public Native_IsClientInVotePool(Handle:plugin, numParams)
@@ -671,7 +690,7 @@ public Native_RedrawClientVote(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
 		return;
 	}
-	
+	//TODO
 }
 
 public Native_GetType(Handle:plugin, numParams)
@@ -754,7 +773,7 @@ public Native_DisplayPass(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
 		return;
 	}
-	
+	//TODO
 }
 
 public Native_DisplayPassEx(Handle:plugin, numParams)
@@ -765,7 +784,7 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
 		return;
 	}
-	
+	//TODO
 }
 
 public Native_DisplayFail(Handle:plugin, numParams)
@@ -776,5 +795,5 @@ public Native_DisplayFail(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVote handle %x is invalid", vote);
 		return;
 	}
-	
+	//TODO
 }

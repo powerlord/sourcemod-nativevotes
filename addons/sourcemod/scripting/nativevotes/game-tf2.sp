@@ -141,7 +141,7 @@ bool:Game_ParseVote(const String:vote[], &item)
 	return true;
 }
 
-ClientSelectedItem(client, item)
+Game_ClientSelectedItem(client, item)
 {
 	
 }

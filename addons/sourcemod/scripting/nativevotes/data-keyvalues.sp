@@ -101,43 +101,33 @@ NativeVotesType:Data_GetType(Handle:vote)
 	
 }
 
-Function:Data_GetHandler(Handle:vote, &Handle:plugin, &Function:callback)
+Handle:Data_GetHandler(Handle:vote)
 {
 	if (vote == INVALID_HANDLE)
-		return;
+		return INVALID_HANDLE;
 	
-	plugin = Handle:KvGetNum(vote, "handler_plugin");
-	callback = Function:KvGetNum(vote, "handler_callback");
+	return Handle:KvGetNum(vote, "handler_callback");
 }
 
-Data_GetResultCallback(Handle:vote, &Handle:plugin, &Function:callback)
+Handle:Data_GetResultCallback(Handle:vote)
 {
 	if (vote == INVALID_HANDLE)
-		return;
+		return INVALID_HANDLE;
 	
-	plugin = Handle:KvGetNum(vote, "result_plugin");
-	callback = Function:KvGetNum(vote, "result_callback");
+	return Handle:KvGetNum(vote, "result_callback");
 }
 
-Data_SetResultCallback(Handle:vote, Handle:plugin, Function:callback)
+Handle:Data_CreateVote(NativeVotesType:voteType, MenuAction:actions)
 {
-	if (vote == INVALID_HANDLE || plugin == INVALID_HANDLE || callback == INVALID_FUNCTION)
-		return;
+	new Handle:handler = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
+	new Handle:voteResults = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Array, Param_Array, Param_Cell, Param_Array, Param_Array);
 	
-	KvSetNum(vote, "result_plugin", _:plugin);
-	KvSetNum(vote, "result_callback", _:callback);
-}
-
-Handle:Data_CreateVote(Handle:plugin, MenuHandler:handler, NativeVotesType:voteType, MenuAction:actions)
-{
 	new Handle:vote = CreateKeyValues("NativeVote");
-	KvSetNum(vote, "handler_plugin", _:plugin);
 	KvSetNum(vote, "handler_callback", _:handler);
 	KvSetNum(vote, "vote_type", _:voteType);
 	KvSetString(vote, "argument", "");
 	KvSetNum(vote, "actions", _:actions);
-	KvSetNum(vote, "result_plugin", _:INVALID_HANDLE);
-	KvSetNum(vote, "result_callback", _:INVALID_FUNCTION);
+	KvSetNum(vote, "result_callback", _:voteResults);
 	KvSetNum(vote, "initiator", NATIVEVOTES_SERVER_INDEX);
 	KvSetNum(vote, "team", NATIVEVOTES_ALL_TEAMS);
 	
@@ -165,11 +155,44 @@ bool:Data_AddItem(Handle:vote, const String:info[], const String:display[])
 	return true;
 }
 
+bool:Data_InsertItem(Handle:vote, position, const String:info[], const String:display[])
+{
+	new Handle:infoArray = Handle:KvGetNum(vote, INFO, _:INVALID_HANDLE);
+	new Handle:displayArray = Handle:KvGetNum(vote, DISPLAY, _:INVALID_HANDLE);
+	
+	if (infoArray == INVALID_HANDLE || displayArray == INVALID_HANDLE ||
+		GetArraySize(infoArray) >= Game_GetMaxItems() ||
+		GetArraySize(displayArray) >= Game_GetMaxItems())
+	{
+		return false;
+	}
+	
+	ShiftArrayUp(infoArray, position);
+	ShiftArrayUp(displayArray, position);
+
+	SetArrayString(infoArray, position, info);
+	SetArrayString(displayArray, position, display);
+	
+	return true;
+}
+
 Data_CloseVote(Handle:vote)
 {
 	if (vote == INVALID_HANDLE)
 	{
 		return;
+	}
+	
+	new Handle:handler = Handle:KvGetNum(vote, "handler_callback", _:INVALID_HANDLE);
+	if (handler != INVALID_HANDLE)
+	{
+		CloseHandle(handler);
+	}
+	
+	new Handle:voteResults = Handle:KvGetNum(vote, "results_callback", _:INVALID_HANDLE);
+	if (voteResults != INVALID_HANDLE)
+	{
+		CloseHandle(voteResults);
 	}
 	
 	new Handle:infoArray = Handle:KvGetNum(vote, INFO, _:INVALID_HANDLE);
