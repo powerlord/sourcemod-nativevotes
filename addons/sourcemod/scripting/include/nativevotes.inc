@@ -103,7 +103,7 @@ enum NativeVotesPassType
 }
 
 /**
- * Reasons a vote was canceled, this is used in the   Not used for L4D/L4D2, as they don't care
+ * Reasons a vote was canceled.  Not used for L4D/L4D2, as they don't care
  */
 enum NativeVotesFailType
 {
@@ -111,6 +111,34 @@ enum NativeVotesFailType
 	NativeVotesFail_Loses = 3,			/**< No votes outnumbered Yes votes */
 	NativeVotesFail_NotEnoughVotes = 4,	/**< Vote did not receive enough votes. */
 }
+
+/**
+ * Reasons a callvote command failed.  Not used for L4D/L4D2, as they don't care
+ */
+enum NativeVotesCallFailType
+{
+	NativeVotesCallFail_Loading = 1,		/**< Players are still loading. */
+	NativeVotesCallFail_Recent = 2,			/**< You can't call another vote yet: Argument is seconds until you can call another vote. */
+	NativeVotesCallFail_Disabled = 5,		/**< Server has disabled that issue. */
+	NativeVotesCallFail_MapNotFound = 6,	/**< Server does not have that map. */
+	NativeVotesCallFail_SpecifyMap = 7,		/**< You must specify a map. */
+	NativeVotesCallFail_Failed = 8,			/**< This vote failed recently. */
+	NativeVotesCallFail_WrongTeam = 9,		/**< Team can't call this vote. */
+	NativeVotesCallFail_Waiting = 10,		/**< Vote can't be called during Waiting For Players. */
+	NativeVotesCallFail_Unknown = 11,		/**< Unknown, buggy in TF2. */
+	NativeVotesCallFail_CantKickAdmin = 12,	/**< Can't kick server admin. */
+	NativeVotesCallFail_ScramblePending = 13,	/**< Team Scramble is pending.. */
+	NativeVotesCallFail_Spectators = 14,		/**< Spectators aren't allowed to call votes. */
+	NativeVotesCallFail_LevelSet = 15,		/**< Next level already set. */
+	
+}
+
+/*
+ * Is a specific vote type supported by this game?
+ * 
+ * @param voteType			Vote type
+ */
+native bool:NativeVotes_IsVoteTypeSupported(NativesVotesType:voteType);
 
 /**
  * Creates a new, empty vote.
@@ -121,7 +149,7 @@ enum NativeVotesFailType
  *							Cancel, and End will always be received regardless
  *							of whether they are set or not.  They are also
  *							the only default actions.
- * @return					A new vote Handle.
+ * @return					A new vote Handle on INVALID_HANDLE if a vote type is unsupported by this game.
  */
 native Handle:NativeVotes_Create(MenuHandler:handler, NativesVotesType:voteType,
 							MenuAction:actions=NATIVEVOTES_ACTIONS_DEFAULT);
