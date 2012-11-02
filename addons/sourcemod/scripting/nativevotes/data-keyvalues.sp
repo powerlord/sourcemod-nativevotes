@@ -130,6 +130,7 @@ Handle:Data_CreateVote(NativeVotesType:voteType, MenuAction:actions)
 	KvSetNum(vote, "result_callback", _:voteResults);
 	KvSetNum(vote, "initiator", NATIVEVOTES_SERVER_INDEX);
 	KvSetNum(vote, "team", NATIVEVOTES_ALL_TEAMS);
+	KvSetNum(vote, "options_sent", false);
 	
 	KvSetNum(vote, INFO, _:CreateArray(ByteCountToCells(INFO_LENGTH)));
 	KvSetNum(vote, DISPLAY, _:CreateArray(ByteCountToCells(INFO_LENGTH)));
@@ -209,4 +210,14 @@ Data_CloseVote(Handle:vote)
 	}
 	
 	CloseHandle(vote);
+}
+
+stock Data_GetOptionsSent(Handle:vote)
+{
+	return KvGetNum(vote, "options_sent", false);
+}
+
+stock Data_SetOptionsSent(Handle:vote, bool:truthiness)
+{
+	return KvSetNum(vote, "options_sent", truthiness);
 }

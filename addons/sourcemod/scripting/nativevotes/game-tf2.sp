@@ -37,7 +37,7 @@
 
 #include <sourcemod>
 // Temporary, for auto-complete
-//#include "../include/nativevotes.inc"
+#include "../include/nativevotes.inc"
 
 // User vote to kick user.
 #define TRANSLATION_TF2_VOTE_KICK_IDLE_START			"#TF_vote_kick_player_idle"
@@ -71,6 +71,10 @@
 
 // While not a vote string, it works just as well.
 #define TRANSLATION_TF2_VOTE_CUSTOM						"#TF_playerid_noteam"
+
+#define VOTE_PREFIX										"option"
+
+new bool:g_OptionsSent = false;
 
 bool:Game_CheckVoteType(NativeVotesType:voteType)
 {
@@ -143,6 +147,215 @@ bool:Game_ParseVote(const String:vote[], &item)
 
 Game_ClientSelectedItem(client, item)
 {
+	new Handle:castEvent = CreateEvent("vote_cast");
+	
+	SetEventInt(castEvent, "team", Data_GetTeam(g_CurVote));
+	SetEventInt(castEvent, "entityid", client);
+	SetEventInt(castEvent, "vote_option", item);
+	FireEvent(castEvent);
+	
+	CloseHandle(castEvent);
+}
+
+Game_DisplayVote(Handle:vote, clients[], num_clients)
+{
+	
+	if (!Data_GetOptionsSent(vote))
+	{
+		// This vote never sent its options
+		new Handle:optionsEvent = CreateEvent("vote_options");
+		
+		new maxCount = Data_GetItemCount();
+		
+		for (new i = 0; i < maxCount; i++)
+		{
+			decl String:option[8];
+			Format(option, sizeof(option), "%s%d", VOTE_PREFIX, i+1);
+			
+			decl String:display[64];
+			Data_GetItemDisplay(g_CurVote, i, display, sizeof(display));
+			SetEventString(optionsEvent, option, display);
+		}
+		SetEventInt(optionsEvent, "count", maxCount);
+		FireEvent(optionsEvent);
+		
+		Data_SetOptionsSent(g_CurVote, true);
+	}
+	
+	decl String:translation[64];
+	new bool:b_YesNo = true;
+	
+	NativeVotesType:voteType = Data_GetType(vote);
+	
+	switch(voteType)
+	{
+		case NativeVotesType_Custom_Mult:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_CUSTOM);
+			b_YesNo = false;
+		}
+		
+		case NativeVotesType_ChgDifficulty:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_CHANGEDIFFICULTY_START);
+		}
+		
+		case NativeVotesType_Restart:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_RESTART_START);
+		}
+		
+		case NativeVotesType_Kick:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_KICK_START);
+		}
+		
+		case NativeVotesType_KickIdle:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_KICK_IDLE_START);
+		}
+		
+		case NativeVotesType_KickScamming:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_KICK_SCAMMING_START);
+		}
+		
+		case NativeVotesType_KickCheating:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_KICK_CHEATING_START);
+		}
+		
+		case NativeVotesType_ChangeLevel:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_CHANGELEVEL_START);
+		}
+		
+		case NativeVotesType_NextLevel:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_NEXTLEVEL_SINGLE_START);
+		}
+		
+		case NativeVotesType_NextLevelMult:
+		{
+			
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_NEXTLEVEL_MULTIPLE_START);
+			b_YesNo = false;
+		}
+		
+		case NativeVotesType_ScrambleNow:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_SCRAMBLE_IMMEDIATE_START);
+		}
+		
+		case NativeVotesType_ScrambleEnd:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_SCRAMBLE_ROUNDEND_START);
+		}
+		
+		default:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_CUSTOM);
+		}
+
+	}
+	
+	new Handle:voteStart = StartMessage("VoteStart", clients, num_clients, USERMSG_RELIABLE);
+	BfWriteByte(voteStart, Data_GetTeam());
+	BfWriteByte(voteStart, Data_GetInitiator());
+	BfWriteString(voteStart, translation);
+	BfWriteString(voteStart, Data_GetArgument());
+	BfWriteBool(voteStart, b_YesNo);
+	EndMessage();
 	
 }
 
+Game_DisplayVotePass(Handle:vote, const String:winner[])
+{
+	decl String:translation[64];
+	
+	NativeVotesType:voteType = Data_GetType(vote);
+	
+	switch(voteType)
+	{
+		case NativeVotesType_ChgDifficulty:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_CHANGEDIFFICULTY_PASSED);
+		}
+		
+		case NativeVotesType_Restart:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_RESTART_PASSED);
+		}
+		
+		case NativeVotesType_Kick, NativeVotesType_KickIdle, NativeVotesType_KickScamming, NativeVotesType_KickCheating:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_KICK_PASSED);
+		}
+		
+		case NativeVotesType_ChangeLevel:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_CHANGELEVEL_PASSED);
+		}
+		
+		case NativeVotesType_NextLevel, NativeVotesType_NextLevelMult:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_NEXTLEVEL_PASSED);
+		}
+		
+		case NativeVotesType_ScrambleNow, NativeVotesType_ScrambleEnd:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_SCRAMBLE_PASSED);
+		}
+		
+		default:
+		{
+			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_CUSTOM);
+		}
+	}
+	
+	Game_DisplayVotePassEx(vote, translation, winner);
+}
+
+Game_DisplayVotePassEx(Handle:vote, const String:translation[], const String:winner[])
+{
+	new Handle:bf = StartMessageAll("VotePass", USERMSG_RELIABLE);
+	BfWriteByte(bf, Data_GetTeam(vote));
+	BfWriteString(bf, translation);
+	BfWriteString(bf, winner);
+	EndMessage();
+	
+	CloseHandle(bf);
+}
+
+Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason)
+{
+	new Handle:bf = StartMessageAll("VoteFail", USERMSG_RELIABLE);
+	
+	BfWriteByte(bf, Data_GetTeam(vote));
+	BfWriteByte(bf, reason);
+	EndMessage();
+	
+	CloseHandle(bf);
+}
+
+Game_DisplayVoteFailOne(Handle:vote, client, NativeVotesFailType:reason)
+{
+	new Handle:bf = StartMessageOne("VoteFail", client, USERMSG_RELIABLE);
+	
+	BfWriteByte(bf, Data_GetTeam(vote));
+	BfWriteByte(bf, reason);
+	EndMessage();
+	
+	CloseHandle(bf);
+}
+
+stock Game_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, param1)
+{
+	new Handle:bf = StartMessageOne("CallVoteFail", client, USERMSG_RELIABLE);
+	
+	BfWriteByte(bf, reason);
+	BfWriteShort(bf, param1);
+	EndMessage();
+	
+	CloseHandle(bf);
+}

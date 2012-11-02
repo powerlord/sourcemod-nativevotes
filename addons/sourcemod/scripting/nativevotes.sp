@@ -474,8 +474,6 @@ public Native_Close(Handle:plugin, numParams)
 		return;
 	}
 	
-	Data_CloseVote(vote);
-	
 	if (g_CurVote == vote)
 	{
 		g_CurVote = INVALID_HANDLE;
@@ -486,6 +484,8 @@ public Native_Close(Handle:plugin, numParams)
 			g_VoteTimer = INVALID_HANDLE;
 		}
 	}
+	
+	Data_CloseVote(vote);
 	
 }
 
