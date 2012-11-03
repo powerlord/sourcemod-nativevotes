@@ -209,7 +209,7 @@ public Action:Command_Vote(client, const String:command[], argc)
 		return Plugin_Handled;
 	}
 	
-	// More voting logic
+	//TODO More voting logic
 	
 	Game_ClientSelectedItem(client, item);
 	
@@ -219,7 +219,6 @@ public Action:Command_Vote(client, const String:command[], argc)
 OnVoteStart(Handle:vote)
 {
 	// Fire both Start and VoteStart in the other plugin.
-	
 	new Handle:handler = Data_GetHandler(g_CurVote);
 	
 	Call_StartForward(handler);
