@@ -37,7 +37,7 @@
 
 #include <sourcemod>
 // Temporary, for auto-complete
-#include "../include/nativevotes.inc"
+//#include "../include/nativevotes.inc"
 
 // User vote to kick user.
 #define TRANSLATION_TF2_VOTE_KICK_IDLE_START			"#TF_vote_kick_player_idle"

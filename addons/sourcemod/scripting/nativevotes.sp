@@ -45,6 +45,22 @@
 
 #include <sourcemod>
 #include <sdktools>
+
+// These variables are only used during a vote
+// These would normally be stored in an object/struct
+new Handle:g_CurVote;
+new g_VoteFlags;
+new g_StartTime = 0;
+new g_VoteTime = 0;
+new g_NumVotes = 0;
+new g_ClientVotes[MAXPLAYERS+1];
+new g_TotalClients = 0;
+new String:g_LeaderList[1024];
+new g_Items;
+//new Handle:g_Votes;
+new g_Votes[10];
+new Handle:g_VoteTimer;
+
 #include "include/nativevotes.inc"
 
 #if SDK_VERSION == SOURCE_SDK_EPISODE2VALVE
@@ -66,6 +82,8 @@
 
 #define VERSION "0.1 alpha"
 
+#define VOTE_DELAY_TIME 2.0
+
 // SourceMod uses these internally, so... we do too.
 #if !defined VOTE_NOT_VOTING
 	#define VOTE_NOT_VOTING -2
@@ -83,19 +101,6 @@ new Handle:g_Cvar_VoteConsole;
 new Handle:g_Cvar_VoteClientConsole;
 
 new Handle:g_Forward_VoteResults;
-
-// These variables are only used during a vote
-// These would normally be stored in an object/struct
-new Handle:g_CurVote;
-new g_StartTime = 0;
-new g_VoteTime = 0;
-new g_NumVotes = 0;
-new g_ClientVotes[MAXPLAYERS];
-new g_TotalClients = 0;
-new String:g_LeaderList[1024];
-new g_Items;
-new Handle:g_Votes;
-new Handle:g_VoteTimer;
 
 public Plugin:myinfo = 
 {
@@ -189,6 +194,24 @@ public OnMapEnd()
 	g_VoteTimer = INVALID_HANDLE;
 }
 
+public OnClientDisconnect(client)
+{
+	if (!Internal_IsVoteInProgress())
+	{
+		return;
+	}
+	
+	new item;
+	if ((item = g_ClientVotes[client]) >= VOTE_PENDING)
+	{
+		if (item >= 0)
+		{
+			g_Votes[item]--;
+		}
+		g_ClientVotes[client] = VOTE_NOT_VOTING;
+	}
+}
+
 public Action:Command_Vote(client, const String:command[], argc)
 {
 	// If we're not running a vote, return the vote control back to the server
@@ -219,7 +242,7 @@ public Action:Command_Vote(client, const String:command[], argc)
 OnVoteStart(Handle:vote)
 {
 	// Fire both Start and VoteStart in the other plugin.
-	new Handle:handler = Data_GetHandler(g_CurVote);
+	new Handle:handler = Data_GetHandler(vote);
 	
 	Call_StartForward(handler);
 	Call_PushCell(g_CurVote);
@@ -241,7 +264,7 @@ OnVoteCancel(Handle:vote, NativeVotesFailType:reason)
 {
 	
 	// Fire VoteCancel in the other plugin
-	new Handle:handler = Data_GetHandler(g_CurVote);
+	new Handle:handler = Data_GetHandler(vote);
 	
 	Call_StartForward(handler);
 	Call_PushCell(vote);
@@ -266,7 +289,7 @@ OnVoteEnd(Handle:vote)
 		new slots = Game_GetMaxItems();
 		new votes[slots][2];
 		
-		for (new i = 0; i < g_Votes; i++)
+		for (new i = 0; i < slots; i++)
 		{
 			if (g_Votes[i] > 0)
 			{
@@ -282,7 +305,7 @@ OnVoteEnd(Handle:vote)
 		
 		if (!SendResultCallback(vote, num_votes, num_items, votes))
 		{
-			new Handle:handler = Data_GetHandler(g_CurVote, plugin, handler);
+			new Handle:handler = Data_GetHandler(g_CurVote);
 			
 			Call_StartForward(handler);
 			Call_PushCell(g_CurVote);
@@ -297,8 +320,8 @@ OnVoteEnd(Handle:vote)
 
 bool:SendResultCallback(Handle:vote, num_votes, num_items, votes[][])
 {
-	new Handle:voteResults = Data_GetResultCallback(g_CurVote, plugin, handler);
-	if (plugin == INVALID_HANDLE || handler == INVALID_FUNCTION)
+	new Handle:voteResults = Data_GetResultCallback(g_CurVote);
+	if (GetForwardFunctionCount(voteResults) == 0)
 	{
 		return false;
 	}
@@ -430,6 +453,52 @@ bool:Internal_IsClientInVotePool(client)
 
 	return (g_ClientVotes[client] > VOTE_NOT_VOTING);
 }
+
+bool:Internal_RedrawToClient(client, bool:revotes)
+{
+	if (!Internal_IsClientInVotePool(client))
+	{
+		return false;
+	}
+	
+	if (g_ClientVotes[client] >= 0)
+	{
+		if ((g_VoteFlags & VOTEFLAG_NO_REVOTES) || !revote || g_VoteTime <= VOTE_DELAY_TIME)
+		{
+			return false;
+		}
+		
+		// Display the vote fail screen for a few seconds
+		Game_DisplayVoteFail(g_CurVote, NativeVotesFail_Generic);
+		
+		g_Clients++;
+		g_Votes[g_ClientVotes[client]]--;
+		g_ClientVotes[client] = VOTE_PENDING;
+		g_Revoting[client] = true;
+		g_NumVotes--;
+	}
+	
+	new Handle:data;
+	
+	CreateDataTimer(VOTE_DELAY_TIME, RedrawTimer, data, TIMER_FLAG_NO_MAPCHANGE);
+	WritePackCell(data, client);
+	WritePackCell(data, g_CurVote);
+	
+	return true;
+}
+
+public Action:RedrawTimer(Handle:timer, Handle:data)
+{
+	ResetPack(data);
+	new client = ReadPackCell(data);
+	new Handle:vote = Handle:ReadPackCell(data);
+	
+	if (Internal_IsVoteInProgress() && !Internal_IsCancelling(vote) && !Internal_WasCancelled(vote))
+	{
+		
+	}
+}
+
 
 public Native_IsVoteTypeSupported(Handle:plugin, numParams)
 {
