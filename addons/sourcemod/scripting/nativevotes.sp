@@ -416,11 +416,6 @@ public SortVoteItems(a[], b[], const array[][], Handle:hndl)
 	}
 }
 
-bool:Internal_IsVoteInProgress()
-{
-	return (g_CurVote != INVALID_HANDLE);
-}
-
 bool:Internal_IsClientInVotePool(client)
 {
 	if (client < 1
