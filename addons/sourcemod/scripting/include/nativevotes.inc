@@ -61,7 +61,7 @@ MenuAction_VoteCancel	A vote sequence has been cancelled (param1=NativeVotes_Fai
 /**
  * Vote types. These are mapped to translation strings and pass strings by VoteStart and VotePass handlers
  */
-enum NativesVotesType
+enum NativeVotesType
 {
 	NativeVotesType_Custom_YesNo,	/**< Yes/No, argument is vote text. */
 	NativeVotesType_Custom_Mult,	/**< TF2/CS:GO: Multiple-choice, argument is vote text. */
@@ -156,6 +156,8 @@ native Handle:NativeVotes_Create(MenuHandler:handler, NativesVotesType:voteType,
 
 /**
  * Frees all handles related to a vote.
+ * 
+ * THIS MUST BE CALLED TO AVOID HANDLE LEAKS
  * 
  * @param vote				Vote handle
  * @noreturn

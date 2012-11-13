@@ -75,10 +75,14 @@ new Handle:g_VoteTimer;
 #elseif SDK_VERSION == SOURCE_SDK_CSGO
 	#define PLUGIN_NAME "NativeVotes CS:GO"
 	#include "nativevotes/game-csgo.sp"
+#else
+	#endinput
 #endif
 
 // As long as it uses a Handle, you can switch out the data handling class here
 #include "nativevotes/data-keyvalues.sp"
+
+#include "nativevotes/handler.sp"
 
 #define VERSION "0.1 alpha"
 
@@ -92,13 +96,9 @@ new Handle:g_VoteTimer;
 #if !defined VOTE_PENDING
 	#define VOTE_PENDING -1
 #endif
+#endif
 
 new g_VoteController;
-
-new Handle:g_Cvar_VoteHintbox;
-new Handle:g_Cvar_VoteChat;
-new Handle:g_Cvar_VoteConsole;
-new Handle:g_Cvar_VoteClientConsole;
 
 new Handle:g_Forward_VoteResults;
 
@@ -161,10 +161,7 @@ public OnPluginStart()
 	
 	CreateConVar("nativevotes_version", VERSION, "NativeVotes API version", FCVAR_DONTRECORD | FCVAR_NOTIFY);
 
-	g_Cvar_VoteHintbox = CreateConVar("nativevotes_progress_hintbox", "0", "Specifies whether or not to display vote progress to clients in the\n\"hint\" box (near the bottom of the screen in most games).\nValid values are 0 (Disabled) or 1 (Enabled).", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_Cvar_VoteChat = CreateConVar("nativevotes_progress_chat", "0", "Specifies whether or not to display vote progress to clients in the\nchat area. Valid values are 0 (Disabled) or 1 (Enabled).", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_Cvar_VoteConsole = CreateConVar("nativevotes_progress_chat", "0", "Specifies whether or not to display vote progress in the server console.\nValid values are 0 (Disabled) or 1 (Enabled).", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_Cvar_VoteClientConsole = CreateConVar("nativevotes_progress_client_console", "0", "Specifies whether or not to display vote progress to clients in the\nclient console. Valid values are 0 (Disabled) or 1 (Enabled).", FCVAR_NONE, true, 0.0, true, 1.0);
+	Handler_OnLoad();
 
 	AddCommandListener(Command_Vote, "vote"); // TF2, CS:GO
 	AddCommandListener(Command_Vote, "Vote"); // L4D, L4D2
@@ -192,24 +189,6 @@ public OnMapEnd()
 	}
 
 	g_VoteTimer = INVALID_HANDLE;
-}
-
-public OnClientDisconnect(client)
-{
-	if (!Internal_IsVoteInProgress())
-	{
-		return;
-	}
-	
-	new item;
-	if ((item = g_ClientVotes[client]) >= VOTE_PENDING)
-	{
-		if (item >= 0)
-		{
-			g_Votes[item]--;
-		}
-		g_ClientVotes[client] = VOTE_NOT_VOTING;
-	}
 }
 
 public Action:Command_Vote(client, const String:command[], argc)
