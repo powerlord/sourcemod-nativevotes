@@ -185,7 +185,7 @@ Game_DisplayVote(Handle:vote, clients[], num_clients)
 	decl String:translation[64];
 	new bool:b_YesNo = true;
 	
-	NativeVotesType:voteType = Data_GetType(vote);
+	new NativeVotesType:voteType = Data_GetType(vote);
 	
 	switch(voteType)
 	{
@@ -269,62 +269,117 @@ Game_DisplayVote(Handle:vote, clients[], num_clients)
 	
 }
 
-Game_DisplayVotePass(Handle:vote, const String:winner[])
+Game_DisplayVotePass(Handle:vote, const String:param1[])
 {
-	decl String:translation[64];
+	new NativeVotesType:voteType = Data_GetType(vote);
 	
-	NativeVotesType:voteType = Data_GetType(vote);
+	new NativeVotesPassType:passType = NativeVotesPass_None;
 	
 	switch(voteType)
 	{
+		case NativeVotesType_Custom_YesNo, NativeVotesType_Custom_Mult:
+		{
+			passType = NativeVotesPass_Custom;
+		}
+		
 		case NativeVotesType_ChgDifficulty:
 		{
-			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_CHANGEDIFFICULTY_PASSED);
+			passType = NativeVotesPass_ChgDifficulty;
 		}
 		
 		case NativeVotesType_Restart:
 		{
-			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_RESTART_PASSED);
+			passType = NativeVotesPass_Restart;
 		}
 		
 		case NativeVotesType_Kick, NativeVotesType_KickIdle, NativeVotesType_KickScamming, NativeVotesType_KickCheating:
 		{
-			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_KICK_PASSED);
+			passType = NativeVotesPass_Kick;
 		}
 		
 		case NativeVotesType_ChangeLevel:
 		{
-			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_CHANGELEVEL_PASSED);
+			passType = NativeVotesPass_ChangeLevel;
 		}
 		
 		case NativeVotesType_NextLevel, NativeVotesType_NextLevelMult:
 		{
-			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_NEXTLEVEL_PASSED);
+			passType = NativeVotesPass_NextLevel;
 		}
 		
 		case NativeVotesType_ScrambleNow, NativeVotesType_ScrambleEnd:
 		{
-			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_SCRAMBLE_PASSED);
+			passType = NativeVotesPass_Scramble;
 		}
 		
 		default:
 		{
-			strcopy(translation, sizeof(translation), TRANSLATION_TF2_VOTE_CUSTOM);
+			passType = NativeVotesPass_Custom;
 		}
 	}
 	
-	Game_DisplayVotePassEx(vote, translation, winner);
+	Game_DisplayVotePassEx(vote, translation, param1);
 }
 
-Game_DisplayVotePassEx(Handle:vote, const String:translation[], const String:winner[])
+Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const String:param1[])
 {
+	decl String:translation[64];
+	Game_VotePassToTranslation(passType, translation, sizeof(translation));
+	
 	new Handle:bf = StartMessageAll("VotePass", USERMSG_RELIABLE);
 	BfWriteByte(bf, Data_GetTeam(vote));
 	BfWriteString(bf, translation);
-	BfWriteString(bf, winner);
+	BfWriteString(bf, param1);
 	EndMessage();
 	
 	CloseHandle(bf);
+}
+
+stock Game_VotePassToTranslation(NativeVotesPassType:passType, String:buffer[], maxlength)
+{
+	switch(passType)
+	{
+
+		case NativeVotesPass_Custom:
+		{
+			strcopy(buffer, maxlength, TRANSLATION_TF2_VOTE_CUSTOM);
+		}
+		
+		case NativeVotesPass_ChgDifficulty:
+		{
+			strcopy(buffer, maxlength, TRANSLATION_TF2_VOTE_CHANGEDIFFICULTY_PASSED);
+		}
+		
+		case NativeVotesPass_Restart:
+		{
+			strcopy(buffer, maxlength, TRANSLATION_TF2_VOTE_RESTART_PASSED);
+		}
+		
+		case NativeVotesPass_Kick:
+		{
+			strcopy(buffer, maxlength, TRANSLATION_TF2_VOTE_KICK_PASSED);
+		}
+		
+		case NativeVotesPass_ChangeLevel:
+		{
+			strcopy(buffer, maxlength, TRANSLATION_TF2_VOTE_CHANGELEVEL_PASSED);
+		}
+		
+		case NativeVotesPass_NextLevel:
+		{
+			strcopy(buffer, maxlength, TRANSLATION_TF2_VOTE_NEXTLEVEL_PASSED);
+		}
+		
+		case NativeVotesPass_Extend:
+		{
+			strcopy(buffer, maxlength, TRANSLATION_TF2_VOTE_NEXTLEVEL_EXTEND_PASSED);
+		}
+		
+		case NativeVotesPass_Scramble:
+		{
+			strcopy(buffer, maxlength, TRANSLATION_TF2_VOTE_SCRAMBLE_PASSED);
+		}
+	}
 }
 
 Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason)

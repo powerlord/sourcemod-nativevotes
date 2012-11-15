@@ -236,7 +236,7 @@ bool:Handler_RedrawToClient(client, bool:revotes)
 	new Handle:data;
 	
 	CreateDataTimer(VOTE_DELAY_TIME, RedrawTimer, data, TIMER_FLAG_NO_MAPCHANGE);
-	WritePackCell(data, client);
+	WritePackCell(data, GetClientUserId(client));
 	WritePackCell(data, g_CurVote);
 	
 	return true;
@@ -592,3 +592,39 @@ BuildVoteLeaders()
 	}
 }
 
+public Action:VoteTimer(Handle:timer)
+{
+	DrawHintProgress();
+	
+	g_TimeLeft--;
+	
+	if (g_TimeLeft == 0)
+	{
+		if (g_DisplayTimer != INVALID_HANDLE)
+		{
+			g_DisplayTimer = INVALID_HANDLE;
+			EndVoting();
+		}
+		return Plugin_Stop;
+	}
+	
+	return Plugin_Continue;
+}
+
+public Action:RedrawTimer(Handle:timer, Handle:data)
+{
+	new Handle:vote = Handle:ReadPackCell(data);
+	new client = GetClientOfUserId(ReadPackCell(data));
+	
+	if (client == 0)
+	{
+		return Plugin_Stop;
+	}
+	
+	if (Handler_IsVoteInProgress() && !Handler_IsCancelling() && !Handler_WasCancelled())
+	{
+		new clients[1] = { client };
+		Game_DisplayVote(vote, clients, 1);
+	}
+	return Plugin_Stop;
+}

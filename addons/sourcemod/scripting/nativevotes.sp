@@ -48,18 +48,18 @@
 
 // These variables are only used during a vote
 // These would normally be stored in an object/struct
-new Handle:g_CurVote;
-new g_VoteFlags;
-new g_StartTime = 0;
-new g_VoteTime = 0;
-new g_NumVotes = 0;
-new g_ClientVotes[MAXPLAYERS+1];
-new g_TotalClients = 0;
-new String:g_LeaderList[1024];
-new g_Items;
+//new Handle:g_CurVote;
+//new g_VoteFlags;
+//new g_StartTime = 0;
+//new g_VoteTime = 0;
+//new g_NumVotes = 0;
+//new g_ClientVotes[MAXPLAYERS+1];
+//new g_TotalClients = 0;
+//new String:g_LeaderList[1024];
+//new g_Items;
 //new Handle:g_Votes;
-new g_Votes[10];
-new Handle:g_VoteTimer;
+//new g_Votes[10];
+//new Handle:g_VoteTimer;
 
 #include "include/nativevotes.inc"
 
@@ -194,7 +194,7 @@ public OnMapEnd()
 public Action:Command_Vote(client, const String:command[], argc)
 {
 	// If we're not running a vote, return the vote control back to the server
-	if (!Internal_IsVoteInProgress())
+	if (!Handler_IsVoteInProgress())
 	{
 		return Plugin_Continue;
 	}
@@ -831,7 +831,14 @@ public Native_DisplayPass(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
-	//TODO
+	
+	new size;
+	GetNativeStringLength(2, size);
+	
+	decl String:winner[size];
+	GetNativeString(2, winner, size);
+
+	Game_DisplayVotePass(vote, winner);
 }
 
 public Native_DisplayPassEx(Handle:plugin, numParams)
@@ -842,7 +849,16 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
-	//TODO
+	
+	NativeVotesPassType:passType = NativeVotesPassType:GetNativeCell(2);
+	
+	new size;
+	GetNativeStringLength(3, size);
+	
+	decl String:winner[size];
+	GetNativeString(3, winner, size);
+	
+	Game_DisplayVotePassEx(vote, passType, winner);
 }
 
 public Native_DisplayFail(Handle:plugin, numParams)
@@ -853,5 +869,80 @@ public Native_DisplayFail(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
-	//TODO
+	
+	new NativeVotesFailType:reason = NativeVotesFailType:GetNativeCell(2);
+	
+	Game_DisplayVoteFail(vote, reason);
+}
+
+public Native_GetTarget(Handle:plugin,  numParams)
+{
+	new Handle:vote = GetNativeCell(1);
+	if (vote == INVALID_HANDLE)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
+		return;
+	}
+	
+	return Data_GetTarget(vote);
+}
+
+public Native_GetTargetSteam(Handle:plugin, numParams)
+{
+	new Handle:vote = GetNativeCell(1);
+	if (vote == INVALID_HANDLE)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
+		return;
+	}
+	
+	new size = GetNativeCell(3);
+	decl String:steamId[size];
+	GetNativeString(2, steamId, size);
+	
+	Data_GetTargetSteam(vote, steamId, size);
+}
+
+public Native_SetTarget(Handle:plugin,  numParams)
+{
+	new Handle:vote = GetNativeCell(1);
+	if (vote == INVALID_HANDLE)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
+		return;
+	}
+	
+	new client = GetNativeCell(2);
+	
+	if (client <= 0 || client > MaxClients || !IsClientConnected(client))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid", client);
+		return;
+	}
+	
+	if (!IsClientConnected(client))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not connected", client);
+		return;
+	}
+	
+	new userid = GetClientUserId(client);
+
+	Data_SetTarget(vote, userid);
+	
+	decl String:steamId[19];
+	GetClientAuthString(client, steamId, sizeof(steamId));
+	
+	Data_SetTargetSteam(vote, steamId);
+
+	new bool:changeArgument = GetNativeCell(3);
+	if (changeArgument)
+	{
+		decl String:name[MAX_NAME_LENGTH];
+		if (client > 0)
+		{
+			GetClientName(client, name, MAX_NAME_LENGTH);
+			Data_SetArgument(vote, name);
+		}
+	}
 }

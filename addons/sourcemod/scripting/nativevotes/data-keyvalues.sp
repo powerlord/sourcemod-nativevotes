@@ -95,6 +95,26 @@ Data_SetArgument(Handle:vote, const String:argument[])
 	KvSetString(vote, "argument", argument);
 }
 
+Data_GetTarget(Handle:vote)
+{
+	return KvGetNum(vote, "target");
+}
+
+Data_SetTarget(Handle:vote, target)
+{
+	KvSetNum(vote, "target", target);
+}
+
+Data_GetTargetSteam(Handle:vote, String:steamId[], maxlength)
+{
+	KvGetString(vote, "target_steam", steamId, maxlength);
+}
+
+Data_SetTargetSteam(Handle:vote, const String:steamId[])
+{
+	KvSetString(vote, "target_steam", steamId);	
+}
+
 NativeVotesType:Data_GetType(Handle:vote)
 {
 	return NativeVotesType:KvGetNum(vote, "vote_type", _:NativeVotesType_Custom_YesNo);
@@ -126,6 +146,8 @@ Handle:Data_CreateVote(NativeVotesType:voteType, MenuAction:actions)
 	KvSetNum(vote, "handler_callback", _:handler);
 	KvSetNum(vote, "vote_type", _:voteType);
 	KvSetString(vote, "argument", "");
+	KvSetNum(vote, "target", 0);
+	KvSetString(vote, "target_steam", "");
 	KvSetNum(vote, "actions", _:actions);
 	KvSetNum(vote, "result_callback", _:voteResults);
 	KvSetNum(vote, "initiator", NATIVEVOTES_SERVER_INDEX);

@@ -41,28 +41,33 @@
 #define NATIVEVOTES_ALL_TEAMS		-1 // Defined by TF2, may be the same in L4D/L4D2
 #define NATIVEVOTES_SERVER_INDEX 	99 // Defined by TF2, may be the same in L4D/L4D2
 
+// These may seem backwards, but this is the order that the votes appear in the vote screen
 #define NATIVEVOTES_VOTE_YES	0		/**< Vote was yes */
 #define NATIVEVOTES_VOTE_NO		1		/**< Vote was no */
 
 /*
 The following MenuActions are supported.  Arguments are also listed, as they differ slightly from the default
-MenuAction_Start		A menu has been started (nothing passed). Identical to MenuAction_VoteStart.
+MenuAction_Start		A menu has been started (nothing passed). Only exists for compat reasons.
 MenuAction_Select		An item was selected (param1=client, param2=item). For subplugin support.
 MenuAction_End			A vote has fully ended and the vote object is ready to be cleaned up (nothing passed)
-						Note: Unlike standard menus MenuAction_End, nothing is passed here.  Check MenuAction_VoteEnd or MenuAction_VoteCancel instead.
+						Note: Unlike standard menus MenuAction_End, nothing is passed here.
+						Check MenuAction_VoteEnd or MenuAction_VoteCancel instead.
 MenuAction_VoteEnd		A vote sequence has succeeded (param1=chosen item) 
 						This is not called if NativeVotes_SetResultCallback has been used on the vote.
+						You should call NativeVotes_DisplayPass or NativeVotes_DisplayPassEx after this
 MenuAction_VoteStart	A vote sequence has started (nothing passed).  Use this instead of MenuAction_Start
-MenuAction_VoteCancel	A vote sequence has been cancelled (param1=NativeVotes_FailType reason)
+MenuAction_VoteCancel	A vote sequence has been cancelled (param1=NativeVotes_FailType reason).
+						The return value can be passed directly to NativeVotes_DisplayFail.
 */
 
-#define NATIVEVOTES_ACTIONS_DEFAULT		MenuAction_VoteCancel|MenuAction_VoteEnd|MenuAction_End
+#define NATIVEVOTES_ACTIONS_DEFAULT		MenuAction_VoteStart|MenuAction_VoteCancel|MenuAction_VoteEnd|MenuAction_End
 
 /**
  * Vote types. These are mapped to translation strings and pass strings by VoteStart and VotePass handlers
  */
 enum NativeVotesType
 {
+	NativeVotesType_None = 0,		/** Special placeholder for callvote with no arguments for NativeVotes_OnCallVote*/
 	NativeVotesType_Custom_YesNo,	/**< Yes/No, argument is vote text. */
 	NativeVotesType_Custom_Mult,	/**< TF2/CS:GO: Multiple-choice, argument is vote text. */
 	NativeVotesType_ChgCampaign,	/**< L4D/L4D2: Yes/No, argument is campaign name */
@@ -70,10 +75,10 @@ enum NativeVotesType
 	NativeVotesType_ReturnToLobby,	/**< L4D/L4D2: Yes/No, argument ignored */
 	NativeVotesType_Alltalk,		/**< L4D2: Yes/No, argument ignored (handled internally by extension) */
 	NativeVotesType_Restart,		/**< Yes/No, argument ignored */
-	NativeVotesType_Kick,			/**< Yes/No, argument is player userid */
-	NativeVotesType_KickIdle,		/**< TF2/CS:GO: Yes/No, argument is player userid */
-	NativeVotesType_KickScamming,	/**< TF2/CS:GO: Yes/No, argument is player userid */
-	NativeVotesType_KickCheating,	/**< TF2/CS:GO: Yes/No, argument is player userid */
+	NativeVotesType_Kick,			/**< Yes/No, target is player userid, argument is auto-set by target */
+	NativeVotesType_KickIdle,		/**< TF2/CS:GO: Yes/No, target is player userid, argument is auto-set by target */
+	NativeVotesType_KickScamming,	/**< TF2/CS:GO: Yes/No, target is player userid, argument is auto-set by target */
+	NativeVotesType_KickCheating,	/**< TF2/CS:GO: Yes/No, target is player userid, argument is auto-set by target */
 	NativeVotesType_ChangeLevel,	/**< Yes/No, argument is level number in L4D/L4D2 or map name in TF2 */
 	NativeVotesType_NextLevel,		/**< TF2/CS:GO: Yes/No, argument is map name */
 	NativeVotesType_NextLevelMult,	/**< TF2/CS:GO: Multiple-choice, argument ignored */
@@ -84,6 +89,7 @@ enum NativeVotesType
 
 enum NativeVotesPassType
 {
+	NativeVotesPass_None = 0,			/**< Special placeholder for error value */
 	NativeVotesPass_Custom,				/**< Argument is custom pass message */
 	NativeVotesPass_ChgCampaign,		/**< L4D/L4D2: Argument is campaign name */
 	NativeVotesPass_ChgDifficulty,		/**< L4D/L4D2/TF2: Argument is difficulty number in L4D/L4D2 and mission name in TF2 */
@@ -91,10 +97,7 @@ enum NativeVotesPassType
 	NativeVotesPass_AlltalkOn,			/**< L4D2: Argument ignored */
 	NativeVotesPass_AlltalkOff,			/**< L4D2: Argument ignored */
 	NativeVotesPass_Restart,			/**< Argument ignored */
-	NativeVotesPass_Kick,				/**< Argument is player userid */
-	NativeVotesPass_KickIdle,			/**< TF2/CS:GO: Argument is player userid */
-	NativeVotesPass_KickScamming,		/**< TF2/CS:GO: Argument is player userid */
-	NativeVotesPass_KickCheating,		/**< TF2/CS:GO: Argument is player userid */
+	NativeVotesPass_Kick,				/**< Argument is player name */
 	NativeVotesPass_ChangeLevel,		/**< Argument is level number in L4D/L4D2 or map name in TF2/CS:GO */
 	NativeVotesPass_NextLevel,			/**< TF2/CS:GO: Argument is map name */
 	NativeVotesPass_Extend,				/**< TF2/CS:GO: Argument ignored */
@@ -113,7 +116,8 @@ enum NativeVotesFailType
 }
 
 /**
- * Reasons a callvote command failed.  Not used for L4D/L4D2, as they don't care
+ * Reasons a callvote command failed.
+ * This is provided as a convenience to plugin authors as it's not strictly part of the vote system
  */
 enum NativeVotesCallFailType
 {
@@ -130,7 +134,6 @@ enum NativeVotesCallFailType
 	NativeVotesCallFail_ScramblePending = 13,	/**< Team Scramble is pending.. */
 	NativeVotesCallFail_Spectators = 14,		/**< Spectators aren't allowed to call votes. */
 	NativeVotesCallFail_LevelSet = 15,		/**< Next level already set. */
-	
 }
 
 /*
@@ -166,10 +169,10 @@ native Handle:NativeVotes_Close(Handle:vote);
 
 /**
  * Broadcasts a vote to a list of clients.  The most selected item will be 
- * returned through BuiltinVoteAction_End.  On a tie, a random item will be returned 
+ * returned through MenuAction_VoteEnd.  On a tie, a random item will be returned 
  * from a list of the tied items.
  *
- * Note that BuiltinVoteAction_End and BuiltinVoteAction_Start are both
+ * Note that MenuAction_VoteStart, MenuAction_VoteCancel, MenuAction_VoteEnd, and MenuAction_End are all
  * default callbacks and do not need to be enabled.
  *
  * @param vote				Vote Handle.
@@ -182,13 +185,13 @@ native Handle:NativeVotes_Close(Handle:vote);
 native bool:NativeVotes_Display(Handle:vote, clients[], numClients, time);
 
 /**
- * Sends a vote menu to all clients.  See DisplayBuiltinVote() for more information.
+ * Sends a vote menu to all clients.  See NativeVotes_Display() for more information.
  *
  * @param vote				Vote Handle.
  * @param time				Maximum time to leave menu on the screen.
  * @return					True on success, false if this menu already has a vote session
  *							in progress.
- * @error					Invalid Handle.
+ * @error					Invalid Handle, or a vote is already in progress.
  */
 stock bool:NativeVotes_DisplayToAll(Handle:vote, time)
 {
@@ -208,14 +211,14 @@ stock bool:NativeVotes_DisplayToAll(Handle:vote, time)
 }
 
 /**
- * Sends a vote menu to a single team.  See DisplayBuiltinVote() for more information.
+ * Sends a vote menu to a single team.  See NativeVotes_Display() for more information.
  *
  * @param vote				Vote Handle.
- * @param team				Team to send vote to. 1 = spectators, 2 = RED/Survivors, 3 = BLU/Infected
+ * @param team				Team to send vote to. 1 = spectators, 2 = RED/Survivors/Terrorists, 3 = BLU/Infected/Counter-Terrorists
  * @param time				Maximum time to leave menu on the screen.
  * @return					True on success, false if this menu already has a vote session
  *							in progress.
- * @error					Invalid Handle.
+ * @error					Invalid Handle, or a vote is already in progress.
  */
 stock bool:NativeVotes_DisplayToTeam(Handle:vote, team, time)
 {
@@ -237,13 +240,13 @@ stock bool:NativeVotes_DisplayToTeam(Handle:vote, team, time)
 }
 
 /**
- * Sends a vote menu to all clients who are not spectators or waiting to choose a team.  See DisplayBuiltinVote() for more information.
+ * Sends a vote menu to all clients who are not spectators or waiting to choose a team.  See NativeVotes_Display() for more information.
  *
  * @param vote				Vote Handle.
  * @param time				Maximum time to leave menu on the screen.
  * @return					True on success, false if this menu already has a vote session
  *							in progress.
- * @error					Invalid Handle.
+ * @error					Invalid Handle, or a vote is already in progress.
  */
 stock bool:NativeVotes_DisplayToAllNonSpectators(Handle:vote, time)
 {
@@ -265,7 +268,7 @@ stock bool:NativeVotes_DisplayToAllNonSpectators(Handle:vote, time)
 /**
  * Appends a new item to the end of a vote.  Only valid for Multiple Choice votes
  *
- * @param vote				BuiltinVote Handle.
+ * @param vote				NativeVotes Handle.
  * @param info				Item information string.
  * @return					True on success, false on failure.
  * @error					Invalid Handle, item limit reached, or if the vote is not multiple choice.
@@ -345,15 +348,51 @@ native NativeVotes_SetArgument(Handle:vote, const String:argument[]);
  * @param vote				Vote Handle.
  * @param buffer			Buffer to store argument.
  * @param maxlength			Maximum length of the buffer.
- * @return					Number of bytes written.
+ * @noreturn
  * @error					Invalid Handle.
  */
 native NativeVotes_GetArgument(Handle:vote, String:buffer[], maxlength);
 
 /**
+ * Sets the target userid for vote
+ * This should be used instead of SetArgument for votes that target players
+ * 
+ * Also sets target SteamID
+ * 
+ * @param vote				Vote Handle.
+ * @param userid			Client index of target player
+ * @param setArgument		If true, also sets argument to client's name
+ * @noreturn
+ * @error					Invalid Handle.
+ */
+native NativeVotes_SetTarget(Handle:vote, client, bool:setArgument=true);
+
+/**
+ * Returns the userid of a vote's target
+ *
+ * @param vote				Vote Handle.
+ * @return					Client index of target player or 0 for no target or target disconnected since vote started
+ * @error					Invalid Handle.
+ */
+native NativeVotes_GetTarget(Handle:vote);
+
+/**
+ * Get the Steam ID of a vote's target
+ * Useful if the target has disconnect from the server during a vote.
+ * This was added in specifically for Kick/Ban votes
+ *
+ * @param vote				Vote Handle.
+ * @param buffer			Buffer to store steamId.  Should be 19 characters or more..
+ * @param maxlength			Maximum length of the buffer.
+ * @noreturn
+ * @error					Invalid Handle.
+ */
+native NativeVotes_GetTargetSteam(Handle:vote, String:buffer[], maxlength);
+
+/**
  * Returns whether a vote is in progress.
  *
- * @return					True if a BuiltinVote is in progress, false otherwise.
+ * @return					True if a NativeVotes vote is in progress, false otherwise.
  */
 native bool:NativeVotes_IsVoteInProgress();
 
@@ -424,7 +463,7 @@ functag public NativeVotes_VoteHandler(Handle:vote,
 
 /**
  * Sets an advanced vote handling callback.  If this callback is set,
- * BuiltinVoteAction_VoteEnd will not be called.
+ * MenuAction_VoteEnd will not be called.
  *
  * @param vote				NativeVotes Handle.
  * @param callback			Callback function.
@@ -490,7 +529,7 @@ native NativeVotes_SetTeam(Handle:vote, team);
  * Retrieve the team this vote is for
  * 
  * @param vote				NativeVotes Handle.
- * @return					Team index or BUILTINVOTES_ALL_TEAMS for all teams.
+ * @return					Team index or NATIVEVOTES_ALL_TEAMS for all teams.
  * @error					Invalid Handle
  */
 native NativeVotes_GetTeam(Handle:vote);
@@ -527,6 +566,7 @@ native NativeVotes_GetInitiator(Handle:vote);
  * 
  * @param vote				Vote handle
  * @param param1			Normally the item that won the vote. Also used for custom vote winners
+ * @noreturn
  */
 native NativeVotes_DisplayPass(Handle:vote, String:param1[]="");
 
@@ -536,12 +576,13 @@ native NativeVotes_DisplayPass(Handle:vote, String:param1[]="");
  * A sample usage of this would be if Extend won an RTV vote: NativeVotes_DisplayPassEx(vote, NativeVotesPass_Extend, map);
  *
  * You MUST call one of NativeVotes_DisplayPass, NativeVotes_DisplayPassEx,
- * or NativeVotes_DisplayFail to hide the vote screen for users who didn't vote,
+ * or NativeVotes_DisplayFail to hide the vote screen for users who didn't vote
  * and to clear out their selection for the next vote.
  * 
  * #param vote				Vote handle
  * @param passType			The pass screen to display
  * @param param1			Normally the item that won the vote. Also used for custom vote winners
+ * @noreturn
  */
 native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, String:param1[]="");
 
@@ -552,7 +593,8 @@ native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, Stri
  * or NativeVotes_DisplayFail to hide the vote screen for users who didn't vote,
  * and to clear out their selection for the next vote.
  * 
- * @param reason			Vote failure reason from BuiltinVoteFailed enum
+ * @param reason			Vote failure reason from NativeVotesFailType enum
+ * @noreturn
  */
 native NativeVotes_DisplayFail(Handle:vote, NativeVotesFailType:reason=NativeVotesFail_Generic);
 
@@ -573,6 +615,41 @@ stock bool:NativeVotes_IsNewVoteAllowed()
 	
 	return true;
 }
+
+/**
+ * Used when callvote is called with no arguments.
+ * 
+ * This is used to setup the VoteSetup usermessage on TF2 and CS:GO
+ * 
+ * @param voteTypes		Populate this array with the vote types this server supports
+ * 						Custom and multiple choice votes are not supported from
+ * 						the GUI and are thus ignored.
+ */
+forward NativeVotes_OnCallVoteSetup(NativeVotesType:voteTypes[]);
+
+/**
+ * Forward for "callvote" handling
+ * 
+ * You should respond to this by starting a vote (or a timer prior to starting a vote) or by calling 
+ * 
+ * @param voteType		Type of vote being called.  This will never be a multiple-choice or custom vote.
+ * @param voteArgument	Vote argument or blank if the vote type has no argument.
+ * @param userid		userid for kick votes or 0 for all other votes
+ * @noreturn
+ */
+forward NativeVotes_OnCallVote(NativeVotesType:voteType, const String:voteArgument[], userid);
+
+/**
+ *  Send a call vote fail screen to a user
+ * Used to respond to a callvote with invalid arguments or for other reasons
+ * (such as trying to target an admin for a kick/ban vote)
+ * 
+ * @param client		The client to display the fail screen to
+ * @param reason		A vote call fail reason
+ * @param time			For NativeVotesCallFail_Recent, the number of seconds until the vote
+ * 						can be called again
+ */
+native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time);
 
 /**
  * Retrieves voting information from BuiltinVoteAction_VoteEnd.
@@ -630,4 +707,7 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_DisplayPass");
 	MarkNativeAsOptional("NativeVotes_DisplayPassEx");
 	MarkNativeAsOptional("NativeVotes_DisplayFail");
+	MarkNativeAsOptional("NativeVotes_GetTarget");
+	MarkNativeAsOptional("NativeVotes_GetTargetSteam");
+	MarkNativeAsOptional("NativeVotes_SetTarget");
 }
