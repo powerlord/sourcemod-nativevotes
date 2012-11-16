@@ -42,7 +42,7 @@ new Handle:g_Cvar_VoteDelay;
 #define VOTE_NOT_VOTING -2
 #define VOTE_PENDING -1
 
-#define VOTE_DELAY_TIME 3
+#define VOTE_DELAY_TIME 3.0
 
 // Would be part of an object
 new g_Clients;
@@ -540,7 +540,7 @@ DrawHintProgress()
 		return;
 	}
 	
-	static String:buffer[1024];
+	//static String:buffer[1024];
 	
 	new Float:fTimeRemaining = (g_fStartTime + g_nVoteTime) - GetGameTime();
 	if (fTimeRemaining < 0.0)
@@ -548,7 +548,7 @@ DrawHintProgress()
 		fTimeRemaining = 0.0;
 	}
 	
-	int timeRemaining = RoundFloat(fTimeRemaining);
+	new timeRemaining = RoundFloat(fTimeRemaining);
 
 	PrintHintTextToAll("%t%s", "Vote Count", g_NumVotes, g_TotalClients, timeRemaining, g_LeaderList);
 }
@@ -623,7 +623,8 @@ public Action:RedrawTimer(Handle:timer, Handle:data)
 	
 	if (Handler_IsVoteInProgress() && !Handler_IsCancelling() && !Handler_WasCancelled())
 	{
-		new clients[1] = { client };
+		new clients[1];
+		clients[0] = client;
 		Game_DisplayVote(vote, clients, 1);
 	}
 	return Plugin_Stop;

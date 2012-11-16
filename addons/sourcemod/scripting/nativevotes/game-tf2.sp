@@ -145,11 +145,11 @@ bool:Game_ParseVote(const String:vote[], &item)
 	return true;
 }
 
-Game_ClientSelectedItem(client, item)
+Game_ClientSelectedItem(Handle:vote, client, item)
 {
 	new Handle:castEvent = CreateEvent("vote_cast");
 	
-	SetEventInt(castEvent, "team", Data_GetTeam(g_CurVote));
+	SetEventInt(castEvent, "team", Data_GetTeam(vote));
 	SetEventInt(castEvent, "entityid", client);
 	SetEventInt(castEvent, "vote_option", item);
 	FireEvent(castEvent);
@@ -165,7 +165,7 @@ Game_DisplayVote(Handle:vote, clients[], num_clients)
 		// This vote never sent its options
 		new Handle:optionsEvent = CreateEvent("vote_options");
 		
-		new maxCount = Data_GetItemCount();
+		new maxCount = Data_GetItemCount(vote);
 		
 		for (new i = 0; i < maxCount; i++)
 		{
@@ -173,13 +173,13 @@ Game_DisplayVote(Handle:vote, clients[], num_clients)
 			Format(option, sizeof(option), "%s%d", VOTE_PREFIX, i+1);
 			
 			decl String:display[64];
-			Data_GetItemDisplay(g_CurVote, i, display, sizeof(display));
+			Data_GetItemDisplay(vote, i, display, sizeof(display));
 			SetEventString(optionsEvent, option, display);
 		}
 		SetEventInt(optionsEvent, "count", maxCount);
 		FireEvent(optionsEvent);
 		
-		Data_SetOptionsSent(g_CurVote, true);
+		Data_SetOptionsSent(vote, true);
 	}
 	
 	decl String:translation[64];
@@ -259,11 +259,13 @@ Game_DisplayVote(Handle:vote, clients[], num_clients)
 
 	}
 	
+	decl String:argument[64];
+	Data_GetArgument(vote, argument, sizeof(argument));
 	new Handle:voteStart = StartMessage("VoteStart", clients, num_clients, USERMSG_RELIABLE);
-	BfWriteByte(voteStart, Data_GetTeam());
-	BfWriteByte(voteStart, Data_GetInitiator());
+	BfWriteByte(voteStart, Data_GetTeam(vote));
+	BfWriteByte(voteStart, Data_GetInitiator(vote));
 	BfWriteString(voteStart, translation);
-	BfWriteString(voteStart, Data_GetArgument());
+	BfWriteString(voteStart, argument);
 	BfWriteBool(voteStart, b_YesNo);
 	EndMessage();
 	
@@ -318,7 +320,7 @@ Game_DisplayVotePass(Handle:vote, const String:param1[])
 		}
 	}
 	
-	Game_DisplayVotePassEx(vote, translation, param1);
+	Game_DisplayVotePassEx(vote, passType, param1);
 }
 
 Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const String:param1[])
@@ -387,7 +389,7 @@ Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason)
 	new Handle:bf = StartMessageAll("VoteFail", USERMSG_RELIABLE);
 	
 	BfWriteByte(bf, Data_GetTeam(vote));
-	BfWriteByte(bf, reason);
+	BfWriteByte(bf, _:reason);
 	EndMessage();
 	
 	CloseHandle(bf);

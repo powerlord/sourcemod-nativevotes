@@ -86,7 +86,7 @@
 
 #define VERSION "0.1 alpha"
 
-#define VOTE_DELAY_TIME 2.0
+//#define VOTE_DELAY_TIME 2.0
 
 // SourceMod uses these internally, so... we do too.
 #if !defined VOTE_NOT_VOTING
@@ -95,7 +95,6 @@
 
 #if !defined VOTE_PENDING
 	#define VOTE_PENDING -1
-#endif
 #endif
 
 new g_VoteController;
@@ -181,14 +180,14 @@ public OnConfigsExecuted()
 
 public OnMapEnd()
 {
-	if (g_CurVote != INVALID_HANDLE)
+	if (g_hCurVote != INVALID_HANDLE)
 	{
 		// Cancel the ongoing vote, but don't close the handle, as the other plugin may still re-use it
-		OnVoteCancel(g_CurVote, NativeVotesFail_Generic);
-		g_CurVote = INVALID_HANDLE;
+		OnVoteCancel(g_hCurVote, NativeVotesFail_Generic);
+		g_hCurVote = INVALID_HANDLE;
 	}
 
-	g_VoteTimer = INVALID_HANDLE;
+	g_hVoteTimer = INVALID_HANDLE;
 }
 
 public Action:Command_Vote(client, const String:command[], argc)
@@ -218,42 +217,88 @@ public Action:Command_Vote(client, const String:command[], argc)
 	return Plugin_Handled;
 }
 
+OnVoteSelect(Handle:vote, client, item)
+{
+	DoAction(vote, MenuAction_Select, client, item);
+}
+
+OnEnd(Handle:vote)
+{
+	DoAction(vote, MenuAction_End, 0, 0);
+}
+
+OnVoteEnd(Handle:vote, item)
+{
+	DoAction(vote, MenuAction_VoteEnd, item, 0);
+}
+
 OnVoteStart(Handle:vote)
 {
 	// Fire both Start and VoteStart in the other plugin.
-	new Handle:handler = Data_GetHandler(vote);
 	
-	Call_StartForward(handler);
-	Call_PushCell(g_CurVote);
-	Call_PushCell(MenuAction_Start);
-	Call_PushCell(0);
-	Call_PushCell(0);
-	Call_Finish();
+	DoAction(vote, MenuAction_Start, 0, 0);
 	
-	Call_StartForward(handler);
-	Call_PushCell(g_CurVote);
-	Call_PushCell(MenuAction_VoteStart);
-	Call_PushCell(0);
-	Call_PushCell(0);
-	Call_Finish();
-
+	DoAction(vote, MenuAction_VoteStart, 0, 0);
 }
 
 OnVoteCancel(Handle:vote, NativeVotesFailType:reason)
 {
-	
-	// Fire VoteCancel in the other plugin
-	new Handle:handler = Data_GetHandler(vote);
-	
-	Call_StartForward(handler);
-	Call_PushCell(vote);
-	Call_PushCell(MenuAction_VoteCancel);
-	Call_PushCell(reason);
-	Call_PushCell(0);
-	Call_Finish();
+	DoAction(vote, MenuAction_VoteCancel, reason, 0);
 }
 
-OnVoteEnd(Handle:vote)
+DoAction(Handle:vote, MenuAction action, param1, param2, Action:def_res = Plugin_Continue)
+{
+	new Action:res = def_res;
+	
+	new Handle:handler = Data_GetHandler(vote);
+	Call_StartForward(handler);
+	Call_PushCell(vote);
+	Call_PushCell(action);
+	Call_PushCell(param1);
+	Call_PushCell(param2);
+	Call_Finish(res);
+	return res;
+}
+
+OnVoteResults(vote, const votes[][]. item_count)
+{
+	new Handle:resultsHandler = Data_GetResultCallback(vote);
+	
+	if (resultsHandler == INVALID_HANDLE)
+	{
+		/* Call MenuAction_VoteEnd instead.  See if there are any extra winners. */
+		new num_items = 1;
+		for (new i = 1; i < num_items; i++)
+		{
+			if (votes[i][VOTEINFO_ITEM_VOTES] != votes[0][VOTEINFO_ITEM_VOTES])
+			{
+				break;
+			}
+			num_items++;
+		}
+		
+		/* See if we need to pick a random winner. */
+		new winning_item;
+		if (num_items > 1)
+		{
+			/* Yes, we do */
+			winning_item = GetRandomInt(0, num_items - 1);
+			winning_item = votes[winning_item][VOTEINFO_ITEM_INDEX];
+		}
+		else 
+		{
+			/* No, take the first */
+			winning_item = votes[winning_item][VOTEINFO_ITEM_INDEX];
+		}
+	}
+	else
+	{
+		// TODO Safety save
+	}
+}
+
+
+VoteEnd(Handle:vote)
 {
 	if (g_NumVotes == 0)
 	{
@@ -284,7 +329,7 @@ OnVoteEnd(Handle:vote)
 		
 		if (!SendResultCallback(vote, num_votes, num_items, votes))
 		{
-			new Handle:handler = Data_GetHandler(g_CurVote);
+			new Handle:handler = Data_GetHandler(g_hCurVote);
 			
 			Call_StartForward(handler);
 			Call_PushCell(g_CurVote);

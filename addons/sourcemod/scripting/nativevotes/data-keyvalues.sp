@@ -43,26 +43,39 @@
 
 bool:Data_GetItemInfo(Handle:vote, item, String:choice[], choiceSize)
 {
-	Handle:array = KvGetNum(vote, INFO, INVALID_HANDLE);
+	new Handle:array = Handle:KvGetNum(vote, INFO, _:INVALID_HANDLE);
 
-	if (array == INVALID_HANDLE || item > GetArraySize(item))
+	if (array == INVALID_HANDLE || item > Data_GetItemCount(vote))
 	{
 		return false;
 	}
 	
 	GetArrayString(array, item, choice, choiceSize);
+	return true;
 }
 
 bool:Data_GetItemDisplay(Handle:vote, item, String:choice[], choiceSize)
 {
-	Handle:array = KvGetNum(vote, DISPLAY, INVALID_HANDLE);
+	new Handle:array = Handle:KvGetNum(vote, DISPLAY, _:INVALID_HANDLE);
 
-	if (array == INVALID_HANDLE || item > GetArraySize(item))
+	if (array == INVALID_HANDLE || item > Data_GetItemCount(vote))
 	{
 		return false;
 	}
 	
 	GetArrayString(array, item, choice, choiceSize);
+	return true;
+}
+
+Data_GetItemCount(Handle:vote)
+{
+	new Handle:array = Handle:KvGetNum(vote, INFO, _:INVALID_HANDLE);
+	if (array == INVALID_HANDLE)
+	{
+		return 0;
+	}
+	
+	return GetArraySize(array);
 }
 
 Data_GetTeam(Handle:vote)
