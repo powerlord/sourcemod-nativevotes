@@ -40,39 +40,39 @@
 //#include "../include/nativevotes.inc"
 
 // User vote to kick user.
-#define TRANSLATION_TF2_VOTE_KICK_IDLE_START			"#TF_vote_kick_player_idle"
-#define TRANSLATION_TF2_VOTE_KICK_SCAMMING_START		"#TF_vote_kick_player_scamming"
-#define TRANSLATION_TF2_VOTE_KICK_CHEATING_START		"#TF_vote_kick_player_cheating"
-#define TRANSLATION_TF2_VOTE_KICK_START					"#TF_vote_kick_player_other"
-#define TRANSLATION_TF2_VOTE_KICK_PASSED				"#TF_vote_passed_kick_player"
+#define TF2_VOTE_KICK_IDLE_START			"#TF_vote_kick_player_idle"
+#define TF2_VOTE_KICK_SCAMMING_START		"#TF_vote_kick_player_scamming"
+#define TF2_VOTE_KICK_CHEATING_START		"#TF_vote_kick_player_cheating"
+#define TF2_VOTE_KICK_START					"#TF_vote_kick_player_other"
+#define TF2_VOTE_KICK_PASSED				"#TF_vote_passed_kick_player"
 
 // User vote to restart map.
-#define TRANSLATION_TF2_VOTE_RESTART_START				"#TF_vote_restart_game"
-#define TRANSLATION_TF2_VOTE_RESTART_PASSED				"#TF_vote_passed_restart_game"
+#define TF2_VOTE_RESTART_START				"#TF_vote_restart_game"
+#define TF2_VOTE_RESTART_PASSED				"#TF_vote_passed_restart_game"
 
 // User vote to change maps.
-#define TRANSLATION_TF2_VOTE_CHANGELEVEL_START			"#TF_vote_changelevel"
-#define TRANSLATION_TF2_VOTE_CHANGELEVEL_PASSED			"#TF_vote_passed_changelevel"
+#define TF2_VOTE_CHANGELEVEL_START			"#TF_vote_changelevel"
+#define TF2_VOTE_CHANGELEVEL_PASSED			"#TF_vote_passed_changelevel"
 
 // User vote to change next level.
-#define TRANSLATION_TF2_VOTE_NEXTLEVEL_SINGLE_START		"#TF_vote_nextlevel"
-#define TRANSLATION_TF2_VOTE_NEXTLEVEL_MULTIPLE_START	"#TF_vote_nextlevel_choices" // Started by server
-#define TRANSLATION_TF2_VOTE_NEXTLEVEL_EXTEND_PASSED	"#TF_vote_passed_nextlevel_extend"
-#define TRANSLATION_TF2_VOTE_NEXTLEVEL_PASSED			"#TF_vote_passed_nextlevel"
+#define TF2_VOTE_NEXTLEVEL_SINGLE_START		"#TF_vote_nextlevel"
+#define TF2_VOTE_NEXTLEVEL_MULTIPLE_START	"#TF_vote_nextlevel_choices" // Started by server
+#define TF2_VOTE_NEXTLEVEL_EXTEND_PASSED	"#TF_vote_passed_nextlevel_extend"
+#define TF2_VOTE_NEXTLEVEL_PASSED			"#TF_vote_passed_nextlevel"
 
 // User vote to scramble teams.  Can be immediate or end of round.
-#define TRANSLATION_TF2_VOTE_SCRAMBLE_IMMEDIATE_START	"#TF_vote_scramble_teams"
-#define TRANSLATION_TF2_VOTE_SCRAMBLE_ROUNDEND_START	"#TF_vote_should_scramble_round"
-#define TRANSLATION_TF2_VOTE_SCRAMBLE_PASSED 			"#TF_vote_passed_scramble_teams"
+#define TF2_VOTE_SCRAMBLE_IMMEDIATE_START	"#TF_vote_scramble_teams"
+#define TF2_VOTE_SCRAMBLE_ROUNDEND_START	"#TF_vote_should_scramble_round"
+#define TF2_VOTE_SCRAMBLE_PASSED 			"#TF_vote_passed_scramble_teams"
 
 // User vote to change MvM mission
-#define TRANSLATION_TF2_VOTE_CHANGEDIFFICULTY_START		"#TF_vote_changechallenge"
-#define TRANSLATION_TF2_VOTE_CHANGEDIFFICULTY_PASSED	"#TF_vote_passed_changechallenge"
+#define TF2_VOTE_CHANGEDIFFICULTY_START		"#TF_vote_changechallenge"
+#define TF2_VOTE_CHANGEDIFFICULTY_PASSED	"#TF_vote_passed_changechallenge"
 
 // While not a vote string, it works just as well.
-#define TRANSLATION_TF2_VOTE_CUSTOM						"#TF_playerid_noteam"
+#define TF2_TRANSLATION_VOTE_CUSTOM			"#TF_playerid_noteam"
 
-#define VOTE_PREFIX										"option"
+#define OB_VOTE_PREFIX										"option"
 
 new bool:g_OptionsSent = false;
 
@@ -416,3 +416,18 @@ stock Game_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, param1)
 	
 	CloseHandle(bf);
 }
+
+Game_OnClientCommand(client, const String:command[], argc)
+{
+	decl String:option[8];
+	GetCmdArg(1, option, sizeof(option));
+	
+	if (strlen(option) == 7)
+	{
+		// The seventh character is the actual vote option in TF2 (option1 - option5)
+		new arg = StringToInt(option[6]) - 1;
+		
+		Handler_OnVoteSelect(g_hCurVote, client, item);
+	}
+}
+

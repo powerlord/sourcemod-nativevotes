@@ -40,33 +40,33 @@
 #include "../include/nativevotes.inc"
 
 // User vote to kick user.
-#define TRANSLATION_CSGO_VOTE_KICK_IDLE_START			"#SFUI_vote_kick_player_idle"
-#define TRANSLATION_CSGO_VOTE_KICK_SCAMMING_START		"#SFUI_vote_kick_player_scamming"
-#define TRANSLATION_CSGO_VOTE_KICK_CHEATING_START		"#SFUI_vote_kick_player_cheating"
-#define TRANSLATION_CSGO_VOTE_KICK_START				"#SFUI_vote_kick_player_other"
-#define TRANSLATION_CSGO_VOTE_KICK_PASSED				"#SFUI_vote_passed_kick_player"
+#define CSGO_VOTE_KICK_IDLE_START			"#SFUI_vote_kick_player_idle"
+#define CSGO_VOTE_KICK_SCAMMING_START		"#SFUI_vote_kick_player_scamming"
+#define CSGO_VOTE_KICK_CHEATING_START		"#SFUI_vote_kick_player_cheating"
+#define CSGO_VOTE_KICK_START				"#SFUI_vote_kick_player_other"
+#define CSGO_VOTE_KICK_PASSED				"#SFUI_vote_passed_kick_player"
 
 // User vote to restart map.
-#define TRANSLATION_CSGO_VOTE_RESTART_START				"#SFUI_vote_restart_game"
-#define TRANSLATION_CSGO_VOTE_RESTART_PASSED			"#SFUI_vote_passed_restart_game"
+#define CSGO_VOTE_RESTART_START				"#SFUI_vote_restart_game"
+#define CSGO_VOTE_RESTART_PASSED			"#SFUI_vote_passed_restart_game"
 
 // User vote to change maps.
-#define TRANSLATION_CSGO_VOTE_CHANGELEVEL_START			"#SFUI_vote_changelevel"
-#define TRANSLATION_CSGO_VOTE_CHANGELEVEL_PASSED		"#SFUI_vote_passed_changelevel"
+#define CSGO_VOTE_CHANGELEVEL_START			"#SFUI_vote_changelevel"
+#define CSGO_VOTE_CHANGELEVEL_PASSED		"#SFUI_vote_passed_changelevel"
 
 // User vote to change next level.
-#define TRANSLATION_CSGO_VOTE_NEXTLEVEL_SINGLE_START	"#SFUI_vote_nextlevel"
-#define TRANSLATION_CSGO_VOTE_NEXTLEVEL_MULTIPLE_START	"#SFUI_vote_nextlevel_choices" // Started by server
-#define TRANSLATION_CSGO_VOTE_NEXTLEVEL_EXTEND_PASSED	"#SFUI_vote_passed_nextlevel_extend"
-#define TRANSLATION_CSGO_VOTE_NEXTLEVEL_PASSED			"#SFUI_vote_passed_nextlevel"
+#define CSGO_VOTE_NEXTLEVEL_SINGLE_START	"#SFUI_vote_nextlevel"
+#define CSGO_VOTE_NEXTLEVEL_MULTIPLE_START	"#SFUI_vote_nextlevel_choices" // Started by server
+#define CSGO_VOTE_NEXTLEVEL_EXTEND_PASSED	"#SFUI_vote_passed_nextlevel_extend"
+#define CSGO_VOTE_NEXTLEVEL_PASSED			"#SFUI_vote_passed_nextlevel"
 
 // User vote to scramble teams.  Can be immediate or end of round.
-#define TRANSLATION_CSGO_VOTE_SCRAMBLE_START			"#SFUI_vote_scramble_teams"
-#define TRANSLATION_CSGO_VOTE_SCRAMBLE_PASSED 			"#SFUI_vote_passed_scramble_teams"
+#define CSGO_VOTE_SCRAMBLE_START			"#SFUI_vote_scramble_teams"
+#define CSGO_VOTE_SCRAMBLE_PASSED 			"#SFUI_vote_passed_scramble_teams"
 
-#define TRANSLATION_CSGO_VOTE_SWAPTEAMS_START			"#SFUI_vote_swap_teams"
-#define TRANSLATION_CSGO_VOTE_SWAPTEAMS_PASSED 			"#SFUI_vote_passed_swap_teams"
+#define CSGO_VOTE_SWAPTEAMS_START			"#SFUI_vote_swap_teams"
+#define CSGO_VOTE_SWAPTEAMS_PASSED 			"#SFUI_vote_passed_swap_teams"
 
 // While not a vote string, it works just as well.
-#define TRANSLATION_CSGO_VOTE_CUSTOM					"#SFUI_Scoreboard_NormalPlayer"
+#define CSGO_VOTE_CUSTOM					"#SFUI_Scoreboard_NormalPlayer"
 
