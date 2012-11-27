@@ -617,27 +617,41 @@ stock bool:NativeVotes_IsNewVoteAllowed()
 }
 
 /**
+ * Register a plugin as a vote manager.
+ * This is used to abstract away the details of the callvote command.
+ * 
+ * @param setupHandler	Handler to override the which vote types your server supports.
+ * @param callHandler	Handler for callvote commands.
+ * @noreturn
+ */
+native NativeVotes_RegisterVoteManager(NativeVotes_OnCallVoteSetup:setupHandler, NativeVotes_OnCallVote:callHandler);
+
+/**
  * Used when callvote is called with no arguments.
  * 
- * This is used to setup the VoteSetup usermessage on TF2 and CS:GO
+ * This is used to set up the VoteSetup usermessage on TF2 and CS:GO
  * 
  * @param voteTypes		Populate this array with the vote types this server supports
  * 						Custom and multiple choice votes are not supported from
  * 						the GUI and are thus ignored.
+ * @return				Plugin_Continue to allow the server itself (or another plugin) to process the callvote
+ * 						Plugin_Changed if you're changing the voteTypes,
+ * 						Plugin_Handled to return a blank VoteSetup usermessage
+ * 						Plugin_Stop to prevent to prevent VoteSetup usermessage (not recommended)
  */
-forward NativeVotes_OnCallVoteSetup(NativeVotesType:voteTypes[]);
+functag public NativeVotes_CallVoteSetupHandler(NativeVotesType:voteTypes[]);
 
 /**
  * Forward for "callvote" handling
  * 
- * You should respond to this by starting a vote (or a timer prior to starting a vote) or by calling 
+ * You should respond to this by starting a vote or by calling NativeVotes_DisplayCallVoteFail
  * 
- * @param voteType		Type of vote being called.  This will never be a multiple-choice or custom vote.
+ * @param voteType		Type of vote being called.  This will NEVER be a multiple-choice or custom vote.
  * @param voteArgument	Vote argument or blank if the vote type has no argument.
  * @param userid		userid for kick votes or 0 for all other votes
  * @noreturn
  */
-forward NativeVotes_OnCallVote(NativeVotesType:voteType, const String:voteArgument[], userid);
+functag public NativeVotes_CallVoteHandler(NativeVotesType:voteType, const String:voteArgument[], userid);
 
 /**
  *  Send a call vote fail screen to a user

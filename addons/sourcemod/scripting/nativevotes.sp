@@ -52,7 +52,7 @@
 #define L4D2_VOTE_YES_INDEX					1
 #define L4D2_VOTE_NO_INDEX					0
 
-#define L4D_COUNT							2
+#define L4DL4D2_COUNT						2
 #define TF2CSGO_COUNT						5
 
 //----------------------------------------------------------------------------
@@ -184,6 +184,11 @@ new Handle:g_Cvar_VoteDelay;
 
 new Handle:g_Forward_VoteResults;
 
+// Public Forwards
+
+new Handle:g_Forward_OnCallVoteSetup;
+new Handle:g_Forward_OnCallVote;
+
 //----------------------------------------------------------------------------
 // Used to track current vote data
 new g_Clients;
@@ -306,6 +311,9 @@ public OnPluginStart()
 	AddCommandListener(Command_Vote, "vote"); // TF2, CS:GO
 	AddCommandListener(Command_Vote, "Vote"); // L4D, L4D2
 	
+	g_Forward_OnCallVoteSetup = CreateForward(ET_Event, Param_Array);
+	g_Forward_OnCallVote = CreateForward(ET_Ignore, Param_Cell, Param_String, Param_Cell);
+	
 	AutoExecConfig(true, "nativevotes");
 }
 
@@ -318,6 +326,11 @@ public OnConfigsExecuted()
 		LogError("Could not find Vote Controller.");
 	}
 }
+
+public Action:Command_VCallote(client, const String:command[], argc)
+{
+}
+
 
 public OnVoteDelayChange(Handle:convar, const String:oldValue[], const String:newValue[])
 {
