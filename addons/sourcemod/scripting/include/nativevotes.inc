@@ -624,12 +624,12 @@ stock bool:NativeVotes_IsNewVoteAllowed()
  * @param callHandler	Handler for callvote commands.
  * @noreturn
  */
-native NativeVotes_RegisterVoteManager(NativeVotes_OnCallVoteSetup:setupHandler, NativeVotes_OnCallVote:callHandler);
+native NativeVotes_RegisterVoteManager(NativeVotes_OnCallVote:callHandler, NativeVotes_OnCallVoteSetup:setupHandler=INVALID_FUNCTION);
 
 /**
  * Used when callvote is called with no arguments.
  * 
- * This is used to set up the VoteSetup usermessage on TF2 and CS:GO
+ * This is used to configure the VoteSetup usermessage on TF2 and CS:GO
  * 
  * @param voteTypes		Populate this array with the vote types this server supports
  * 						Custom and multiple choice votes are not supported from

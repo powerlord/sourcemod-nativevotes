@@ -1,3 +1,5 @@
+// 
+http://gaming.stackexchange.com/legal/moderator-agreement
 /**
  * vim: set ts=4 :
  * =============================================================================
@@ -47,6 +49,9 @@
 
 #define VERSION "0.1 alpha"
 
+#define MAX_VOTE_ISSUES						20
+#define VOTE_STRING_SIZE					32
+
 //----------------------------------------------------------------------------
 // These values are swapped from their NativeVotes equivalent
 #define L4D2_VOTE_YES_INDEX					1
@@ -60,6 +65,9 @@
 
 //----------------------------------------------------------------------------
 // L4D/L4D2
+
+#define L4DL4D2_VOTE_YES_STRING				"Yes"
+#define L4DL4D2_VOTE_NO_STRING				"No"
 
 #define L4D_VOTE_KICK_START					"#L4D_vote_kick_player"
 #define L4D_VOTE_KICK_PASSED				"#L4D_vote_passed_kick_player"
@@ -97,6 +105,12 @@
 //----------------------------------------------------------------------------
 // TF2/CSGO
 #define TF2CSGO_VOTE_PREFIX					"option"
+
+#define TF2CSGO_VOTE_STRING_KICK			"Kick"
+#define TF2CSGO_VOTE_STRING_RESTART			"RestartGame"
+#define TF2CSGO_VOTE_STRING_CHANGELEVEL		"ChangeLevel"
+#define TF2CSGO_VOTE_STRING_NEXTLEVEL		"NextLevel"
+#define TF2CSGO_VOTE_STRING_SCRAMBLE		"ScrambleTeams"
 
 //----------------------------------------------------------------------------
 // TF2
@@ -314,23 +328,83 @@ public OnPluginStart()
 	g_Forward_OnCallVoteSetup = CreateForward(ET_Event, Param_Array);
 	g_Forward_OnCallVote = CreateForward(ET_Ignore, Param_Cell, Param_String, Param_Cell);
 	
+	AddCommandListener(Command_CallVote, "callvote"); // All games
+	
 	AutoExecConfig(true, "nativevotes");
 }
 
 public OnConfigsExecuted()
 {
 	// This is done every map for safety reasons... it usually doesn't change
-	g_VoteController = FindEntityByClassname(-1, "vote_controller");
+	g_VoteController = EntIndexToEntRef(FindEntityByClassname(-1, "vote_controller"));
 	if (g_VoteController == INVALID_ENT_REFERENCE)
 	{
 		LogError("Could not find Vote Controller.");
 	}
 }
 
-public Action:Command_VCallote(client, const String:command[], argc)
+public Action:Command_CallVote(client, const String:command[], argc)
 {
-}
+	switch (argc)
+	{
+		case 0:
+		{
+			new NativeVotesType:voteTypes[MAX_VOTE_ISSUES];
+			new Action:result;
+			
+			Call_StartForward(g_Forward_OnCallVoteSetup);
+			Call_PushArrayEx(voteTypes, MAX_VOTE_ISSUES, SM_PARAM_COPYBACK);
+			Call_Finish(result);
+			
+			switch (result)
+			{
+				case Plugin_Continue:
+				{
+					return Plugin_Continue;
+				}
+				
+				case Plugin_Handled:
+				{
+					// Make sure the vote list is empty
+					voteTypes[0] = NativeVotesType_None;
+				}
+				
+				case Plugin_Stop:
+				{
+					return Plugin_Stop;
+				}
+			}
+			
+			// Plugin_Changed goes here without any special handling
+			switch (g_GameVersion)
+			{
+				/*
+				case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+				{
+					L4DL4D2_DisplayVoteSetup(client, voteTypes);
+				}
+				*/
+				
+				case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+				{
+					TF2CSGO_DisplayVoteSetup(client, voteTypes);
+				}
+			}
+		}
+		
+		default:
+		{
+			decl String:voteString[VOTE_STRING_SIZE];
+			GetCmdArg(1, voteString, VOTE_STRING_SIZE);
+			
+			
+			
+			
+		}
+		
+	}
 
+}
 
 public OnVoteDelayChange(Handle:convar, const String:oldValue[], const String:newValue[])
 {
@@ -1543,6 +1617,84 @@ TF2CSGO_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, param1)
 	CloseHandle(bf);
 }
 
+TF2CSGO_VoteTypeToVoteString(NativeVotesType:voteType, String:voteString[], maxlength)
+{
+	new bool:valid = false;
+	switch(voteType)
+	{
+		case NativeVotesType_Kick:
+		{
+			strcopy(voteString, maxlength, TF2CSGO_VOTE_STRING_KICK);
+			valid = true;
+		}
+		
+		case NativeVotesType_ChangeLevel:
+		{
+			strcopy(voteString, maxlength, TF2CSGO_VOTE_STRING_CHANGELEVEL);
+			valid = true;
+		}
+		
+		case NativeVotesType_NextLevel:
+		{
+			strcopy(voteString, maxlength, TF2CSGO_VOTE_STRING_NEXTLEVEL);
+			valid = true;
+		}
+		
+		case NativeVotesType_Restart:
+		{
+			strcopy(voteString, maxlength, TF2CSGO_VOTE_STRING_RESTART);
+			valid = true;
+		}
+		
+		case NativeVotesType_ScrambleEnd, NativeVotesType_ScrambleNow:
+		{
+			strcopy(voteString, maxlength, TF2CSGO_VOTE_STRING_SCRAMBLE);
+			valid = true;
+		}
+	}
+	
+	return valid;
+}
+
+
+TF2CSGO_DisplayVoteSetup(client, NativeVotesType:voteTypes[])
+{
+	new count = 0;
+	new validVoteTypes[MAX_VOTE_ISSUES][VOTE_STRING_SIZE];
+	
+	for (new i = 0; i < MAX_VOTE_ISSUES; ++i)
+	{
+		if (voteTypes[i] == NativeVotesType_None)
+		{
+			break;
+		}
+		
+		new bool:valid = false;
+		if (g_GameVersion == SOURCE_SDK_EPISODE2VALVE)
+		{
+			valid = TF2_CheckVoteType(voteTypes[i]);
+		}
+		else if (g_GameVersion == SOURCE_SDK_CSGO)
+		{
+			valid = CSGO_CheckVoteType(voteTypes[i]);
+		}
+		
+		if (valid && TF2CSGO_VoteTypeToVoteString(voteTypes[i], validVoteTypes[count], VOTE_STRING_SIZE))
+		{
+			++count;
+		}
+	}
+	
+	new Handle:bf = StartMessageOne("VoteSetup", client, USERMSG_RELIABLE);
+	
+	BfWriteByte(bf, count);
+	for (new i = 0; i < count; ++i)
+	{
+		BfWriteString(bf, validVoteTypes[i]);
+	}
+	
+	EndMessage();
+}
 
 //----------------------------------------------------------------------------
 // TF2 functions
