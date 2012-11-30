@@ -1,5 +1,4 @@
-// 
-http://gaming.stackexchange.com/legal/moderator-agreement
+// http://gaming.stackexchange.com/legal/moderator-agreement
 /**
  * vim: set ts=4 :
  * =============================================================================
@@ -353,6 +352,7 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			new Action:result;
 			
 			Call_StartForward(g_Forward_OnCallVoteSetup);
+			Call_PushCell(client);
 			Call_PushArrayEx(voteTypes, MAX_VOTE_ISSUES, SM_PARAM_COPYBACK);
 			Call_Finish(result);
 			
@@ -397,12 +397,60 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			decl String:voteString[VOTE_STRING_SIZE];
 			GetCmdArg(1, voteString, VOTE_STRING_SIZE);
 			
+			new String:argument[64];
 			
+			new NativeVotesType:voteType = TF2CSGO_VoteStringToVoteType(voteString);
 			
+			new target = 0;
+			
+			if (voteType == NativeVotesType_Kick)
+			{
+				decl String:param1[20];
+				GetCmdArg(2, param1, sizeof(param1));
+				
+				decl String:params[2][20];
+				ExplodeString(param1, " ", params, sizeof(params), sizeof(params[]));
+				
+				target = StringToInt(params[0]);
+				
+				if (!IsValidEntity(target))
+				{
+					return Plugin_Continue;
+				}
+				
+				if (StrEqual(params[1], "cheating", false))
+				{
+					voteType = NativeVotesType_KickCheating;
+				}
+				else if (StrEqual(params[1], "idle", false))
+				{
+					voteType = NativeVotesType_KickIdle;
+				}
+				else if (StrEqual(params[1], "scamming", false))
+				{
+					voteType = NativeVotesType_KickScamming;
+				}
+				
+				GetClientName(GetClientOfUserId(target), argument, sizeof(argument));
+			}
+			else
+			{
+				GetCmdArg(2, argument, sizeof(argument));
+			}
+			
+			Call_StartForward(g_Forward_OnCallVote);
+			Call_PushCell(client);
+			Call_PushCell(voteType);
+			Call_PushString(argument);
+			Call_PushCell(target);
+			Call_Finish();
 			
 		}
 		
 	}
+	
+	// Default to continue if we're not processing things
+	return Plugin_Continue;
 
 }
 
@@ -590,7 +638,7 @@ VoteEnd(Handle:vote)
 	
 }
 
-bool:SendResultCallback(Handle:vote, num_votes, num_items, votes[][])
+bool:SendResultCallback(Handle:vote, num_votes, num_items, const votes[][])
 {
 	new Handle:voteResults = Data_GetResultCallback(g_CurVote);
 	if (GetForwardFunctionCount(voteResults) == 0)
@@ -624,7 +672,7 @@ bool:SendResultCallback(Handle:vote, num_votes, num_items, votes[][])
 	}
 	
 	Call_StartForward(voteResults);
-	Call_PushCell(vote);
+	Call_PushCell(_:vote);
 	Call_PushCell(num_votes);
 	Call_PushCell(num_clients);
 	Call_PushArray(client_indexes, num_clients);
@@ -1656,6 +1704,33 @@ TF2CSGO_VoteTypeToVoteString(NativeVotesType:voteType, String:voteString[], maxl
 	return valid;
 }
 
+NativeVotesType:TF2CSGO_VoteStringToVoteType(String:voteString[])
+{
+	new NativeVotesType:voteType = NativeVotesType_None;
+	
+	if (StrEqual(voteString, TF2CSGO_VOTE_STRING_KICK, false)
+	{
+		voteType = NativeVotesType_Kick;
+	}
+	else if (StrEqual(voteString, TF2CSGO_VOTE_STRING_CHANGELEVEL, false))
+	{
+		voteType = NativeVotesType_ChangeLevel;
+	}
+	else if (StrEqual(voteString, TF2CSGO_VOTE_STRING_NEXTLEVEL. false)
+	{
+		voteType = NativeVotesType_NextLevel;
+	}
+	else if (StrEqual(voteString, TF2CSGO_VOTE_STRING_RESTART, false)
+	{
+		voteType = NativeVotesType_Restart;
+	}
+	else if (StrEqual(voteString, TF2CSGO_VOTE_STRING_SCRAMBLE, false)
+	{
+		voteType = NativeVotesType_ScrambleNow;
+	}
+	
+	return voteType;
+}
 
 TF2CSGO_DisplayVoteSetup(client, NativeVotesType:voteTypes[])
 {

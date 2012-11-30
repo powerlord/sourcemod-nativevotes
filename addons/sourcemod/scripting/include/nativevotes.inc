@@ -85,7 +85,7 @@ enum NativeVotesType
 	NativeVotesType_ScrambleNow,	/**< TF2/CS:GO: Yes/No, argument ignored */
 	NativeVotesType_ScrambleEnd,	/**< TF2: Yes/No, argument ignored */
 	NativeVotesType_SwapTeams		/**< CS:GO: Yes/No, argument ignored */
-}
+};
 
 enum NativeVotesPassType
 {
@@ -102,8 +102,8 @@ enum NativeVotesPassType
 	NativeVotesPass_NextLevel,			/**< TF2/CS:GO: Argument is map name */
 	NativeVotesPass_Extend,				/**< TF2/CS:GO: Argument ignored */
 	NativeVotesPass_Scramble,			/**< TF2/CS:GO: Argument ignored */
-	NativeVotesPass_SwapTeams			/**< CS:GO: Argument ignored */
-}
+	NativeVotesPass_SwapTeams,			/**< CS:GO: Argument ignored */
+};
 
 /**
  * Reasons a vote was canceled.  Not used for L4D/L4D2, as they don't care
@@ -113,7 +113,7 @@ enum NativeVotesFailType
 	NativeVotesFail_Generic = 0,		/**< Vote was generically cancelled. */
 	NativeVotesFail_Loses = 3,			/**< No votes outnumbered Yes votes */
 	NativeVotesFail_NotEnoughVotes = 4,	/**< Vote did not receive enough votes. */
-}
+};
 
 /**
  * Reasons a callvote command failed.
@@ -134,7 +134,7 @@ enum NativeVotesCallFailType
 	NativeVotesCallFail_ScramblePending = 13,	/**< Team Scramble is pending.. */
 	NativeVotesCallFail_Spectators = 14,		/**< Spectators aren't allowed to call votes. */
 	NativeVotesCallFail_LevelSet = 15,		/**< Next level already set. */
-}
+};
 
 /*
  * Is a specific vote type supported by this game?
@@ -617,41 +617,43 @@ stock bool:NativeVotes_IsNewVoteAllowed()
 }
 
 /**
- * Register a plugin as a vote manager.
- * This is used to abstract away the details of the callvote command.
- * 
- * @param setupHandler	Handler to override the which vote types your server supports.
- * @param callHandler	Handler for callvote commands.
- * @noreturn
- */
-native NativeVotes_RegisterVoteManager(NativeVotes_OnCallVote:callHandler, NativeVotes_OnCallVoteSetup:setupHandler=INVALID_FUNCTION);
-
-/**
  * Used when callvote is called with no arguments.
  * 
  * This is used to configure the VoteSetup usermessage on TF2 and CS:GO
  * 
+ * @param client		Client, in case the votes are restricted by client
  * @param voteTypes		Populate this array with the vote types this server supports
  * 						Custom and multiple choice votes are not supported from
  * 						the GUI and are thus ignored.
  * @return				Plugin_Continue to allow the server itself (or another plugin) to process the callvote
  * 						Plugin_Changed if you're changing the voteTypes,
  * 						Plugin_Handled to return a blank VoteSetup usermessage
- * 						Plugin_Stop to prevent to prevent VoteSetup usermessage (not recommended)
+ * 						Plugin_Stop to prevent VoteSetup usermessage (not recommended)
  */
-functag public NativeVotes_CallVoteSetupHandler(NativeVotesType:voteTypes[]);
+functag public Action:NativeVotes_CallVoteSetupHandler(client, NativeVotesType:voteTypes[]);
 
 /**
  * Forward for "callvote" handling
  * 
  * You should respond to this by starting a vote or by calling NativeVotes_DisplayCallVoteFail
  * 
+ * @param client		Client
  * @param voteType		Type of vote being called.  This will NEVER be a multiple-choice or custom vote.
  * @param voteArgument	Vote argument or blank if the vote type has no argument.
- * @param userid		userid for kick votes or 0 for all other votes
+ * @param target		target userid for kick votes or 0 for all other votes
  * @noreturn
  */
-functag public NativeVotes_CallVoteHandler(NativeVotesType:voteType, const String:voteArgument[], userid);
+functag public NativeVotes_CallVoteHandler(client, NativeVotesType:voteType, const String:voteArgument[], target);
+
+/**
+ * Register a plugin as a vote manager.
+ * This is used to abstract away the details of the callvote command.
+ * 
+ * @param callHandler	Handler for callvote commands.
+ * @param setupHandler	Handler to override the which vote types your server supports.  Only useful on TF2 and CS:GO.
+ * @noreturn
+ */
+native NativeVotes_RegisterVoteManager(NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteSetupHandler:setupHandler=INVALID_FUNCTION);
 
 /**
  *  Send a call vote fail screen to a user
