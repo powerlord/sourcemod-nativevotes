@@ -35,6 +35,8 @@
 
 #include "include/nativevotes.inc"
 
+#define LOGTAG "NV"
+
 // SourceMod 1.4 compatibility shim
 #if !defined SOURCE_SDK_CSGO
 	#define SOURCE_SDK_CSGO					80		/**< Engine released after CS:GO (no SDK yet) */
@@ -113,6 +115,9 @@
 
 //----------------------------------------------------------------------------
 // TF2
+
+#define TF2_VOTE_STRING_CHANGEMISSION		"ChangeMission"
+
 // User vote to kick user.
 #define TF2_VOTE_KICK_IDLE_START			"#TF_vote_kick_player_idle"
 #define TF2_VOTE_KICK_SCAMMING_START		"#TF_vote_kick_player_scamming"
@@ -140,11 +145,11 @@
 #define TF2_VOTE_SCRAMBLE_PASSED 			"#TF_vote_passed_scramble_teams"
 
 // User vote to change MvM mission
-#define TF2_VOTE_CHANGEDIFFICULTY_START		"#TF_vote_changechallenge"
-#define TF2_VOTE_CHANGEDIFFICULTY_PASSED	"#TF_vote_passed_changechallenge"
+#define TF2_VOTE_CHANGEMISSION_START		"#TF_vote_changechallenge"
+#define TF2_VOTE_CHANGEMISSION_PASSED		"#TF_vote_passed_changechallenge"
 
 // While not a vote string, it works just as well.
-#define TF2_TRANSLATION_VOTE_CUSTOM			"#TF_playerid_noteam"
+#define TF2_VOTE_CUSTOM						"#TF_playerid_noteam"
 
 //----------------------------------------------------------------------------
 // CSGO
@@ -489,7 +494,7 @@ public OnMapEnd()
 public Action:Command_Vote(client, const String:command[], argc)
 {
 	// If we're not running a vote, return the vote control back to the server
-	if (!Handler_IsVoteInProgress())
+	if (!Internal_IsVoteInProgress())
 	{
 		return Plugin_Continue;
 	}
@@ -508,10 +513,100 @@ public Action:Command_Vote(client, const String:command[], argc)
 	
 	//TODO More voting logic
 	
-	Game_ClientSelectedItem(client, item);
+	switch(g_GameVersion)
+	{
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		{
+			
+		}
+		
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			TF2CSGO_ClientSelectedItem(g_hCurVote, client, item);
+		}
+	}
 	
 	return Plugin_Handled;
 }
+
+VoteSelect(Handle:vote, client, item)
+{
+	if (Internal_IsVoteInProgress() && g_ClientVotes[client] == VOTE_PENDING)
+	{
+		/* Check by our item count, NOT the vote array size */
+		if (item < g_Items)
+		{
+			switch(g_GameVersion)
+			{
+				case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+				{
+					// L4DL4D2_ClientSelectedItem(vote, client, item);
+				}
+				
+				case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+				{
+					TF2CSGO_ClientSelectedItem(vote, client, item);
+				}
+			}
+			
+			g_ClientVotes[client] = item;
+			SetArrayCell(g_hVotes, item, GetArrayCell(g_hVotes, item) + 1);
+			g_NumVotes++;
+			
+			if (GetConVarBool(g_Cvar_VoteChat) || GetConVarBool(g_Cvar_VoteConsole) || GetConVarBool(g_Cvar_VoteClientConsole))
+			{
+				static String:buffer[1024];
+				decl String:choice[128];
+				decl String:name[MAX_NAME_LENGTH];
+				Data_GetItemDisplay(item, choice, sizeof(choice));
+				
+				GetClientName(client, name, MAX_NAME_LENGTH);
+				
+				if (GetConVarBool(g_Cvar_VoteConsole))
+				{
+					PrintToServer("[%s] %T", LOGTAG, "Voted For", LANG_SERVER, name, choice);
+				}
+				
+				if (GetConVarBool(g_Cvar_VoteChat) || GetConVarBool(g_Cvar_VoteClientConsole))
+				{
+					decl String:phrase[30];
+					
+					if (g_bRevoting[client])
+					{
+						strcopy(phrase, sizeof(phrase), "Changed Vote");
+					}
+					else
+					{
+						strcopy(phrase, sizeof(phrase), "Voted For");
+					}
+					
+					if (GetConVarBool(g_Cvar_VoteChat))
+					{
+						PrintToChatAll("[%s] %t", LOGTAG, phrase, name, choice);
+					}
+
+					if (GetConVarBool(g_Cvar_VoteClientConsole))
+					{
+						for (new i = 1; i <= MaxClients; i++)
+						{
+							if (IsClientInGame(i) && !IsFakeClient(i))
+							{
+								PrintToConsole(i, "[%s] %t", LOGTAG, phrase, name, choice);
+							}
+						}
+					}
+				}
+			}
+			Game_UpdateVoteCounts(g_hCurVote, g_Items, g_Votes, g_TotalClients);
+			BuildVoteLeaders();
+			DrawHintProgress();
+		}
+		
+		OnVoteSelect(g_hCurVote, client, item);
+		DecrementPlayerCount();
+	}
+}
+
 
 OnVoteSelect(Handle:vote, client, item)
 {
@@ -542,7 +637,7 @@ OnVoteCancel(Handle:vote, NativeVotesFailType:reason)
 	DoAction(vote, MenuAction_VoteCancel, reason, 0);
 }
 
-DoAction(Handle:vote, MenuAction action, param1, param2, Action:def_res = Plugin_Continue)
+DoAction(Handle:vote, MenuAction:action, param1, param2, Action:def_res = Plugin_Continue)
 {
 	new Action:res = def_res;
 	
@@ -556,7 +651,7 @@ DoAction(Handle:vote, MenuAction action, param1, param2, Action:def_res = Plugin
 	return res;
 }
 
-OnVoteResults(vote, const votes[][]. item_count)
+OnVoteResults(vote, const votes[][], item_count)
 {
 	new Handle:resultsHandler = Data_GetResultCallback(vote);
 	
@@ -757,6 +852,12 @@ public SortVoteItems(a[], b[], const array[][], Handle:hndl)
 	}
 }
 
+bool:Internal_IsVoteInProgress()
+{
+	return (g_hCurVote != INVALID_HANDLE);
+}
+
+
 bool:Internal_IsClientInVotePool(client)
 {
 	if (client < 1
@@ -827,22 +928,26 @@ public Native_IsVoteTypeSupported(Handle:plugin, numParams)
 	{
 		case SOURCE_SDK_EPISODE2VALVE:
 		{
-			returnVal = TF2_
+			returnVal = TF2_CheckVoteType(type);
 		}
 		
 		case SOURCE_SDK_LEFT4DEAD:
 		{
+			returnVal = L4D_CheckVoteType(type);
 		}
 		
 		case SOURCE_SDK_LEFT4DEAD2:
 		{
+			returnVal = L4D2_CheckVoteType(type);
 		}
 		
 		case SOURCE_SDK_CSGO:
 		{
+			returnVal = CSGO_CheckVoteType(type);
 		}
 	}
-	return Game_CheckVoteType(GetNativeCell(1));
+	
+	return returnVal;
 }
 
 public Native_Create(Handle:plugin, numParams)
@@ -1778,11 +1883,11 @@ bool:TF2_CheckVoteType(NativeVotesType:voteType)
 {
 	switch(voteType)
 	{
-		case NativeVotesType_Custom_YesNo, NativeVotesType_Custom_Mult, NativeVotesType_ChgDifficulty,
-		NativeVotesType_Restart, NativeVotesType_Kick, NativeVotesType_KickIdle, 
-		NativeVotesType_KickScamming, NativeVotesType_KickCheating, NativeVotesType_ChangeLevel,
-		NativeVotesType_NextLevel, NativeVotesType_NextLevelMult, NativeVotesType_ScrambleNow,
-		NativeVotesType_ScrambleEnd,
+		case NativeVotesType_Custom_YesNo, NativeVotesType_Custom_Mult, NativeVotesType_Restart,
+		NativeVotesType_Kick, NativeVotesType_KickIdle, NativeVotesType_KickScamming,
+		NativeVotesType_KickCheating, NativeVotesType_ChangeLevel, NativeVotesType_NextLevel,
+		NativeVotesType_NextLevelMult, NativeVotesType_ScrambleNow, NativeVotesType_ScrambleEnd,
+		NativeVotesType_ChgMission:
 		{
 			return true;
 		}
@@ -1795,9 +1900,9 @@ bool:TF2_CheckVotePassType(NativeVotesPass:passType)
 {
 	switch(passType)
 	{
-		case NativeVotesPass_ChgDifficulty, NativeVotesPass_Custom, NativeVotesPass_Restart,
-		NativeVotesPass_ChangeLevel, NativeVotesPass_Kick, NativeVotesPass_NextLevel,
-		NativeVotesPass_Extend, NativeVotesPass_Scramble:
+		case NativeVotesPass_Custom, NativeVotesPass_Restart, NativeVotesPass_ChangeLevel,
+		NativeVotesPass_Kick, NativeVotesPass_NextLevel, NativeVotesPass_Extend,
+		NativeVotesPass_Scramble, NativeVotesPass_ChgMission:
 		{
 			return true;
 		}
@@ -1815,11 +1920,6 @@ bool:TF2_VoteTypeToTranslation(NativeVotesType:voteType, String:translation[], m
 		{
 			strcopy(translation, maxlength, TF2_VOTE_CUSTOM);
 			bYesNo = false;
-		}
-		
-		case NativeVotesType_ChgDifficulty:
-		{
-			strcopy(translation, maxlength, TF2_VOTE_CHANGEDIFFICULTY_START);
 		}
 		
 		case NativeVotesType_Restart:
@@ -1874,6 +1974,11 @@ bool:TF2_VoteTypeToTranslation(NativeVotesType:voteType, String:translation[], m
 			strcopy(translation, maxlength, TF2_VOTE_SCRAMBLE_ROUNDEND_START);
 		}
 		
+		case NativeVotesType_ChgMission:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_CHANGEMISSION_START);
+		}
+		
 		default:
 		{
 			strcopy(translation, maxlength, TF2_VOTE_CUSTOM);
@@ -1887,16 +1992,6 @@ TF2_VotePassToTranslation(NativeVotesPassType:passType, String:translation[], ma
 {
 	switch(passType)
 	{
-		case NativeVotesPass_Custom:
-		{
-			strcopy(translation, maxlength, TF2_VOTE_CUSTOM);
-		}
-		
-		case NativeVotesPass_ChgDifficulty:
-		{
-			strcopy(translation, maxlength, TF2_VOTE_CHANGEDIFFICULTY_PASSED);
-		}
-		
 		case NativeVotesPass_Restart:
 		{
 			strcopy(translation, maxlength, TF2_VOTE_RESTART_PASSED);
@@ -1925,6 +2020,16 @@ TF2_VotePassToTranslation(NativeVotesPassType:passType, String:translation[], ma
 		case NativeVotesPass_Scramble:
 		{
 			strcopy(translation, maxlength, TF2_VOTE_SCRAMBLE_PASSED);
+		}
+
+		case NativeVotesPass_ChgMission:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_CHANGEMISSION_PASSED);
+		}
+		
+		default:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_CUSTOM);
 		}
 	}
 }
@@ -2039,11 +2144,6 @@ CSGO_VotePassToTranslation(NativeVotesPassType:passType, String:translation[], m
 {
 	switch(passType)
 	{
-		case NativeVotesPass_Custom:
-		{
-			strcopy(translation, maxlength, CSGO_VOTE_CUSTOM);
-		}
-		
 		case NativeVotesPass_Restart:
 		{
 			strcopy(translation, maxlength, CSGO_VOTE_RESTART_PASSED);

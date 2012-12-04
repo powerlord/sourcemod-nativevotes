@@ -71,7 +71,7 @@ enum NativeVotesType
 	NativeVotesType_Custom_YesNo,	/**< Yes/No, argument is vote text. */
 	NativeVotesType_Custom_Mult,	/**< TF2/CS:GO: Multiple-choice, argument is vote text. */
 	NativeVotesType_ChgCampaign,	/**< L4D/L4D2: Yes/No, argument is campaign name */
-	NativeVotesType_ChgDifficulty,	/**< L4D/L4D2/TF2: Yes/No, argument is difficulty number in L4D/L4D2 and mission name in TF2 */
+	NativeVotesType_ChgDifficulty,	/**< L4D/L4D2: Yes/No, argument is difficulty number in L4D/L4D2 */
 	NativeVotesType_ReturnToLobby,	/**< L4D/L4D2: Yes/No, argument ignored */
 	NativeVotesType_Alltalk,		/**< L4D2: Yes/No, argument ignored (handled internally by extension) */
 	NativeVotesType_Restart,		/**< Yes/No, argument ignored */
@@ -84,7 +84,8 @@ enum NativeVotesType
 	NativeVotesType_NextLevelMult,	/**< TF2/CS:GO: Multiple-choice, argument ignored */
 	NativeVotesType_ScrambleNow,	/**< TF2/CS:GO: Yes/No, argument ignored */
 	NativeVotesType_ScrambleEnd,	/**< TF2: Yes/No, argument ignored */
-	NativeVotesType_SwapTeams		/**< CS:GO: Yes/No, argument ignored */
+	NativeVotesType_ChgMission,		/**< TF2: Yes/No, argument is popfile */
+	NativeVotesType_SwapTeams,		/**< CS:GO: Yes/No, argument ignored */
 };
 
 enum NativeVotesPassType
@@ -102,6 +103,7 @@ enum NativeVotesPassType
 	NativeVotesPass_NextLevel,			/**< TF2/CS:GO: Argument is map name */
 	NativeVotesPass_Extend,				/**< TF2/CS:GO: Argument ignored */
 	NativeVotesPass_Scramble,			/**< TF2/CS:GO: Argument ignored */
+	NativeVotesType_ChgMission,			/**< TF2: Argument is popfile */
 	NativeVotesPass_SwapTeams,			/**< CS:GO: Argument ignored */
 };
 
