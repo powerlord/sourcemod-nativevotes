@@ -179,8 +179,8 @@ bool:Data_AddItem(Handle:vote, const String:info[], const String:display[])
 	new Handle:displayArray = Handle:KvGetNum(vote, DISPLAY, _:INVALID_HANDLE);
 	
 	if (infoArray == INVALID_HANDLE || displayArray == INVALID_HANDLE ||
-		GetArraySize(infoArray) >= Game_GetMaxItems() ||
-		GetArraySize(displayArray) >= Game_GetMaxItems())
+		GetArraySize(infoArray) >= Internal_GetMaxItems() ||
+		GetArraySize(displayArray) >= Internal_GetMaxItems())
 	{
 		return false;
 	}
@@ -197,8 +197,8 @@ bool:Data_InsertItem(Handle:vote, position, const String:info[], const String:di
 	new Handle:displayArray = Handle:KvGetNum(vote, DISPLAY, _:INVALID_HANDLE);
 	
 	if (infoArray == INVALID_HANDLE || displayArray == INVALID_HANDLE ||
-		GetArraySize(infoArray) >= Game_GetMaxItems() ||
-		GetArraySize(displayArray) >= Game_GetMaxItems())
+		GetArraySize(infoArray) >= Internal_GetMaxItems() ||
+		GetArraySize(displayArray) >= Internal_GetMaxItems())
 	{
 		return false;
 	}

@@ -1,4 +1,3 @@
-// http://gaming.stackexchange.com/legal/moderator-agreement
 /**
  * vim: set ts=4 :
  * =============================================================================
@@ -34,6 +33,7 @@
 #include <sdktools>
 
 #include "include/nativevotes.inc"
+#include "nativevotes/data-keyvalues.sp"
 
 #define LOGTAG "NV"
 
@@ -499,33 +499,31 @@ public Action:Command_Vote(client, const String:command[], argc)
 		return Plugin_Continue;
 	}
 	
-	decl String:vote[32];
-	GetCmdArg(1, vote, sizeof(vote));
+	decl String:option[32];
+	GetCmdArg(1, option, sizeof(option));
 	
-	new item;
-	
-	new bool:success = Game_ParseVote(vote, item);
-	
-	if (!success)
-	{
-		return Plugin_Handled;
-	}
-	
-	//TODO More voting logic
+	new item = NATIVEVOTES_VOTE_INVALID;
 	
 	switch(g_GameVersion)
 	{
 		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
 		{
-			
+			item = L4DL4D2_ParseVote(option);
 		}
 		
 		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
 		{
-			TF2CSGO_ClientSelectedItem(g_hCurVote, client, item);
+			item = TF2CSGO_ParseVote(option);
 		}
 	}
 	
+	if (item == NATIVEVOTES_VOTE_INVALID)
+	{
+		return Plugin_Handled;
+	}
+	
+	VoteSelect(g_hCurVote, client, item);
+
 	return Plugin_Handled;
 }
 
@@ -558,7 +556,7 @@ VoteSelect(Handle:vote, client, item)
 				static String:buffer[1024];
 				decl String:choice[128];
 				decl String:name[MAX_NAME_LENGTH];
-				Data_GetItemDisplay(item, choice, sizeof(choice));
+				Data_GetItemDisplay(vote, item, choice, sizeof(choice));
 				
 				GetClientName(client, name, MAX_NAME_LENGTH);
 				
@@ -597,7 +595,21 @@ VoteSelect(Handle:vote, client, item)
 					}
 				}
 			}
-			Game_UpdateVoteCounts(g_hCurVote, g_Items, g_Votes, g_TotalClients);
+			
+			switch(g_GameVersion)
+			{
+				case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+				{
+					//L4DL4D2_UpdateVoteCounts(g_hCurVote, g_Items, g_hVotes, g_TotalClients);
+				}
+				
+				case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+				{
+					//TF2CSGO_UpdateVoteCounts(g_hCurVote, g_Items, g_hVotes, g_TotalClients);
+				}
+			}
+			
+			Game_UpdateVoteCounts(g_hCurVote, g_Items, g_hVotes, g_TotalClients);
 			BuildVoteLeaders();
 			DrawHintProgress();
 		}
@@ -634,7 +646,7 @@ OnVoteStart(Handle:vote)
 
 OnVoteCancel(Handle:vote, NativeVotesFailType:reason)
 {
-	DoAction(vote, MenuAction_VoteCancel, reason, 0);
+	DoAction(vote, MenuAction_VoteCancel, _:reason, 0);
 }
 
 DoAction(Handle:vote, MenuAction:action, param1, param2, Action:def_res = Plugin_Continue)
@@ -812,10 +824,11 @@ BuildVoteLeaders()
 	
 	for (new i = 0; i < g_Votes; i++)
 	{
-		if (g_Votes[i] > 0)
+		new voteCount = GetArrayCell(g_hVotes, i);
+		if (voteCount > 0)
 		{
 			votes[num_items][VOTEINFO_ITEM_INDEX] = i;
-			votes[num_items][VOTEINFO_ITEM_VOTES] = g_Votes[i];
+			votes[num_items][VOTEINFO_ITEM_VOTES] = voteCount;
 			num_items++;
 		}
 	}
@@ -857,6 +870,21 @@ bool:Internal_IsVoteInProgress()
 	return (g_hCurVote != INVALID_HANDLE);
 }
 
+Internal_GetMaxItems()
+{
+	switch (g_GameVersion)
+	{
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		{
+			return L4DL4D2_COUNT
+		}
+		
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			return TF2CSGO_COUNT;
+		}
+	}
+}
 
 bool:Internal_IsClientInVotePool(client)
 {
@@ -1424,6 +1452,21 @@ public Native_SetTarget(Handle:plugin,  numParams)
 //----------------------------------------------------------------------------
 // L4D/L4D2 shared functions
 
+// NATIVEVOTES_VOTE_INVALID means parse failed
+L4DL4D2_ParseVote(const String:option[])
+{
+	if (StrEqual(option, "Yes", false))
+	{
+		return NATIVEVOTES_VOTE_YES;
+	}
+	else if (StrEqual(option, "No", false))
+	{
+		return NATIVEVOTES_VOTE_NO;
+	}
+	
+	return NATIVEVOTES_VOTE_INVALID;
+}
+
 L4DL4D2_VoteTypeToTranslation(NativeVotesType:voteType, String:translation[], maxlength)
 {
 	switch(voteType)
@@ -1592,6 +1635,17 @@ bool:L4D2_CheckVotePassType(NativeVotesPass:passType)
 //----------------------------------------------------------------------------
 // TF2/CSGO shared functions
 
+// -1 means parse failed
+TF2CSGO_ParseVote(const String:option[])
+{
+	if (strlen(option) != 7)
+	{
+		return NATIVEVOTES_VOTE_INVALID;
+	}
+
+	return StringToInt(option[6]) - 1;
+}
+
 TF2CSGO_ClientSelectedItem(Handle:vote, client, item)
 {
 	new Handle:castEvent = CreateEvent("vote_cast");
@@ -1602,6 +1656,15 @@ TF2CSGO_ClientSelectedItem(Handle:vote, client, item)
 	FireEvent(castEvent);
 	
 	CloseHandle(castEvent);
+}
+
+TF2CSGO_UpdateVoteCounts(items, Handle:votes, totalClients)
+{
+	new size = GetArraySize(votes);
+	for (new i = 0; i < size; i++)
+	{
+		SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", GetArrayCell(votes, i), 4, i);
+	}
 }
 
 TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)

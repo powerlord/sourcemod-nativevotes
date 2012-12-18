@@ -42,8 +42,9 @@
 #define NATIVEVOTES_SERVER_INDEX 	99 // Defined by TF2, may be the same in L4D/L4D2
 
 // These may seem backwards, but this is the order that the votes appear in the vote screen
-#define NATIVEVOTES_VOTE_YES	0		/**< Vote was yes */
-#define NATIVEVOTES_VOTE_NO		1		/**< Vote was no */
+#define NATIVEVOTES_VOTE_INVALID	-1		/**< Vote was invalid, currently only valid internally */
+#define NATIVEVOTES_VOTE_YES		0		/**< Vote was yes */
+#define NATIVEVOTES_VOTE_NO			1		/**< Vote was no */
 
 /*
 The following MenuActions are supported.  Arguments are also listed, as they differ slightly from the default
