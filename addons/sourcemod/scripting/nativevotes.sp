@@ -553,7 +553,6 @@ VoteSelect(Handle:vote, client, item)
 			
 			if (GetConVarBool(g_Cvar_VoteChat) || GetConVarBool(g_Cvar_VoteConsole) || GetConVarBool(g_Cvar_VoteClientConsole))
 			{
-				static String:buffer[1024];
 				decl String:choice[128];
 				decl String:name[MAX_NAME_LENGTH];
 				Data_GetItemDisplay(vote, item, choice, sizeof(choice));
@@ -660,7 +659,7 @@ DoAction(Handle:vote, MenuAction:action, param1, param2, Action:def_res = Plugin
 	Call_PushCell(param1);
 	Call_PushCell(param2);
 	Call_Finish(res);
-	return res;
+	return _:res;
 }
 
 OnVoteResults(vote, const votes[][], item_count)
