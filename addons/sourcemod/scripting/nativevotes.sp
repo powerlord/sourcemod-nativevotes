@@ -209,6 +209,8 @@ new Handle:g_Forward_OnCallVote;
 
 //----------------------------------------------------------------------------
 // Used to track current vote data
+new Handle:g_hVoteTimer;
+
 new g_Clients;
 new g_TotalClients;
 new g_Items;
@@ -220,7 +222,7 @@ new bool:g_bWasCancelled;
 new g_NumVotes;
 new g_VoteTime;
 new g_VoteFlags;
-new Float:g_fStartTime;
+new g_StartTime;
 new g_nVoteTime;
 new g_TimeLeft;
 new g_ClientVotes[MAXPLAYERS+1];
@@ -239,42 +241,9 @@ public Plugin:myinfo =
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 {
-	// Guess which game we're using.
-	g_GameVersion = GuessSDKVersion();
-	
-	new bool:load;
-	
-	switch(g_GameVersion)
+	if (!Game_IsGameSupported())
 	{
-		case SOURCE_SDK_EPISODE2VALVE:
-		{
-			decl String:gameFolder[8];
-			GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
-			if (StrEqual(gameFolder, "tf", false) || StrEqual(gameFolder, "tf_beta", false))
-			{
-				load = true;
-			}
-			else
-			{
-				// Fail for HL2:MP, DoD:S, and CS:S
-				load = false;
-			}
-		}
-		
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2, SOURCE_SDK_CSGO:
-		{
-			load = true;
-		}
-		
-		default:
-		{
-			load = false;
-		}
-	}
-	
-	if (!load)
-	{
-		strcopy(error, err_max, "NativeVotes only supports L4D, L4D2, TF2, and CS:GO");
+		strcopy(error, err_max, "Unsupported game");
 		return APLRes_Failure;
 	}
 	
@@ -476,7 +445,7 @@ public OnVoteDelayChange(Handle:convar, const String:oldValue[], const String:ne
 	
 	/* Subtract the original value, then add the new one. */
 	g_NextVote -= StringToFloat(oldValue);
-	g_NextVote += GetConVarFloat(convar);
+	g_NextVote += StringToFloat(newValue);
 }
 
 public OnMapEnd()
@@ -502,20 +471,7 @@ public Action:Command_Vote(client, const String:command[], argc)
 	decl String:option[32];
 	GetCmdArg(1, option, sizeof(option));
 	
-	new item = NATIVEVOTES_VOTE_INVALID;
-	
-	switch(g_GameVersion)
-	{
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
-		{
-			item = L4DL4D2_ParseVote(option);
-		}
-		
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			item = TF2CSGO_ParseVote(option);
-		}
-	}
+	new item = Game_ParseVote(option);
 	
 	if (item == NATIVEVOTES_VOTE_INVALID)
 	{
@@ -604,11 +560,10 @@ VoteSelect(Handle:vote, client, item)
 				
 				case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
 				{
-					//TF2CSGO_UpdateVoteCounts(g_hCurVote, g_Items, g_hVotes, g_TotalClients);
+					TF2CSGO_UpdateVoteCounts(g_Items, g_hVotes, g_TotalClients);
 				}
 			}
 			
-			Game_UpdateVoteCounts(g_hCurVote, g_Items, g_hVotes, g_TotalClients);
 			BuildVoteLeaders();
 			DrawHintProgress();
 		}
@@ -798,7 +753,7 @@ DrawHintProgress()
 		return;
 	}
 	
-	new timeRemaining = (g_StartTime + g_VoteTime) - GetTime();
+	new timeRemaining = (g_StartTime + g_nVoteTime) - GetTime();
 	
 	if (timeRemaining < 0)
 	{
@@ -821,7 +776,7 @@ BuildVoteLeaders()
 	new slots = Game_GetMaxItems();
 	new votes[slots][2];
 	
-	for (new i = 0; i < g_Votes; i++)
+	for (new i = 0; i < GetArraySize(g_hVotes); i++)
 	{
 		new voteCount = GetArrayCell(g_hVotes, i);
 		if (voteCount > 0)
@@ -833,17 +788,17 @@ BuildVoteLeaders()
 	}
 	
 	/* Sort the item list descending */
-	SortCustom2D(votes, sizeof(votes), SortVoteItems);
+	SortCustom2D(votes, slots, SortVoteItems);
 	
 	/* Take the top 3 (if applicable) and draw them */
-	new len = 0;
+	g_LeaderList[0] = '\0';
 	
 	for (new i = 0; i < num_items && i < 3; i++)
 	{
 		new cur_item = votes[i][VOTEINFO_ITEM_INDEX];
 		decl String:choice[256];
-		Data_GetItemDisplay(g_CurVote, cur_item, choice, sizeof(choice));
-		Format(g_LeaderList + len, sizeof(g_LeaderList) - len, "\n%i. %s: (%i)", i+1, choice, votes[i][VOTEINFO_ITEM_VOTES]);
+		Data_GetItemDisplay(g_hCurVote, cur_item, choice, sizeof(choice));
+		Format(g_LeaderList, sizeof(g_LeaderList), "%s\n%i. %s: (%i)", g_LeaderList, i+1, choice, votes[i][VOTEINFO_ITEM_VOTES]);
 	}
 	
 }
@@ -864,32 +819,28 @@ public SortVoteItems(a[], b[], const array[][], Handle:hndl)
 	}
 }
 
+DecrementPlayerCount()
+{
+	g_Clients--;
+	
+	// The vote is running and we have no clients left, so end the vote.
+	if (g_bStarted && g_Clients == 0)
+	{
+		EndVoting();
+	}
+	
+}
+
 bool:Internal_IsVoteInProgress()
 {
 	return (g_hCurVote != INVALID_HANDLE);
-}
-
-Internal_GetMaxItems()
-{
-	switch (g_GameVersion)
-	{
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
-		{
-			return L4DL4D2_COUNT
-		}
-		
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			return TF2CSGO_COUNT;
-		}
-	}
 }
 
 bool:Internal_IsClientInVotePool(client)
 {
 	if (client < 1
 		|| client > MaxClients
-		|| g_CurVote == INVALID_HANDLE)
+		|| g_hCurVote == INVALID_HANDLE)
 	{
 		return false;
 	}
@@ -948,33 +899,9 @@ public Action:RedrawTimer(Handle:timer, Handle:data)
 
 public Native_IsVoteTypeSupported(Handle:plugin, numParams)
 {
-	NativeVotesType:type = GetNativeCell(1);
-	new bool:returnVal = false;
+	new NativeVotesType:type = GetNativeCell(1);
 	
-	switch(g_GameVersion)
-	{
-		case SOURCE_SDK_EPISODE2VALVE:
-		{
-			returnVal = TF2_CheckVoteType(type);
-		}
-		
-		case SOURCE_SDK_LEFT4DEAD:
-		{
-			returnVal = L4D_CheckVoteType(type);
-		}
-		
-		case SOURCE_SDK_LEFT4DEAD2:
-		{
-			returnVal = L4D2_CheckVoteType(type);
-		}
-		
-		case SOURCE_SDK_CSGO:
-		{
-			returnVal = CSGO_CheckVoteType(type);
-		}
-	}
-	
-	return returnVal;
+	return Game_CheckVoteType(type);
 }
 
 public Native_Create(Handle:plugin, numParams)
@@ -1014,19 +941,18 @@ public Native_Close(Handle:plugin, numParams)
 		return;
 	}
 	
-	if (g_CurVote == vote)
+	if (g_hCurVote == vote)
 	{
-		g_CurVote = INVALID_HANDLE;
+		g_hCurVote = INVALID_HANDLE;
 		
-		if (g_VoteTimer != INVALID_HANDLE)
+		if (g_hVoteTimer != INVALID_HANDLE)
 		{
-			KillTimer(g_VoteTimer);
-			g_VoteTimer = INVALID_HANDLE;
+			KillTimer(g_hVoteTimer);
+			g_hVoteTimer = INVALID_HANDLE;
 		}
 	}
 	
 	Data_CloseVote(vote);
-	
 }
 
 public Native_Display(Handle:plugin, numParams)
@@ -1348,7 +1274,7 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 		return;
 	}
 	
-	NativeVotesPassType:passType = NativeVotesPassType:GetNativeCell(2);
+	new NativeVotesPassType:passType = NativeVotesPassType:GetNativeCell(2);
 	
 	new size;
 	GetNativeStringLength(3, size);
@@ -1379,7 +1305,7 @@ public Native_GetTarget(Handle:plugin,  numParams)
 	if (vote == INVALID_HANDLE)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
-		return;
+		return 0;
 	}
 	
 	return Data_GetTarget(vote);
@@ -1445,8 +1371,183 @@ public Native_SetTarget(Handle:plugin,  numParams)
 	}
 }
 
+
 //----------------------------------------------------------------------------
 // Data functions
+
+//----------------------------------------------------------------------------
+// Generic functions
+// 
+
+bool:Game_IsGameSupported()
+{
+	// Guess which game we're using.
+	g_GameVersion = GuessSDKVersion(); // This value won't change
+	
+	switch(g_GameVersion)
+	{
+		case SOURCE_SDK_EPISODE2VALVE:
+		{
+			decl String:gameFolder[8];
+			GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
+			if (StrEqual(gameFolder, "tf", false) || StrEqual(gameFolder, "tf_beta", false))
+			{
+				return true;
+			}
+			else
+			{
+				// Fail for HL2:MP, DoD:S, and CS:S (on 1.4; CSS is its own engine on 1.5)
+				return false;
+			}
+		}
+		
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2, SOURCE_SDK_CSGO:
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// All logic for choosing a game-specific function should happen here.
+// There should be one per function in the game shared and specific sections
+Game_ParseVote(const String:option[])
+{
+	new item = NATIVEVOTES_VOTE_INVALID;
+	
+	switch(g_GameVersion)
+	{
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		{
+			item = L4DL4D2_ParseVote(option);
+		}
+		
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			item = TF2CSGO_ParseVote(option);
+		}
+	}
+	
+	return item;
+
+}
+
+Game_GetMaxItems()
+{
+	switch (g_GameVersion)
+	{
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		{
+			return L4DL4D2_COUNT
+		}
+		
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			return TF2CSGO_COUNT;
+		}
+	}
+	
+	return 0; // Here to prevent warnings
+}
+
+bool:Game_CheckVoteType(NativeVotesType:type)
+{
+	new bool:returnVal = false;
+	
+	switch(g_GameVersion)
+	{
+		case SOURCE_SDK_EPISODE2VALVE:
+		{
+			returnVal = TF2_CheckVoteType(type);
+		}
+		
+		case SOURCE_SDK_LEFT4DEAD:
+		{
+			returnVal = L4D_CheckVoteType(type);
+		}
+		
+		case SOURCE_SDK_LEFT4DEAD2:
+		{
+			returnVal = L4D2_CheckVoteType(type);
+		}
+		
+		case SOURCE_SDK_CSGO:
+		{
+			returnVal = CSGO_CheckVoteType(type);
+		}
+	}
+	
+	return returnVal;
+}
+
+Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason)
+{
+	switch(g_GameVersion)
+	{
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			TF2CSGO_DisplayVoteFail(vote, reason);
+		}
+		
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		{
+			//L4DL4D2_DisplayVoteFail(vote, reason);
+		}
+		
+	}
+	
+}
+
+Game_DisplayVotePass(Handle:vote, const String:param1[])
+{
+	switch (g_GameVersion)
+	{
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			TF2CSGO_DisplayVotePass(vote, param1);
+		}
+
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		{
+			//L4DL4D2_DisplayVotePass(vote, param1);
+		}
+		
+	}
+}
+
+Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const String:param1[])
+{
+	switch (g_GameVersion)
+	{
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			TF2CSGO_DisplayVotePassEx(vote, passType, param1);
+		}
+
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		{
+			//L4DL4D2_DisplayVotePass(vote, passType, param1);
+		}
+		
+	}
+}
+
+Game_ClientSelectedItem(Handle:vote, client, item)
+{
+	switch(g_GameVersion)
+	{
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		{
+			// L4DL4D2_ClientSelectedItem(vote, client, item);
+		}
+		
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			TF2CSGO_ClientSelectedItem(vote, client, item);
+		}
+	}
+}
 
 //----------------------------------------------------------------------------
 // L4D/L4D2 shared functions
@@ -1875,7 +1976,7 @@ NativeVotesType:TF2CSGO_VoteStringToVoteType(String:voteString[])
 {
 	new NativeVotesType:voteType = NativeVotesType_None;
 	
-	if (StrEqual(voteString, TF2CSGO_VOTE_STRING_KICK, false)
+	if (StrEqual(voteString, TF2CSGO_VOTE_STRING_KICK, false))
 	{
 		voteType = NativeVotesType_Kick;
 	}
@@ -1883,15 +1984,15 @@ NativeVotesType:TF2CSGO_VoteStringToVoteType(String:voteString[])
 	{
 		voteType = NativeVotesType_ChangeLevel;
 	}
-	else if (StrEqual(voteString, TF2CSGO_VOTE_STRING_NEXTLEVEL. false)
+	else if (StrEqual(voteString, TF2CSGO_VOTE_STRING_NEXTLEVEL, false))
 	{
 		voteType = NativeVotesType_NextLevel;
 	}
-	else if (StrEqual(voteString, TF2CSGO_VOTE_STRING_RESTART, false)
+	else if (StrEqual(voteString, TF2CSGO_VOTE_STRING_RESTART, false))
 	{
 		voteType = NativeVotesType_Restart;
 	}
-	else if (StrEqual(voteString, TF2CSGO_VOTE_STRING_SCRAMBLE, false)
+	else if (StrEqual(voteString, TF2CSGO_VOTE_STRING_SCRAMBLE, false))
 	{
 		voteType = NativeVotesType_ScrambleNow;
 	}
@@ -1902,7 +2003,7 @@ NativeVotesType:TF2CSGO_VoteStringToVoteType(String:voteString[])
 TF2CSGO_DisplayVoteSetup(client, NativeVotesType:voteTypes[])
 {
 	new count = 0;
-	new validVoteTypes[MAX_VOTE_ISSUES][VOTE_STRING_SIZE];
+	new String:validVoteTypes[MAX_VOTE_ISSUES][VOTE_STRING_SIZE];
 	
 	for (new i = 0; i < MAX_VOTE_ISSUES; ++i)
 	{
@@ -1911,15 +2012,7 @@ TF2CSGO_DisplayVoteSetup(client, NativeVotesType:voteTypes[])
 			break;
 		}
 		
-		new bool:valid = false;
-		if (g_GameVersion == SOURCE_SDK_EPISODE2VALVE)
-		{
-			valid = TF2_CheckVoteType(voteTypes[i]);
-		}
-		else if (g_GameVersion == SOURCE_SDK_CSGO)
-		{
-			valid = CSGO_CheckVoteType(voteTypes[i]);
-		}
+		new bool:valid = Game_CheckVoteType(voteTypes[i]);
 		
 		if (valid && TF2CSGO_VoteTypeToVoteString(voteTypes[i], validVoteTypes[count], VOTE_STRING_SIZE))
 		{

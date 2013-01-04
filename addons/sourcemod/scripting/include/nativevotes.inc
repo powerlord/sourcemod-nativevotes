@@ -104,7 +104,7 @@ enum NativeVotesPassType
 	NativeVotesPass_NextLevel,			/**< TF2/CS:GO: Argument is map name */
 	NativeVotesPass_Extend,				/**< TF2/CS:GO: Argument ignored */
 	NativeVotesPass_Scramble,			/**< TF2/CS:GO: Argument ignored */
-	NativeVotesType_ChgMission,			/**< TF2: Argument is popfile */
+	NativeVotesPass_ChgMission,			/**< TF2: Argument is popfile */
 	NativeVotesPass_SwapTeams,			/**< CS:GO: Argument ignored */
 };
 
