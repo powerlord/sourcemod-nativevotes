@@ -210,6 +210,7 @@ new Handle:g_Forward_OnCallVote;
 //----------------------------------------------------------------------------
 // Used to track current vote data
 new Handle:g_hVoteTimer;
+new Handle:g_hDisplayTimer;
 
 new g_Clients;
 new g_TotalClients;
@@ -829,6 +830,66 @@ DecrementPlayerCount()
 		EndVoting();
 	}
 	
+}
+
+
+EndVoting()
+{
+	new Float:fVoteDelay = GetConVarFloat(g_Cvar_VoteDelay);
+	if (fVoteDelay < 1.0)
+	{
+		g_NextVote = 0.0;
+	}
+	else
+	{
+		g_NextVote = GetTime() + fVoteDelay;
+	}
+	
+	if (g_hDisplayTimer != INVALID_HANDLE)
+	{
+		KillTimer(g_hDisplayTimer);
+		g_hDisplayTimer = INVALID_HANDLE;
+	}
+	
+	if (g_bCancelled)
+	{
+		/* If we were cancelled, don't bother tabulating anything.
+		 * Reset just in case someone tries to redraw, which means
+		 * we need to save our states.
+		 */
+		new vote = g_hCurVote;
+		Internal_Reset()
+		OnVoteCancel(vote, NativeVotesFail_Generic);
+		OnVoteEnd(vote, MenuEnd_Cancelled);
+		return;
+	}
+	
+	new slots = Game_GetMaxItems();
+	new votes[slots][2];
+	new num_items = Internal_GetResults(votes);
+	
+}
+
+Internal_GetResults(&votes[][])
+{
+	// Since we can't have structs, we get "struct" with this instead
+	new num_items;
+	
+	for (new i = 0; i < GetArraySize(g_hVotes); i++)
+	{
+		new voteCount = GetArrayCell(g_hVotes, i);
+		if (voteCount > 0)
+		{
+			votes[num_items][VOTEINFO_ITEM_INDEX] = i;
+			votes[num_items][VOTEINFO_ITEM_VOTES] = voteCount;
+			num_items++;
+		}
+	}
+	
+	/* Sort the item list descending */
+	SortCustom2D(votes, slots, SortVoteItems);
+
+	return num_items;
 }
 
 bool:Internal_IsVoteInProgress()
