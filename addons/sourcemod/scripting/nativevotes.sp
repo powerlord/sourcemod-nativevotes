@@ -671,19 +671,7 @@ VoteEnd(Handle:vote)
 		new slots = Game_GetMaxItems();
 		new votes[slots][2];
 		
-		for (new i = 0; i < slots; i++)
-		{
-			if (g_Votes[i] > 0)
-			{
-				votes[num_items][VOTEINFO_ITEM_INDEX] = i;
-				votes[num_items][VOTEINFO_ITEM_VOTES] = g_Votes[i];
-				num_items++;
-				num_votes += g_Votes[i];
-			}
-		}
-		
-		/* Sort the item list descending */
-		SortCustom2D(votes, sizeof(votes), SortVoteItems);
+		Internal_GetResults(votes, slots);
 		
 		if (!SendResultCallback(vote, num_votes, num_items, votes))
 		{
@@ -857,8 +845,8 @@ EndVoting()
 		 * Reset just in case someone tries to redraw, which means
 		 * we need to save our states.
 		 */
-		new vote = g_hCurVote;
-		Internal_Reset()
+		new Handle:vote = g_hCurVote;
+		Internal_Reset();
 		OnVoteCancel(vote, NativeVotesFail_Generic);
 		OnVoteEnd(vote, MenuEnd_Cancelled);
 		return;
@@ -866,11 +854,13 @@ EndVoting()
 	
 	new slots = Game_GetMaxItems();
 	new votes[slots][2];
-	new num_items = Internal_GetResults(votes);
+	new num_items = Internal_GetResults(votes, slots);
+	
+	// TODO
 	
 }
 
-Internal_GetResults(&votes[][])
+Internal_GetResults(votes[][], slots)
 {
 	// Since we can't have structs, we get "struct" with this instead
 	new num_items;
@@ -890,6 +880,37 @@ Internal_GetResults(&votes[][])
 	SortCustom2D(votes, slots, SortVoteItems);
 
 	return num_items;
+}
+
+Internal_IsCancelling(Handle:vote)
+{
+	//TODO
+	
+}
+
+Internal_WasCancelled(Handle:vote)
+{
+	//TODO
+	
+}
+
+Internal_Reset()
+{
+	g_Clients = 0;
+	g_Items = 0;
+	g_bStarted = false;
+	g_hCurVote = INVALID_HANDLE;
+	g_NumVotes = 0;
+	g_bCancelled = false;
+	g_bWasCancelled = false;
+	g_LeaderList[0] = '\0';
+	g_TotalClients = 0;
+	
+	if (g_hDisplayTimer != INVALID_HANDLE)
+	{
+		KillTimer(g_hDisplayTimer);
+		g_hDisplayTimer = INVALID_HANDLE;
+	}
 }
 
 bool:Internal_IsVoteInProgress()
