@@ -1213,7 +1213,10 @@ public Native_SetResultCallback(Handle:plugin, numParams)
 	new Handle:voteResults = Data_GetResultCallback(vote);
 	
 	RemoveAllFromForward(voteResults, plugin);
-	AddToForward(voteResults, plugin, function);
+	if (!AddToForward(voteResults, plugin, function))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes_VoteHandler function %x is invalid", function);
+	}
 }
 
 public Native_CheckVoteDelay(Handle:plugin, numParams)
