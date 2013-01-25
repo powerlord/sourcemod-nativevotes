@@ -68,44 +68,50 @@ MenuAction_VoteCancel	A vote sequence has been cancelled (param1=NativeVotes_Fai
  */
 enum NativeVotesType
 {
-	NativeVotesType_None = 0,		/** Special placeholder for callvote with no arguments for NativeVotes_OnCallVote*/
-	NativeVotesType_Custom_YesNo,	/**< Yes/No, argument is vote text. */
-	NativeVotesType_Custom_Mult,	/**< TF2/CS:GO: Multiple-choice, argument is vote text. */
-	NativeVotesType_ChgCampaign,	/**< L4D/L4D2: Yes/No, argument is campaign name */
-	NativeVotesType_ChgDifficulty,	/**< L4D/L4D2: Yes/No, argument is difficulty number in L4D/L4D2 */
-	NativeVotesType_ReturnToLobby,	/**< L4D/L4D2: Yes/No, argument ignored */
-	NativeVotesType_Alltalk,		/**< L4D2: Yes/No, argument ignored (handled internally by extension) */
-	NativeVotesType_Restart,		/**< Yes/No, argument ignored */
-	NativeVotesType_Kick,			/**< Yes/No, target is player userid, argument is auto-set by target */
-	NativeVotesType_KickIdle,		/**< TF2/CS:GO: Yes/No, target is player userid, argument is auto-set by target */
-	NativeVotesType_KickScamming,	/**< TF2/CS:GO: Yes/No, target is player userid, argument is auto-set by target */
-	NativeVotesType_KickCheating,	/**< TF2/CS:GO: Yes/No, target is player userid, argument is auto-set by target */
-	NativeVotesType_ChangeLevel,	/**< Yes/No, argument is level number in L4D/L4D2 or map name in TF2 */
-	NativeVotesType_NextLevel,		/**< TF2/CS:GO: Yes/No, argument is map name */
-	NativeVotesType_NextLevelMult,	/**< TF2/CS:GO: Multiple-choice, argument ignored */
-	NativeVotesType_ScrambleNow,	/**< TF2/CS:GO: Yes/No, argument ignored */
-	NativeVotesType_ScrambleEnd,	/**< TF2: Yes/No, argument ignored */
-	NativeVotesType_ChgMission,		/**< TF2: Yes/No, argument is popfile */
-	NativeVotesType_SwapTeams,		/**< CS:GO: Yes/No, argument ignored */
+	NativeVotesType_None = 0,		/** Special placeholder for callvote with no arguments for NativeVotes_OnCallVote */
+	NativeVotesType_Custom_YesNo,	/**< Yes/No, details are vote text. */
+	NativeVotesType_Custom_Mult,	/**< TF2/CS:GO: Multiple-choice, details are vote text. */
+	NativeVotesType_ChgCampaign,	/**< L4D/L4D2: Yes/No, details are campaign name */
+	NativeVotesType_ChgDifficulty,	/**< L4D/L4D2: Yes/No, details are difficulty number in L4D/L4D2 */
+	NativeVotesType_ReturnToLobby,	/**< L4D/L4D2: Yes/No, details are ignored */
+	NativeVotesType_Alltalk,		/**< L4D2: Yes/No, details are ignored (handled internally by extension) */
+	NativeVotesType_Restart,		/**< Yes/No, details are ignored */
+	NativeVotesType_Kick,			/**< Yes/No, target is player userid, details are auto-set by target */
+	NativeVotesType_KickIdle,		/**< TF2/CS:GO: Yes/No, target is player userid, details are auto-set by target */
+	NativeVotesType_KickScamming,	/**< TF2/CS:GO: Yes/No, target is player userid, details are auto-set by target */
+	NativeVotesType_KickCheating,	/**< TF2/CS:GO: Yes/No, target is player userid, details are auto-set by target */
+	NativeVotesType_ChangeLevel,	/**< Yes/No, details are level number in L4D/L4D2 or map name in TF2 */
+	NativeVotesType_NextLevel,		/**< TF2/CS:GO: Yes/No, details are map name */
+	NativeVotesType_NextLevelMult,	/**< TF2/CS:GO: Multiple-choice, details are ignored */
+	NativeVotesType_ScrambleNow,	/**< TF2/CS:GO: Yes/No, details are ignored */
+	NativeVotesType_ScrambleEnd,	/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_ChgMission,		/**< TF2: Yes/No, details are popfile */
+	NativeVotesType_SwapTeams,		/**< CS:GO: Yes/No, details are ignored */
+	NativeVotesType_Surrender,		/**< CS:GO: Yes/No, details are ignored */
+	NativeVotesType_Rematch,		/**< CS:GO: Yes/No, details are ignored */
+	NativeVotesType_Continue,		/**< CS:GO: Yes/No, details are ignored */
 };
 
 enum NativeVotesPassType
 {
 	NativeVotesPass_None = 0,			/**< Special placeholder for error value */
-	NativeVotesPass_Custom,				/**< Argument is custom pass message */
-	NativeVotesPass_ChgCampaign,		/**< L4D/L4D2: Argument is campaign name */
-	NativeVotesPass_ChgDifficulty,		/**< L4D/L4D2/TF2: Argument is difficulty number in L4D/L4D2 and mission name in TF2 */
-	NativeVotesPass_ReturnToLobby,      /**< L4D/L4D2: Argument ignored */
-	NativeVotesPass_AlltalkOn,			/**< L4D2: Argument ignored */
-	NativeVotesPass_AlltalkOff,			/**< L4D2: Argument ignored */
-	NativeVotesPass_Restart,			/**< Argument ignored */
-	NativeVotesPass_Kick,				/**< Argument is player name */
-	NativeVotesPass_ChangeLevel,		/**< Argument is level number in L4D/L4D2 or map name in TF2/CS:GO */
-	NativeVotesPass_NextLevel,			/**< TF2/CS:GO: Argument is map name */
-	NativeVotesPass_Extend,				/**< TF2/CS:GO: Argument ignored */
-	NativeVotesPass_Scramble,			/**< TF2/CS:GO: Argument ignored */
-	NativeVotesPass_ChgMission,			/**< TF2: Argument is popfile */
-	NativeVotesPass_SwapTeams,			/**< CS:GO: Argument ignored */
+	NativeVotesPass_Custom,				/**< Details are custom pass message */
+	NativeVotesPass_ChgCampaign,		/**< L4D/L4D2: Details are campaign name */
+	NativeVotesPass_ChgDifficulty,		/**< L4D/L4D2/TF2: Details are difficulty number in L4D/L4D2 and mission name in TF2 */
+	NativeVotesPass_ReturnToLobby,      /**< L4D/L4D2: Details are ignored */
+	NativeVotesPass_AlltalkOn,			/**< L4D2: Details are ignored */
+	NativeVotesPass_AlltalkOff,			/**< L4D2: Details are ignored */
+	NativeVotesPass_Restart,			/**< Details are ignored */
+	NativeVotesPass_Kick,				/**< Details are player name */
+	NativeVotesPass_ChangeLevel,		/**< Details are level number in L4D/L4D2 or map name in TF2/CS:GO */
+	NativeVotesPass_NextLevel,			/**< TF2/CS:GO: Details are map name */
+	NativeVotesPass_Extend,				/**< TF2/CS:GO: Details are ignored */
+	NativeVotesPass_Scramble,			/**< TF2/CS:GO: Details are ignored */
+	NativeVotesPass_ChgMission,			/**< TF2: Details are popfile */
+	NativeVotesPass_SwapTeams,			/**< CS:GO: Details are ignored */
+	NativeVotesPass_Surrender,			/**< CS:GO: Details are ignored */
+	NativeVotesPass_Rematch,			/**< CS:GO: Details are ignored */
+	NativeVotesPass_Continue,			/**< CS:GO: Details are ignored */
 };
 
 /**
@@ -336,25 +342,25 @@ native bool:NativeVotes_GetItem(Handle:vote,
 native NativeVotes_GetItemCount(Handle:vote);
 
 /**
- * Sets the vote's argument for votes that support arguments
+ * Sets the vote's details for votes that support details
  *
  * @param vote				Vote Handle.
- * @param argument			Argument string. See vote types for what each argument stands for.
+ * @param argument			Details string. See vote types for what details stands for.
  * @noreturn
  * @error					Invalid Handle.
  */
-native NativeVotes_SetArgument(Handle:vote, const String:argument[]);
+native NativeVotes_SetDetails(Handle:vote, const String:argument[]);
 
 /**
- * Returns the text of a vote's argument if set.
+ * Returns the text of a vote's details if set.
  *
  * @param vote				Vote Handle.
- * @param buffer			Buffer to store argument.
+ * @param buffer			Buffer to store details.
  * @param maxlength			Maximum length of the buffer.
  * @noreturn
  * @error					Invalid Handle.
  */
-native NativeVotes_GetArgument(Handle:vote, String:buffer[], maxlength);
+native NativeVotes_GetDetails(Handle:vote, String:buffer[], maxlength);
 
 /**
  * Sets the target userid for vote
@@ -364,11 +370,11 @@ native NativeVotes_GetArgument(Handle:vote, String:buffer[], maxlength);
  * 
  * @param vote				Vote Handle.
  * @param userid			Client index of target player
- * @param setArgument		If true, also sets argument to client's name
+ * @param setDetails		If true, also sets vote details to client's name
  * @noreturn
  * @error					Invalid Handle.
  */
-native NativeVotes_SetTarget(Handle:vote, client, bool:setArgument=true);
+native NativeVotes_SetTarget(Handle:vote, client, bool:setDetails=true);
 
 /**
  * Returns the userid of a vote's target
@@ -568,10 +574,10 @@ native NativeVotes_GetInitiator(Handle:vote);
  * and to clear out their selection for the next vote.
  * 
  * @param vote				Vote handle
- * @param param1			Normally the item that won the vote. Also used for custom vote winners
+ * @param details			Normally the item that won the vote. Also used for custom vote winners
  * @noreturn
  */
-native NativeVotes_DisplayPass(Handle:vote, String:param1[]="");
+native NativeVotes_DisplayPass(Handle:vote, String:details[]="");
 
 /**
  * Display vote passed screen with a custom type.
@@ -584,10 +590,10 @@ native NativeVotes_DisplayPass(Handle:vote, String:param1[]="");
  * 
  * #param vote				Vote handle
  * @param passType			The pass screen to display
- * @param param1			Normally the item that won the vote. Also used for custom vote winners
+ * @param details			Normally the item that won the vote. Also used for custom vote winners
  * @noreturn
  */
-native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, String:param1[]="");
+native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, String:details[]="");
 
 /**
  * Display failure screen.
@@ -671,9 +677,9 @@ native NativeVotes_RegisterVoteManager(NativeVotes_CallVoteHandler:callHandler, 
 native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time);
 
 /**
- * Retrieves voting information from BuiltinVoteAction_VoteEnd.
+ * Retrieves voting information from MenuAction_VoteEnd.
  *
- * @param param2		Second parameter of BuiltinVoteAction_VoteEnd.
+ * @param param2		Second parameter of MenuAction_VoteEnd.
  * @param winningVotes	Number of votes received by the winning option.
  * @param totalVotes	Number of total votes received.
  * @noreturn
@@ -708,8 +714,8 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_RemoveAllItems");
 	MarkNativeAsOptional("NativeVotes_GetItem");
 	MarkNativeAsOptional("NativeVotes_GetItemCount");
-	MarkNativeAsOptional("NativeVotes_SetArgument");
-	MarkNativeAsOptional("NativeVotes_GetArgument");
+	MarkNativeAsOptional("NativeVotes_SetDetails");
+	MarkNativeAsOptional("NativeVotes_GetDetails");
 	MarkNativeAsOptional("NativeVotes_IsVoteInProgress");
 	MarkNativeAsOptional("NativeVotes_GetMaxItems");
 	MarkNativeAsOptional("NativeVotes_SetOptionFlags");

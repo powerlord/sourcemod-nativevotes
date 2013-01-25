@@ -98,14 +98,14 @@ Data_SetInitiator(Handle:vote, initiator)
 	KvSetNum(vote, "initiator", initiator);
 }
 
-Data_GetArgument(Handle:vote, String:argument[], maxlength)
+Data_GetDetails(Handle:vote, String:details[], maxlength)
 {
-	KvGetString(vote, "argument", argument, maxlength);
+	KvGetString(vote, "details", details, maxlength);
 }
 
-Data_SetArgument(Handle:vote, const String:argument[])
+Data_SetDetails(Handle:vote, const String:details[])
 {
-	KvSetString(vote, "argument", argument);
+	KvSetString(vote, "details", details);
 }
 
 Data_GetTarget(Handle:vote)
@@ -158,7 +158,7 @@ Handle:Data_CreateVote(NativeVotesType:voteType, MenuAction:actions)
 	new Handle:vote = CreateKeyValues("NativeVote");
 	KvSetNum(vote, "handler_callback", _:handler);
 	KvSetNum(vote, "vote_type", _:voteType);
-	KvSetString(vote, "argument", "");
+	KvSetString(vote, "details", "");
 	KvSetNum(vote, "target", 0);
 	KvSetString(vote, "target_steam", "");
 	KvSetNum(vote, "actions", _:actions);

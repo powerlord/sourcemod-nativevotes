@@ -158,6 +158,7 @@
 #define CSGO_VOTE_KICK_SCAMMING_START		"#SFUI_vote_kick_player_scamming"
 #define CSGO_VOTE_KICK_CHEATING_START		"#SFUI_vote_kick_player_cheating"
 #define CSGO_VOTE_KICK_START				"#SFUI_vote_kick_player_other"
+#define CSGO_VOTE_KICK_OTHERTEAM			"#SFUI_otherteam_vote_kick_player"
 #define CSGO_VOTE_KICK_PASSED				"#SFUI_vote_passed_kick_player"
 
 // User vote to restart map.
@@ -180,6 +181,20 @@
 
 #define CSGO_VOTE_SWAPTEAMS_START			"#SFUI_vote_swap_teams"
 #define CSGO_VOTE_SWAPTEAMS_PASSED 			"#SFUI_vote_passed_swap_teams"
+
+#define CSGO_VOTE_SURRENDER_START			"#SFUI_vote_surrender"
+#define CSGO_VOTE_SURRENDER_OTHERTEAM		"#SFUI_otherteam_vote_surrender"
+#define CSGO_VOTE_SURRENDER_PASSED			"#SFUI_vote_passed_surrender"
+
+#define CSGO_VOTE_REMATCH_START				"#SFUI_vote_rematch"
+#define CSGO_VOTE_REMATCH_OTHERTEAM			"#SFUI_vote_rematch"
+#define CSGO_VOTE_REMATCH_PASSED			"#SFUI_vote_passed_rematch"
+
+#define CSGO_VOTE_CONTINUE_START			"#SFUI_vote_continue"
+#define CSGO_VOTE_CONTINUE_OTHERTEAM		"#SFUI_otherteam_vote_continue_or_surrender"
+#define CSGO_VOTE_CONTINUE_PASSED			"#SFUI_vote_passed_continue"
+
+#define CSGO_VOTE_UNIMPLEMENTED_OTHERTEAM	"#SFUI_otherteam_vote_unimplemented"
 
 // While not a vote string, it works just as well.
 #define CSGO_VOTE_CUSTOM					"#SFUI_Scoreboard_NormalPlayer"
@@ -258,8 +273,8 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_RemoveAllItems", Native_RemoveAllItems);
 	CreateNative("NativeVotes_GetItem", Native_GetItem);
 	CreateNative("NativeVotes_GetItemCount", Native_GetItemCount);
-	CreateNative("NativeVotes_SetArgument", Native_SetArgument);
-	CreateNative("NativeVotes_GetArgument", Native_GetArgument);
+	CreateNative("NativeVotes_SetDetails", Native_SetDetails);
+	CreateNative("NativeVotes_GetDetails", Native_GetDetails);
 	CreateNative("NativeVotes_IsVoteInProgress", Native_IsVoteInProgress);
 	CreateNative("NativeVotes_GetMaxItems", Native_GetMaxItems);
 	CreateNative("NativeVotes_SetOptionFlags", Native_SetOptionFlags);
@@ -271,6 +286,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_GetType", Native_GetType);
 	CreateNative("NativeVotes_SetTeam", Native_SetTeam);
 	CreateNative("NativeVotes_GetTeam", Native_GetTeam);
+	CreateNative("NativeVotes_SetInitiator", Native_SetInitiator);
 	CreateNative("NativeVotes_SetInitiator", Native_SetInitiator);
 	CreateNative("NativeVotes_GetInitiator", Native_GetInitiator);
 	CreateNative("NativeVotes_DisplayPass", Native_DisplayPass);
@@ -890,8 +906,7 @@ Internal_IsCancelling(Handle:vote)
 
 Internal_WasCancelled(Handle:vote)
 {
-	//TODO
-	
+	return g_bWasCancelled;
 }
 
 Internal_Reset()
@@ -1128,7 +1143,7 @@ public Native_GetItemCount(Handle:plugin, numParams)
 	}
 }
 
-public Native_GetArgument(Handle:plugin, numParams)
+public Native_GetDetails(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
 	if (vote == INVALID_HANDLE)
@@ -1137,13 +1152,16 @@ public Native_GetArgument(Handle:plugin, numParams)
 		return;
 	}
 	
-	new maxlength = GetNativeCell(3);
-	decl String:argument[maxlength];
+	new len = GetNativeCell(3);
+
+	decl String:details[len];
 	
-	Data_GetArgument(vote, argument, maxlength);
+	Data_GetDetails(vote, details, len);
+	
+	SetNativeString(2, details, len);
 }
 
-public Native_SetArgument(Handle:plugin, numParams)
+public Native_SetDetails(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
 	if (vote == INVALID_HANDLE)
@@ -1152,13 +1170,13 @@ public Native_SetArgument(Handle:plugin, numParams)
 		return;
 	}
 	
-	new maxlength;
-	GetNativeStringLength(2, maxlength);
+	new len;
+	GetNativeStringLength(2, len);
 	
-	decl String:argument[maxlength];
-	GetNativeString(2, argument, maxlength);
+	decl String:details[len + 1];
+	GetNativeString(2, details, len + 1);
 	
-	Data_SetArgument(vote, argument);
+	Data_SetDetails(vote, details);
 }
 
 public Native_IsVoteInProgress(Handle:plugin, numParams)
@@ -1444,14 +1462,14 @@ public Native_SetTarget(Handle:plugin,  numParams)
 	
 	Data_SetTargetSteam(vote, steamId);
 
-	new bool:changeArgument = GetNativeCell(3);
-	if (changeArgument)
+	new bool:changeDetails = GetNativeCell(3);
+	if (changeDetails)
 	{
 		decl String:name[MAX_NAME_LENGTH];
 		if (client > 0)
 		{
 			GetClientName(client, name, MAX_NAME_LENGTH);
-			Data_SetArgument(vote, name);
+			Data_SetDetails(vote, name);
 		}
 	}
 }
@@ -1820,6 +1838,8 @@ bool:L4D2_CheckVotePassType(NativeVotesPass:passType)
 //----------------------------------------------------------------------------
 // TF2/CSGO shared functions
 
+// TF2 and CSGO functions are still together in case Valve moves TF2 to protobufs.
+
 // -1 means parse failed
 TF2CSGO_ParseVote(const String:option[])
 {
@@ -1877,7 +1897,8 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		Data_SetOptionsSent(vote, true);
 	}
 	
-	decl String:translation[64];
+	new String:translation[64];
+	new String:otherTeamString[64];
 	new bool:bYesNo = true;
 	
 	new NativeVotesType:voteType = Data_GetType(vote);
@@ -1892,19 +1913,35 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		case SOURCE_SDK_CSGO:
 		{
 			bYesNo = CSGO_VoteTypeToTranslation(voteType, translation, sizeof(translation));
+			CSGO_VoteTypeToVoteOtherTeamString(voteType, otherTeamString, sizeof(otherTeamString));
 		}
 	}
 	
-	decl String:argument[64];
-	Data_GetArgument(vote, argument, sizeof(argument));
-	new Handle:voteStart = StartMessage("VoteStart", clients, num_clients, USERMSG_RELIABLE);
-	BfWriteByte(voteStart, Data_GetTeam(vote));
-	BfWriteByte(voteStart, Data_GetInitiator(vote));
-	BfWriteString(voteStart, translation);
-	BfWriteString(voteStart, argument);
-	BfWriteBool(voteStart, bYesNo);
-	EndMessage();
+	decl String:details[64];
+	Data_GetArgument(vote, details, sizeof(details));
 	
+	new Handle:voteStart = StartMessage("VoteStart", clients, num_clients, USERMSG_RELIABLE);
+	
+	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
+	{
+		PbSetInt(voteStart, "team", Data_GetTeam(vote));
+		PbSetInt(voteStart, "ent_idx", Data_GetInitiator(vote));
+		PbSetString(voteStart, "disp_str", translation);
+		PbSetString(voteStart, "details_str", details);
+		PbSetBool(voteStart, "is_yes_no_vote", bYesNo);
+		PbSetString(voteStart, "other_team_str", otherTeamString);
+		PbSetInt(voteStart, "vote_type", 0); // Need to check values for this
+	}
+	else
+	{
+		BfWriteByte(voteStart, Data_GetTeam(vote));
+		BfWriteByte(voteStart, Data_GetInitiator(vote));
+		BfWriteString(voteStart, translation);
+		BfWriteString(voteStart, details);
+		BfWriteBool(voteStart, bYesNo);
+	}
+
+	EndMessage();
 }
 
 TF2CSGO_DisplayVotePass(Handle:vote, const String:param1[])
@@ -1959,7 +1996,7 @@ TF2CSGO_DisplayVotePass(Handle:vote, const String:param1[])
 	TF2CSGO_DisplayVotePassEx(vote, passType, param1);
 }
 
-TF2CSGO_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const String:param1[])
+TF2CSGO_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const String:details[])
 {
 	decl String:translation[64];
 	
@@ -1976,46 +2013,64 @@ TF2CSGO_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const Strin
 		}
 	}
 	
-	new Handle:bf = StartMessageAll("VotePass", USERMSG_RELIABLE);
-	BfWriteByte(bf, Data_GetTeam(vote));
-	BfWriteString(bf, translation);
-	BfWriteString(bf, param1);
+	new Handle:votePass = StartMessageAll("VotePass", USERMSG_RELIABLE);
+
+	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
+	{
+		PbSetInt(votePass, "team", Data_GetTeam(vote));
+		PbSetString(votePass, "disp_str", translation);
+		PbSetString(votePass, "details_str", details);
+		PbSetInt(votePass, "vote_type", 0); // Unknown, need to check values
+	}
+	else
+	{
+		BfWriteByte(votePass, Data_GetTeam(vote));
+		BfWriteString(votePass, translation);
+		BfWriteString(votePass, details);
+	}
 	EndMessage();
-	
-	CloseHandle(bf);
 }
 
-TF2CSGO_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason)
+TF2CSGO_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason, client=0)
 {
-	new Handle:bf = StartMessageAll("VoteFail", USERMSG_RELIABLE);
+	new Handle:voteFailed;
+	if (!client)
+	{
+		voteFailed = StartMessageAll("VoteFailed", USERMSG_RELIABLE);
+	}
+	else
+	{
+		voteFailed = StartMessageOne("VoteFailed", client, USERMSG_RELIABLE);
+	}
 	
-	BfWriteByte(bf, Data_GetTeam(vote));
-	BfWriteByte(bf, _:reason);
+	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
+	{
+		PbSetInt(voteFailed, "team", Data_GetTeam(vote));
+		PbSetInt(voteFailed, "reason", _:reason);
+	}
+	else
+	{
+		BfWriteByte(voteFailed, Data_GetTeam(vote));
+		BfWriteByte(voteFailed, _:reason);
+	}
 	EndMessage();
-	
-	CloseHandle(bf);
 }
 
-TF2CSGO_DisplayVoteFailOne(Handle:vote, client, NativeVotesFailType:reason)
+TF2CSGO_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
 {
-	new Handle:bf = StartMessageOne("VoteFail", client, USERMSG_RELIABLE);
-	
-	BfWriteByte(bf, Data_GetTeam(vote));
-	BfWriteByte(bf, reason);
-	EndMessage();
-	
-	CloseHandle(bf);
-}
+	new Handle:callVoteFail = StartMessageOne("CallVoteFailed", client, USERMSG_RELIABLE);
 
-TF2CSGO_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, param1)
-{
-	new Handle:bf = StartMessageOne("CallVoteFail", client, USERMSG_RELIABLE);
-	
-	BfWriteByte(bf, reason);
-	BfWriteShort(bf, param1);
+	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
+	{
+		PbSetInt(callVoteFail, "reason", reason);
+		PbSetInt(callVoteFail, "time", time);
+	}
+	else
+	{
+		BfWriteByte(callVoteFail, reason);
+		BfWriteShort(callVoteFail, time);
+	}
 	EndMessage();
-	
-	CloseHandle(bf);
 }
 
 TF2CSGO_VoteTypeToVoteString(NativeVotesType:voteType, String:voteString[], maxlength)
@@ -2105,12 +2160,22 @@ TF2CSGO_DisplayVoteSetup(client, NativeVotesType:voteTypes[])
 		}
 	}
 	
-	new Handle:bf = StartMessageOne("VoteSetup", client, USERMSG_RELIABLE);
+	new Handle:voteSetup = StartMessageOne("VoteSetup", client, USERMSG_RELIABLE);
 	
-	BfWriteByte(bf, count);
-	for (new i = 0; i < count; ++i)
+	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
 	{
-		BfWriteString(bf, validVoteTypes[i]);
+		for (new i = 0; i < count; ++i)
+		{
+			PbAddString(voteSetup, "potential_issues", validVoteTypes[i]);
+		}
+	}
+	else
+	{
+		BfWriteByte(voteSetup, count);
+		for (new i = 0; i < count; ++i)
+		{
+			BfWriteString(voteSetup, validVoteTypes[i]);
+		}
 	}
 	
 	EndMessage();
@@ -2284,7 +2349,8 @@ bool:CSGO_CheckVoteType(NativeVotesType:voteType)
 		case NativeVotesType_Custom_YesNo, NativeVotesType_Custom_Mult, NativeVotesType_Restart,
 		NativeVotesType_Kick, NativeVotesType_KickIdle, NativeVotesType_KickScamming,
 		NativeVotesType_KickCheating, NativeVotesType_ChangeLevel, NativeVotesType_NextLevel,
-		NativeVotesType_NextLevelMult, NativeVotesType_ScrambleNow, NativeVotesType_SwapTeams:
+		NativeVotesType_NextLevelMult, NativeVotesType_ScrambleNow, NativeVotesType_SwapTeams,
+		NativeVotesType_Surrender, NativeVotesType_Rematch, NativeVotesType_Continue:
 		{
 			return true;
 		}
@@ -2299,7 +2365,8 @@ bool:CSGO_CheckVotePassType(NativeVotesPass:passType)
 	{
 		case NativeVotesPass_Custom, NativeVotesPass_Restart, NativeVotesPass_Kick,
 		NativeVotesPass_ChangeLevel, NativeVotesPass_NextLevel, NativeVotesPass_Extend,
-		NativeVotesPass_Scramble, NativeVotesPass_SwapTeams:
+		NativeVotesPass_Scramble, NativeVotesPass_SwapTeams, NativeVotesPass_Surrender,
+		NativeVotesPass_Rematch, NativeVotesPass_Continue:
 		{
 			return true;
 		}
@@ -2371,6 +2438,21 @@ bool:CSGO_VoteTypeToTranslation(NativeVotesType:voteType, String:translation[], 
 			strcopy(translation, maxlength, CSGO_VOTE_SWAPTEAMS_START);
 		}
 		
+		case NativeVotesType_Surrender:
+		{
+			strcopy(translation, maxlength, CSGO_VOTE_SURRENDER_START);
+		}
+		
+		case NativeVotesType_Rematch:
+		{
+			strcopy(translation, maxlength, CSGO_VOTE_REMATCH_START);
+		}
+		
+		case NativeVotesType_Continue:
+		{
+			strcopy(translation, maxlength, CSGO_VOTE_CONTINUE_START);
+		}
+		
 		default:
 		{
 			strcopy(translation, maxlength, CSGO_VOTE_CUSTOM);
@@ -2419,9 +2501,53 @@ CSGO_VotePassToTranslation(NativeVotesPassType:passType, String:translation[], m
 			strcopy(translation, maxlength, CSGO_VOTE_SWAPTEAMS_PASSED);
 		}
 		
+		case NativeVotesPass_Surrender:
+		{
+			strcopy(translation, maxlength, CSGO_VOTE_SURRENDER_PASSED);
+		}
+		
+		case NativeVotesPass_Rematch:
+		{
+			strcopy(translation, maxlength, CSGO_VOTE_REMATCH_PASSED);
+		}
+		
+		case NativeVotesPass_Continue:
+		{
+			strcopy(translation, maxlength, CSGO_VOTE_CONTINUE_PASSED);
+		}
+		
 		default:
 		{
 			strcopy(translation, maxlength, CSGO_VOTE_CUSTOM);
 		}
 	}
 }
+
+CSGO_VoteTypeToVoteOtherTeamString(NativeVotesType:voteType, String:otherTeamString[], maxlength)
+{
+	new bool:valid = false;
+	switch(voteType)
+	{
+		case NativeVotesType_Kick:
+		{
+			strcopy(otherTeamString, maxlength, CSGO_VOTE_KICK_OTHERTEAM);
+		}
+		
+		case NativeVotesType_Surrender:
+		{
+			strcopy(otherTeamString, maxlength, CSGO_VOTE_SURRENDER_OTHERTEAM);
+		}
+		
+		case NativeVotesType_Continue:
+		{
+			strcopy(otherTeamString, maxlength, CSGO_VOTE_CONTINUE_OTHERTEAM);
+		}
+		
+		default:
+		{
+			strcopy(otherTeamString, maxlength, CSGO_VOTE_UNIMPLEMENTED_OTHERTEAM);
+		}
+	}
+
+}
+
