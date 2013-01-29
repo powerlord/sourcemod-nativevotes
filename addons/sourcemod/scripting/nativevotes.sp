@@ -900,8 +900,7 @@ Internal_GetResults(votes[][], slots)
 
 Internal_IsCancelling(Handle:vote)
 {
-	//TODO
-	
+	return g_bCancelled;
 }
 
 Internal_WasCancelled(Handle:vote)
