@@ -215,7 +215,7 @@ new Handle:g_Cvar_VoteConsole;
 new Handle:g_Cvar_VoteClientConsole;
 new Handle:g_Cvar_VoteDelay;
 
-new Handle:g_Forward_VoteResults;
+//new Handle:g_Forward_VoteResults;
 
 // Public Forwards
 
@@ -495,12 +495,12 @@ public Action:Command_Vote(client, const String:command[], argc)
 		return Plugin_Handled;
 	}
 	
-	VoteSelect(g_hCurVote, client, item);
+	OnVoteSelect(g_hCurVote, client, item);
 
 	return Plugin_Handled;
 }
 
-VoteSelect(Handle:vote, client, item)
+OnVoteSelect(Handle:vote, client, item)
 {
 	if (Internal_IsVoteInProgress() && g_ClientVotes[client] == VOTE_PENDING)
 	{
@@ -585,26 +585,30 @@ VoteSelect(Handle:vote, client, item)
 			DrawHintProgress();
 		}
 		
-		OnVoteSelect(g_hCurVote, client, item);
+		OnSelect(g_hCurVote, client, item);
 		DecrementPlayerCount();
 	}
 }
 
 
-OnVoteSelect(Handle:vote, client, item)
+//MenuAction_Select
+OnSelect(Handle:vote, client, item)
 {
 	DoAction(vote, MenuAction_Select, client, item);
 }
 
-OnEnd(Handle:vote)
+//MenuAction_End
+OnEnd(Handle:vote, item)
 {
-	DoAction(vote, MenuAction_End, 0, 0);
+	DoAction(vote, MenuAction_End, item, 0);
 }
 
+/*
 OnVoteEnd(Handle:vote, item)
 {
 	DoAction(vote, MenuAction_VoteEnd, item, 0);
 }
+*/
 
 OnVoteStart(Handle:vote)
 {
@@ -634,11 +638,11 @@ DoAction(Handle:vote, MenuAction:action, param1, param2, Action:def_res = Plugin
 	return _:res;
 }
 
-OnVoteResults(vote, const votes[][], item_count)
+OnVoteResults(Handle:vote, const votes[][], num_votes, item_count, const client_list[][], num_clients)
 {
 	new Handle:resultsHandler = Data_GetResultCallback(vote);
 	
-	if (resultsHandler == INVALID_HANDLE)
+	if (resultsHandler == INVALID_HANDLE || !GetForwardFunctionCount(resultsHandler))
 	{
 		/* Call MenuAction_VoteEnd instead.  See if there are any extra winners. */
 		new num_items = 1;
@@ -662,15 +666,48 @@ OnVoteResults(vote, const votes[][], item_count)
 		else 
 		{
 			/* No, take the first */
-			winning_item = votes[winning_item][VOTEINFO_ITEM_INDEX];
+			winning_item = votes[0][VOTEINFO_ITEM_INDEX];
 		}
+		
+		new winning_votes = votes[0][VOTEINFO_ITEM_VOTES];
+		
+		DoAction(vote, MenuAction_VoteEnd, winning_item, (num_votes << 16) | (winning_votes & 0xFFFF));
 	}
 	else
 	{
-		// TODO Safety save
+		// This code is quite different than its C++ version, as we're reversing the logic previously done
+		
+		new client_indexes[num_clients];
+		new client_items[num_clients];
+		new vote_items[item_count];
+		new vote_votes[item_count];
+		
+		/* First array */
+		for (new i = 0; i < item_count; i++)
+		{
+			vote_items[i] = votes[i][VOTEINFO_ITEM_INDEX];
+			vote_votes[i] = votes[i][VOTEINFO_ITEM_VOTES];
+		}
+		
+		/* Second array */
+		for (new i = 0; i < num_clients; i++)
+		{
+			client_indexes[i] = client_list[i][VOTEINFO_CLIENT_INDEX];
+			client_items[i] = client_list[i][VOTEINFO_CLIENT_ITEM];
+		}
+		
+		Call_StartForward(resultsHandler);
+		Call_PushCell(vote);
+		Call_PushCell(num_votes);
+		Call_PushCell(num_clients);
+		Call_PushArray(client_indexes, num_clients);
+		Call_PushArray(client_items, num_clients);
+		Call_PushCell(item_count);
+		Call_PushArray(vote_items, item_count);
+		Call_PushArray(vote_votes, item_count);
+		Call_Finish();
 	}
 }
-
 
 VoteEnd(Handle:vote)
 {
@@ -864,22 +901,49 @@ EndVoting()
 		new Handle:vote = g_hCurVote;
 		Internal_Reset();
 		OnVoteCancel(vote, NativeVotesFail_Generic);
-		OnVoteEnd(vote, MenuEnd_Cancelled);
+		OnEnd(vote, MenuEnd_VotingCancelled);
 		return;
 	}
 	
 	new slots = Game_GetMaxItems();
 	new votes[slots][2];
-	new num_items = Internal_GetResults(votes, slots);
+	new num_votes;
+	new num_items = Internal_GetResults(votes, slots, num_votes);
 	
-	// TODO
+	if (!num_votes)
+	{
+		new Handle:vote = g_hCurVote;
+		Internal_Reset();
+		OnVoteCancel(vote, NativeVotesFail_NotEnoughVotes);
+		OnEnd(vote, MenuEnd_VotingCancelled);
+		return;
+	}
 	
+	new client_list[MaxClients][2];
+	new num_clients = Internal_GetClients(client_list);
+	
+	/* Save states, then clear what we've saved.
+	 * This makes us re-entrant, which is always the safe way to go.
+	 */
+	new Handle:vote = g_hCurVote;
+	Internal_Reset();
+	
+	/* Send vote info */
+	OnVoteResults(vote, votes, num_votes, num_items, client_list, num_clients);
+	OnEnd(vote, MenuEnd_VotingDone);
 }
 
-Internal_GetResults(votes[][], slots)
+Internal_GetResults(votes[][], slots, &num_votes=0)
 {
+	if (!Internal_IsVoteInProgress())
+	{
+		return 0;
+	}
+	
 	// Since we can't have structs, we get "struct" with this instead
 	new num_items;
+	
+	num_votes = 0;
 	
 	for (new i = 0; i < GetArraySize(g_hVotes); i++)
 	{
@@ -888,24 +952,53 @@ Internal_GetResults(votes[][], slots)
 		{
 			votes[num_items][VOTEINFO_ITEM_INDEX] = i;
 			votes[num_items][VOTEINFO_ITEM_VOTES] = voteCount;
+			num_votes += voteCount;
 			num_items++;
 		}
 	}
 	
-	/* Sort the item list descending */
+	/* Sort the item list descending like we promised */
 	SortCustom2D(votes, slots, SortVoteItems);
 
 	return num_items;
 }
 
-Internal_IsCancelling(Handle:vote)
+Internal_GetClients(client_vote[][])
+{
+	if (!Internal_IsVoteInProgress())
+	{
+		return 0;
+	}
+	
+	/* Build the client list */
+	new num_clients;
+	
+	for (new i = 1; i <= MaxClients; i++)
+	{
+		if (g_ClientVotes[i] >= VOTE_PENDING)
+		{
+			client_vote[i][VOTEINFO_CLIENT_INDEX] = i;
+			client_vote[i][VOTEINFO_CLIENT_ITEM] = g_ClientVotes[i];
+			num_clients++;
+		}
+	}
+	
+	return num_clients;
+}
+
+Internal_IsCancelling()
 {
 	return g_bCancelled;
 }
 
-Internal_WasCancelled(Handle:vote)
+Internal_WasCancelled()
 {
 	return g_bWasCancelled;
+}
+
+Internal_GetCurrentVote()
+{
+	return g_hCurVote;
 }
 
 Internal_Reset()
@@ -983,7 +1076,7 @@ public Action:RedrawTimer(Handle:timer, Handle:data)
 	new client = ReadPackCell(data);
 	new Handle:vote = Handle:ReadPackCell(data);
 	
-	if (Internal_IsVoteInProgress() && !Internal_IsCancelling(vote) && !Internal_WasCancelled(vote))
+	if (Internal_IsVoteInProgress() && !Internal_IsCancelling() && !Internal_WasCancelled())
 	{
 		
 	}
@@ -1874,27 +1967,21 @@ TF2CSGO_UpdateVoteCounts(items, Handle:votes, totalClients)
 TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 {
 	
-	if (!Data_GetOptionsSent(vote))
+	new Handle:optionsEvent = CreateEvent("vote_options");
+	
+	new maxCount = Data_GetItemCount(vote);
+	
+	for (new i = 0; i < maxCount; i++)
 	{
-		// This vote never sent its options
-		new Handle:optionsEvent = CreateEvent("vote_options");
+		decl String:option[8];
+		Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, i+1);
 		
-		new maxCount = Data_GetItemCount(vote);
-		
-		for (new i = 0; i < maxCount; i++)
-		{
-			decl String:option[8];
-			Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, i+1);
-			
-			decl String:display[64];
-			Data_GetItemDisplay(vote, i, display, sizeof(display));
-			SetEventString(optionsEvent, option, display);
-		}
-		SetEventInt(optionsEvent, "count", maxCount);
-		FireEvent(optionsEvent);
-		
-		Data_SetOptionsSent(vote, true);
+		decl String:display[64];
+		Data_GetItemDisplay(vote, i, display, sizeof(display));
+		SetEventString(optionsEvent, option, display);
 	}
+	SetEventInt(optionsEvent, "count", maxCount);
+	FireEvent(optionsEvent);
 	
 	new String:translation[64];
 	new String:otherTeamString[64];

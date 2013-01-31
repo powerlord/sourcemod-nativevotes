@@ -29,7 +29,7 @@
  * Version: $Id$
  */
  
-//#include <menus>
+#include <menus>
  
 #if defined _nativevotes_included
  #endinput
@@ -50,9 +50,8 @@
 The following MenuActions are supported.  Arguments are also listed, as they differ slightly from the default
 MenuAction_Start		A menu has been started (nothing passed). Only exists for compat reasons.
 MenuAction_Select		An item was selected (param1=client, param2=item). For subplugin support.
-MenuAction_End			A vote has fully ended and the vote object is ready to be cleaned up (nothing passed)
-						Note: Unlike standard menus MenuAction_End, nothing is passed here.
-						Check MenuAction_VoteEnd or MenuAction_VoteCancel instead.
+MenuAction_End			A vote has fully ended and the vote object is ready to be cleaned up
+						param1 is MenuEnd reason, either MenuEnd_VotingCancelled or MenuEnd_VotingDone
 MenuAction_VoteEnd		A vote sequence has succeeded (param1=chosen item) 
 						This is not called if NativeVotes_SetResultCallback has been used on the vote.
 						You should call NativeVotes_DisplayPass or NativeVotes_DisplayPassEx after this
@@ -448,27 +447,64 @@ native NativeVotes_Cancel();
 /**
  * Callback for when a vote has ended and results are available.
  * 
- * Unfortunately, due to limitations on function calling in plugins, this is slightly
- * different than VoteHandler and BuiltinVotes_VoteHandler is.
+ * Due to SourceMod Forward limitations in plugins, multi-dimension arrays can't be passed
+ * to forwards.  This means we have to split the client_info and item_info arrays into
+ * their components.
  * 
  * @param vote				The vote being voted on.
  * @param num_votes			Number of votes tallied in total.
  * @param num_clients		Number of clients who could vote.
- * @param client_info		ADT Array of num_clients 2-element arrays.
- * 							Use VOTEINFO_CLIENT_ defines on inner arrays.
+ * @param client_indexes	Array of client indexes. Parallel with client_votes.
+ * @param client_votes		Array of client votes. Parallel with client_indexes.
  * @param num_items			Number of unique items that were selected.
- * @param item_info			ADT Array of num_items 2-element arrays, sorted by count.
- * 							Use VOTEINFO_ITEM defines on inner arrays.
+ * @param item_indexes		Array of vote item indexes. Parallel with item_votes..
+ * @param item_votes		Array of vote vote counts. Parallel with item_indexes.
  * @noreturn
  */
 functag public NativeVotes_VoteHandler(Handle:vote,
-						   num_votes, 
-						   num_clients,
-						   const client_indexes[],
-						   const client_votes[],
-						   num_items,
-						   const item_indexes[],
-						   const item_votes[]);
+							num_votes, 
+							num_clients,
+							const client_indexes[],
+							const client_votes[],
+							num_items,
+							const item_indexes[],
+							const item_votes[]);
+/**
+ * Function to convert client/vote arrays into their two-dimensional versions,
+ * which can then be passed to a standard vote handler.
+ * 
+ * client_info and item_info are the resulting arrays.
+ * 
+ * Not recommend, as you'll have to do custom processing of NativeVotes success/fail anyway.
+ * 
+ * @param num_clients		Number of clients who could vote.
+ * @param client_info		Array of clients.  Use VOTEINFO_CLIENT_ defines.
+ * @param num_items			Number of unique items that were selected.
+ * @param item_info			Array of items, sorted by count.  Use VOTEINFO_ITEM
+ *							defines.
+ * @noreturn
+ */
+stock NativeVotes_FixResults(num_clients,
+							const client_indexes[],
+							const client_votes[],
+							num_items,
+							const item_indexes[],
+							const item_votes[],
+							client_info[][2], 
+							item_info[][2])
+{
+	for (new i = 0; i < num_client, ++i)
+	{
+		client_info[i][VOTEINFO_CLIENT_INDEX] = client_indexes[i];
+		client_info[i][VOTEINFO_CLIENT_ITEM] = client_votes[i];
+	}
+	
+	for (new i = 0; i < num_items; ++i)
+	{
+		item_info[i][VOTEINFO_ITEM_INDEX] = item_indexes[i];
+		item_info[i][VOTEINFO_ITEM_VOTES] = item_votes[i];
+	}
+}
 
 /**
  * Sets an advanced vote handling callback.  If this callback is set,
