@@ -73,13 +73,14 @@ enum NativeVotesType
 	NativeVotesType_ChgCampaign,	/**< L4D/L4D2: Yes/No, details are campaign name */
 	NativeVotesType_ChgDifficulty,	/**< L4D/L4D2: Yes/No, details are difficulty number in L4D/L4D2 */
 	NativeVotesType_ReturnToLobby,	/**< L4D/L4D2: Yes/No, details are ignored */
-	NativeVotesType_Alltalk,		/**< L4D2: Yes/No, details are ignored (handled internally by extension) */
+	NativeVotesType_AlltalkOn,		/**< L4D2: Yes/No, details are ignored (handled internally by extension) */
+	NativeVotesType_AlltalkOff,		/**< L4D2: Yes/No, details are ignored (handled internally by extension) */
 	NativeVotesType_Restart,		/**< Yes/No, details are ignored */
 	NativeVotesType_Kick,			/**< Yes/No, target is player userid, details are auto-set by target */
 	NativeVotesType_KickIdle,		/**< TF2/CS:GO: Yes/No, target is player userid, details are auto-set by target */
 	NativeVotesType_KickScamming,	/**< TF2/CS:GO: Yes/No, target is player userid, details are auto-set by target */
 	NativeVotesType_KickCheating,	/**< TF2/CS:GO: Yes/No, target is player userid, details are auto-set by target */
-	NativeVotesType_ChangeLevel,	/**< Yes/No, details are level number in L4D/L4D2 or map name in TF2 */
+	NativeVotesType_ChgLevel,		/**< Yes/No, details are level number in L4D/L4D2 or map name in TF2 */
 	NativeVotesType_NextLevel,		/**< TF2/CS:GO: Yes/No, details are map name */
 	NativeVotesType_NextLevelMult,	/**< TF2/CS:GO: Multiple-choice, details are ignored */
 	NativeVotesType_ScrambleNow,	/**< TF2/CS:GO: Yes/No, details are ignored */
@@ -102,7 +103,7 @@ enum NativeVotesPassType
 	NativeVotesPass_AlltalkOff,			/**< L4D2: Details are ignored */
 	NativeVotesPass_Restart,			/**< Details are ignored */
 	NativeVotesPass_Kick,				/**< Details are player name */
-	NativeVotesPass_ChangeLevel,		/**< Details are level number in L4D/L4D2 or map name in TF2/CS:GO */
+	NativeVotesPass_ChgLevel,			/**< Details are level number in L4D/L4D2 or map name in TF2/CS:GO */
 	NativeVotesPass_NextLevel,			/**< TF2/CS:GO: Details are map name */
 	NativeVotesPass_Extend,				/**< TF2/CS:GO: Details are ignored */
 	NativeVotesPass_Scramble,			/**< TF2/CS:GO: Details are ignored */
@@ -580,20 +581,20 @@ native NativeVotes_SetTeam(Handle:vote, team);
 native NativeVotes_GetTeam(Handle:vote);
 
 /**
- * Set the player who initiated the vote.
+ * Set the client index of the player who initiated the vote.
  * Use NATIVEVOTES_SERVER_INDEX if initiated by the server itself.
  * 
  * Defaults to NATIVEVOTES_SERVER_INDEX if not explicitly set.
  * 
  * @param vote				NativeVotes Handle.
- * @param client			Client who initiated the vote
+ * @param client			Client who initiated the vote or NATIVEVOTES_SERVER_INDEX
  * @noreturn
  * @error					Invalid Handle
  */
 native NativeVotes_SetInitiator(Handle:vote, client);
 
 /**
- * Retrieve the client index who initiated the vote or NATIVEVOTES_SERVER_INDEX if 
+ * Retrieve the client index of the player who initiated the vote or NATIVEVOTES_SERVER_INDEX if 
  * initiated by the server itself.
  * 
  * @param					Vote handle
