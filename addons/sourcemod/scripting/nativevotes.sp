@@ -264,6 +264,8 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 		return APLRes_Failure;
 	}
 	
+	MarkNativeAsOptional("GetUserMessageType");
+	
 	CreateNative("NativeVotes_IsVoteTypeSupported", Native_IsVoteTypeSupported);
 	CreateNative("NativeVotes_Create", Native_Create);
 	CreateNative("NativeVotes_Close", Native_Close);
@@ -1750,12 +1752,12 @@ Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason)
 		
 		case SOURCE_SDK_LEFT4DEAD:
 		{
-			L4D_DisplayVoteFail(vote, reason);
+			L4D_DisplayVoteFail(vote);
 		}
 		
 		case SOURCE_SDK_LEFT4DEAD2:
 		{
-			L4D2_DisplayVoteFail(vote, reason);
+			L4D2_DisplayVoteFail(vote);
 		}
 		
 	}
@@ -1887,11 +1889,16 @@ L4DL4D2_ParseVote(const String:option[])
 
 L4DL4D2_UpdateVoteCounts(items, Handle:votes, totalClients)
 {
+	new yesVotes = GetArrayCell(votes, NATIVEVOTES_VOTE_YES);
+	new noVotes = GetArrayCell(votes, NATIVEVOTES_VOTE_NO);
 	new Handle:changeEvent = CreateEvent("vote_changed");
-	SetEventInt(changeEvent, "yesVotes", GetArrayCell(votes, NATIVEVOTES_VOTE_YES));
-	SetEventInt(changeEvent, "noVotes", GetArrayCell(votes, NATIVEVOTES_VOTE_NO));
+	SetEventInt(changeEvent, "yesVotes", yesVotes);
+	SetEventInt(changeEvent, "noVotes", noVotes);
 	SetEventInt(changeEvent, "potentialVotes", totalClients);
 	FireEvent(changeEvent);
+	
+	SetEntProp(g_VoteController, Prop_Send, "m_votesYes", yesVotes);
+	SetEntProp(g_VoteController, Prop_Send, "m_votesNo", noVotes);
 }
 
 L4DL4D2_VoteTypeToTranslation(NativeVotesType:voteType, String:translation[], maxlength)
@@ -2039,14 +2046,23 @@ L4D_DisplayVote(Handle:vote, clients[], num_clients)
 	L4DL4D2_VoteTypeToTranslation(voteType, translation, sizeof(translation));
 
 	decl String:details[MAX_DETAILS_SIZE];
-	Data_GetDetails(vote, details, sizeof(MAX_DETAILS_SIZE));
+	Data_GetDetails(vote, details, MAX_DETAILS_SIZE);
+	
+	new team = Data_GetInitiator(vote);
 	
 	new Handle:voteStart = CreateEvent("vote_started");
-	SetEventInt(voteStart, "team", Data_GetTeam(vote));
+	SetEventInt(voteStart, "team", team);
 	SetEventInt(voteStart, "initiator", Data_GetInitiator(vote));
 	SetEventString(voteStart, "issue", translation);
 	SetEventString(voteStart, "param1", details);
 	FireEvent(voteStart);
+	
+	SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", team);
+	SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
+	SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
+	SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
+	// TODO: Need to look these values up
+	//SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", Data_GetType(vote));
 }
 
 L4D_VoteEnded()
@@ -2074,7 +2090,7 @@ L4D_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[
 	FireEvent(passEvent);
 }
 
-L4D_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason, client=0)
+L4D_DisplayVoteFail(Handle:vote, client=0)
 {
 	L4D_VoteEnded();
 	// Not used in L4D?
@@ -2131,7 +2147,7 @@ L4D2_ClientSelectedItem(Handle:vote, client, item)
 		choice = 1;
 	}
 	
-	new voteCast = StartMessageOne("VoteRegistered", client, USERMSG_RELIABLE);
+	new Handle:voteCast = StartMessageOne("VoteRegistered", client, USERMSG_RELIABLE);
 	BfWriteByte(voteCast, choice);
 	EndMessage();
 }
@@ -2150,17 +2166,17 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 	{
 		case NativeVotesType_AlltalkOn:
 		{
-			strcopy(details, sizeof(MAX_DETAILS_SIZE), L4D2_VOTE_ALLTALK_ENABLE);
+			strcopy(details, MAX_DETAILS_SIZE, L4D2_VOTE_ALLTALK_ENABLE);
 		}
 		
 		case NativeVotesType_AlltalkOff:
 		{
-			strcopy(details, sizeof(MAX_DETAILS_SIZE), L4D2_VOTE_ALLTALK_DISABLE);
+			strcopy(details, MAX_DETAILS_SIZE, L4D2_VOTE_ALLTALK_DISABLE);
 		}
 		
 		default:
 		{
-			Data_GetDetails(vote, details, sizeof(MAX_DETAILS_SIZE));
+			Data_GetDetails(vote, details, MAX_DETAILS_SIZE);
 		}
 	}
 	
@@ -2179,11 +2195,12 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 	BfWriteString(voteStart, details);
 	BfWriteString(voteStart, initiatorName);
 	EndMessage();
+	
 }
 
 L4D2_DisplayVotePass(Handle:vote, String:details[])
 {
-	L4D2_DisplayVotePassEx(Data_GetType(vote), VoteTypeToVotePass(vote), details);
+	L4D2_DisplayVotePassEx(vote, VoteTypeToVotePass(Data_GetType(vote)), details);
 }
 
 L4D2_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[])
@@ -2194,12 +2211,12 @@ L4D2_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details
 	{
 		case NativeVotesPass_AlltalkOn:
 		{
-			strcopy(details, sizeof(MAX_DETAILS_SIZE), L4D2_VOTE_ALLTALK_ENABLE);
+			strcopy(details, MAX_DETAILS_SIZE, L4D2_VOTE_ALLTALK_ENABLE);
 		}
 		
 		case NativeVotesPass_AlltalkOff:
 		{
-			strcopy(details, sizeof(MAX_DETAILS_SIZE), L4D2_VOTE_ALLTALK_DISABLE);
+			strcopy(details, MAX_DETAILS_SIZE, L4D2_VOTE_ALLTALK_DISABLE);
 		}
 	}
 	
@@ -2341,7 +2358,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	}
 	
 	decl String:details[MAX_DETAILS_SIZE];
-	Data_GetDetails(vote, details, sizeof(MAX_DETAILS_SIZE));
+	Data_GetDetails(vote, details, MAX_DETAILS_SIZE);
 	
 	new team = Data_GetTeam(vote);
 	
@@ -2369,8 +2386,11 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 
 	EndMessage();
 	
-	SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", Data_GetTeam(vote));
-	SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", maxCount);
+	SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", team);
+	for (new i = 0; i < 5; i++)
+	{
+		SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, 4, i);
+	}
 	SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", num_clients);
 	SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", bYesNo);
 	// TODO: Need to look these values up
