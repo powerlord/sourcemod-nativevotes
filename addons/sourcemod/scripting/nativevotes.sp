@@ -205,7 +205,7 @@
 // Global Variables
 new g_GameVersion = SOURCE_SDK_UNKNOWN;
 
-new Float:g_NextVote = 0.0;
+new g_NextVote = 0;
 
 new g_VoteController;
 
@@ -438,21 +438,21 @@ public Action:Command_CallVote(client, const String:command[], argc)
 public OnVoteDelayChange(Handle:convar, const String:oldValue[], const String:newValue[])
 {
 	/* See if the new vote delay isn't something we need to account for */
-	if (GetConVarFloat(convar) < 1.0)
+	if (GetConVarInt(convar) < 1)
 	{
-		g_NextVote = 0.0;
+		g_NextVote = 0;
 		return;
 	}
 	
 	/* If there was never a last vote, ignore this change */
-	if (g_NextVote < 0.1)
+	if (g_NextVote <= 0)
 	{
 		return;
 	}
 	
 	/* Subtract the original value, then add the new one. */
-	g_NextVote -= StringToFloat(oldValue);
-	g_NextVote += StringToFloat(newValue);
+	g_NextVote -= StringToInt(oldValue);
+	g_NextVote += StringToInt(newValue);
 }
 
 public OnMapEnd()
@@ -462,6 +462,11 @@ public OnMapEnd()
 		// Cancel the ongoing vote, but don't close the handle, as the other plugin may still re-use it
 		OnVoteCancel(g_hCurVote, NativeVotesFail_Generic);
 		g_hCurVote = INVALID_HANDLE;
+	}
+	
+	if (g_hDisplayTimer != INVALID_HANDLE)
+	{
+		g_hDisplayTimer = INVALID_HANDLE;
 	}
 
 	g_hVoteTimer = INVALID_HANDLE;
@@ -503,6 +508,8 @@ OnVoteSelect(Handle:vote, client, item)
 			SetArrayCell(g_hVotes, item, GetArrayCell(g_hVotes, item) + 1);
 			g_NumVotes++;
 			
+			Game_UpdateVoteCounts(g_hVotes, g_TotalClients);
+
 			if (GetConVarBool(g_Cvar_VoteChat) || GetConVarBool(g_Cvar_VoteConsole) || GetConVarBool(g_Cvar_VoteClientConsole))
 			{
 				decl String:choice[128];
@@ -546,8 +553,6 @@ OnVoteSelect(Handle:vote, client, item)
 					}
 				}
 			}
-			
-			Game_UpdateVoteCounts(g_Items, g_hVotes, g_TotalClients);
 			
 			BuildVoteLeaders();
 			DrawHintProgress();
@@ -846,14 +851,14 @@ DecrementPlayerCount()
 
 EndVoting()
 {
-	new Float:fVoteDelay = GetConVarFloat(g_Cvar_VoteDelay);
-	if (fVoteDelay < 1.0)
+	new voteDelay = GetConVarInt(g_Cvar_VoteDelay);
+	if (voteDelay < 1)
 	{
-		g_NextVote = 0.0;
+		g_NextVote = 0;
 	}
 	else
 	{
-		g_NextVote = GetTime() + fVoteDelay;
+		g_NextVote = GetTime() + voteDelay;
 	}
 	
 	if (g_hDisplayTimer != INVALID_HANDLE)
@@ -901,6 +906,167 @@ EndVoting()
 	/* Send vote info */
 	OnVoteResults(vote, votes, num_votes, num_items, client_list, num_clients);
 	OnEnd(vote, MenuEnd_VotingDone);
+}
+
+bool:StartVote(Handle:vote, num_clients, clients[], max_time, flags)
+{
+	if (!InitializeVoting(vote, max_time, flags))
+	{
+		return false;
+	}
+	
+	/* Due to hibernating servers, we no longer use GameTime, but instead standard timestamps.
+	 */
+
+	new voteDelay = GetConVarInt(g_Cvar_VoteDelay);
+	if (voteDelay < 1)
+	{
+		g_NextVote = 0;
+	}
+	else
+	{
+		/* This little trick break for infinite votes!
+		 * However, we just ignore that since those 1) shouldn't exist and
+		 * 2) people must be checking IsVoteInProgress() beforehand anyway.
+		 */
+		g_NextVote = GetTime() + voteDelay + max_time;
+	}
+	
+	g_StartTime = GetTime();
+	g_VoteTime = max_time;
+	g_TimeLeft = max_time;
+	
+	new clientCount = 0;
+	
+	for (new i = 0; i < num_clients; ++i)
+	{
+		if (clients[i] < 1 || clients[i] > MaxClients)
+		{
+			continue;
+		}
+		
+		g_ClientVotes[clients[i]] = VOTE_PENDING;
+		clientCount++;
+	}
+	
+	g_Clients = clientCount;
+	
+	Game_UpdateVoteCounts(g_hVotes, clientCount);
+	
+	DoClientVote(vote, clients, num_clients);	
+	
+	StartVoting();
+	
+	return true;
+}
+
+bool:DoClientVote(Handle:vote, clients[], num_clients)
+{
+	new totalPlayers = 0;
+	new realClients[MaxClients+1];
+	
+	for (new i = 0; i < num_clients; ++i)
+	{
+		if (clients[i] < 1 || clients[i] > MaxClients || IsFakeClient(clients[i]) || !IsClientInGame(clients[i]))
+		{
+			continue;
+		}
+		
+		realClients[totalPlayers++] = clients[i];
+	}
+	
+	if (totalPlayers > 0)
+	{
+		Game_DisplayVote(vote, realClients, totalPlayers);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool:InitializeVoting(Handle:vote, time, flags)
+{
+	if (Internal_IsVoteInProgress())
+	{
+		return false;
+	}
+	
+	Internal_Reset();
+	
+	/* Mark all clients as not voting */
+	for (new i = 1; i <= MaxClients; ++i)
+	{
+		g_ClientVotes[i] = VOTE_NOT_VOTING;
+		g_bRevoting[i] = false;
+	}
+	
+	g_Items = Data_GetItemCount(vote);
+	
+	if (GetArraySize(g_hVotes) < g_Items)
+	{
+		/* Only clear the items we need to... */
+		new size = GetArraySize(g_hVotes);
+		for (new i = 0; i < size; ++i)
+		{
+			SetArrayCell(g_hVotes, i, 0);
+		}
+		ResizeArray(g_hVotes, g_Items);
+	}
+	else
+	{
+		for (new i = 0; i < g_Items; ++i)
+		{
+			SetArrayCell(g_hVotes, i, 0);
+		}
+	}
+	
+	g_bWasCancelled = false;
+	g_hCurVote = vote;
+	g_VoteTime = time;
+	g_VoteFlags = flags;
+	
+	return true;
+}
+
+StartVoting()
+{
+	if (g_hCurVote == INVALID_HANDLE)
+	{
+		return;
+	}
+	
+	g_bStarted = true;
+	
+	OnVoteStart(g_hCurVote);
+	
+	g_hDisplayTimer = CreateTimer(1.0, DisplayTimer, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+	/* By now we know how many clients were set.
+	 * If there are none, we should end IMMEDIATELY.
+	 */
+	if (g_Clients == 0)
+	{
+		EndVoting();
+	}
+	
+	g_TotalClients = g_Clients;
+}
+
+public Action:DisplayTimer(Handle:timer, any:data)
+{
+	DrawHintProgress();
+	if (--g_TimeLeft == 0)
+	{
+		if (g_hDisplayTimer != INVALID_HANDLE)
+		{
+			g_hDisplayTimer = INVALID_HANDLE;
+			EndVoting();
+		}
+		return Plugin_Stop;
+	}
+	
+	return Plugin_Continue;
 }
 
 Internal_GetResults(votes[][], slots, &num_votes=0)
@@ -1048,8 +1214,10 @@ public Action:RedrawTimer(Handle:timer, Handle:data)
 	
 	if (Internal_IsVoteInProgress() && !Internal_IsCancelling() && !Internal_WasCancelled())
 	{
-		
+		Game_DisplayVoteToOne(vote, client);
 	}
+	
+	return Plugin_Stop;
 }
 
 
@@ -1114,9 +1282,39 @@ public Native_Close(Handle:plugin, numParams)
 	Data_CloseVote(vote);
 }
 
+// native bool:NativeVotes_Display(Handle:vote, clients[], numClients, time);
 public Native_Display(Handle:plugin, numParams)
 {
-	//TODO
+	if (Internal_IsVoteInProgress())
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "A vote is already in progress");
+	}
+	
+	new Handle:vote = GetNativeCell(1);
+	if (vote == INVALID_HANDLE)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
+		return false;
+	}
+	
+	new count = GetNativeCell(3);
+	new clients[count];
+	GetNativeArray(2, clients, count);
+	
+	new flags = 0;
+	
+	if (numParams >= 5)
+	{
+		flags = GetNativeCell(5);
+	}
+	
+	if (!StartVote(vote, count, clients, GetNativeCell(4), flags))
+	{
+		return 0;
+	}
+	
+	return 1;
+	
 }
 
 public Native_AddItem(Handle:plugin, numParams)
@@ -1741,6 +1939,47 @@ bool:Game_CheckVoteType(NativeVotesType:type)
 	return returnVal;
 }
 
+bool:Game_DisplayVoteToOne(Handle:vote, client)
+{
+	if (g_bCancelled)
+	{
+		return false;
+	}
+	
+	new clients[1];
+	clients[0] = client;
+	
+	return Game_DisplayVote(vote, clients, 1);
+}
+
+bool:Game_DisplayVote(Handle:vote, clients[], num_clients)
+{
+	if (g_bCancelled)
+	{
+		return false;
+	}
+	
+	switch(g_GameVersion)
+	{
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			TF2CSGO_DisplayVote(vote, clients, num_clients);
+		}
+		
+		case SOURCE_SDK_LEFT4DEAD:
+		{
+			L4D_DisplayVote(vote, num_clients);
+		}
+		
+		case SOURCE_SDK_LEFT4DEAD2:
+		{
+			L4D2_DisplayVote(vote, clients, num_clients);
+		}
+	}
+
+	return true;
+}
+
 Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason)
 {
 	switch(g_GameVersion)
@@ -1752,7 +1991,7 @@ Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason)
 		
 		case SOURCE_SDK_LEFT4DEAD:
 		{
-			L4D_DisplayVoteFail(vote);
+			L4D_DisplayVoteFail();
 		}
 		
 		case SOURCE_SDK_LEFT4DEAD2:
@@ -1824,13 +2063,12 @@ Game_ClientSelectedItem(Handle:vote, client, item)
 		
 		case SOURCE_SDK_LEFT4DEAD2:
 		{
-			L4D2_ClientSelectedItem(vote, client, item);
+			L4D2_ClientSelectedItem(client, item);
 		}
-		
 	}
 }
 
-Game_UpdateVoteCounts(items, Handle:hVoteCounts, totalClients)
+Game_UpdateVoteCounts(Handle:hVoteCounts, totalClients)
 {
 	switch(g_GameVersion)
 	{
@@ -1841,9 +2079,8 @@ Game_UpdateVoteCounts(items, Handle:hVoteCounts, totalClients)
 
 		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
 		{
-			L4DL4D2_UpdateVoteCounts(items, hVoteCounts, totalClients);
+			L4DL4D2_UpdateVoteCounts(hVoteCounts, totalClients);
 		}
-		
 	}
 }
 
@@ -1887,7 +2124,7 @@ L4DL4D2_ParseVote(const String:option[])
 	return NATIVEVOTES_VOTE_INVALID;
 }
 
-L4DL4D2_UpdateVoteCounts(items, Handle:votes, totalClients)
+L4DL4D2_UpdateVoteCounts(Handle:votes, totalClients)
 {
 	new yesVotes = GetArrayCell(votes, NATIVEVOTES_VOTE_YES);
 	new noVotes = GetArrayCell(votes, NATIVEVOTES_VOTE_NO);
@@ -1945,8 +2182,6 @@ L4DL4D2_VoteTypeToTranslation(NativeVotesType:voteType, String:translation[], ma
 			strcopy(translation, maxlength, L4D_VOTE_CUSTOM);
 		}
 	}
-	
-	return bYesNo;
 }
 
 L4DL4D2_VotePassToTranslation(NativeVotesPassType:passType, String:translation[], maxlength)
@@ -2037,7 +2272,7 @@ L4D_ClientSelectedItem(Handle:vote, client, item)
 	}
 }
 
-L4D_DisplayVote(Handle:vote, clients[], num_clients)
+L4D_DisplayVote(Handle:vote, num_clients)
 {
 	new String:translation[64];
 
@@ -2090,7 +2325,7 @@ L4D_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[
 	FireEvent(passEvent);
 }
 
-L4D_DisplayVoteFail(Handle:vote, client=0)
+L4D_DisplayVoteFail()
 {
 	L4D_VoteEnded();
 	// Not used in L4D?
@@ -2134,7 +2369,7 @@ bool:L4D_CheckVotePassType(NativeVotesPass:passType)
 //----------------------------------------------------------------------------
 // L4D2 functions
 
-L4D2_ClientSelectedItem(Handle:vote, client, item)
+L4D2_ClientSelectedItem(client, item)
 {
 	new choice;
 	
@@ -2183,7 +2418,7 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 	new initiator = Data_GetInitiator(vote);
 	new String:initiatorName[MAX_NAME_LENGTH];
 
-	if (initiator != NATIVEVOTES_SERVER_INDEX && client > 0 && client <= MaxClients && IsClientInGame(initiator))
+	if (initiator != NATIVEVOTES_SERVER_INDEX && initiator > 0 && initiator <= MaxClients && IsClientInGame(initiator))
 	{
 		GetClientName(initiator, initiatorName, MAX_NAME_LENGTH);
 	}
@@ -2931,7 +3166,6 @@ CSGO_VotePassToTranslation(NativeVotesPassType:passType, String:translation[], m
 
 CSGO_VoteTypeToVoteOtherTeamString(NativeVotesType:voteType, String:otherTeamString[], maxlength)
 {
-	new bool:valid = false;
 	switch(voteType)
 	{
 		case NativeVotesType_Kick:
