@@ -36,6 +36,8 @@
 #endif
 #define _nativevotes_included
 
+#define CLIENT_DISCONNECTED			-1
+
 #define NATIVEVOTES_EXTEND 			"Extend current Map" /** Defined in TF2, but doesn't appear to be localized */
 
 #define NATIVEVOTES_ALL_TEAMS		-1 // Defined by TF2, may be the same in L4D/L4D2

@@ -278,10 +278,14 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_GetItemCount", Native_GetItemCount);
 	CreateNative("NativeVotes_SetDetails", Native_SetDetails);
 	CreateNative("NativeVotes_GetDetails", Native_GetDetails);
+	CreateNative("NativeVotes_SetTarget", Native_SetTarget);
+	CreateNative("NativeVotes_GetTarget", Native_GetTarget);
+	CreateNative("NativeVotes_GetTargetSteam", Native_GetTargetSteam);
 	CreateNative("NativeVotes_IsVoteInProgress", Native_IsVoteInProgress);
 	CreateNative("NativeVotes_GetMaxItems", Native_GetMaxItems);
 	CreateNative("NativeVotes_SetOptionFlags", Native_SetOptionFlags);
 	CreateNative("NativeVotes_GetOptionFlags", Native_GetOptionFlags);
+	CreateNative("NativeVotes_Cancel", Native_Cancel);
 	CreateNative("NativeVotes_SetResultCallback", Native_SetResultCallback);
 	CreateNative("NativeVotes_CheckVoteDelay", Native_CheckVoteDelay);
 	CreateNative("NativeVotes_IsClientInVotePool", Native_IsClientInVotePool);
@@ -290,11 +294,12 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_SetTeam", Native_SetTeam);
 	CreateNative("NativeVotes_GetTeam", Native_GetTeam);
 	CreateNative("NativeVotes_SetInitiator", Native_SetInitiator);
-	CreateNative("NativeVotes_SetInitiator", Native_SetInitiator);
 	CreateNative("NativeVotes_GetInitiator", Native_GetInitiator);
 	CreateNative("NativeVotes_DisplayPass", Native_DisplayPass);
 	CreateNative("NativeVotes_DisplayPassEx", Native_DisplayPassEx);
 	CreateNative("NativeVotes_DisplayFail", Native_DisplayFail);
+	CreateNative("NativeVotes_RegisterVoteManager", Native_RegisterVoteManager);
+	CreateNative("NativeVotes_DisplayCallVoteFail", Native_DisplayCallVoteFail);
 	
 	RegPluginLibrary("nativevotes");
 	
@@ -576,12 +581,11 @@ OnEnd(Handle:vote, item)
 	DoAction(vote, MenuAction_End, item, 0);
 }
 
-/*
-OnVoteEnd(Handle:vote, item)
+
+stock OnVoteEnd(Handle:vote, item)
 {
 	DoAction(vote, MenuAction_VoteEnd, item, 0);
 }
-*/
 
 OnVoteStart(Handle:vote)
 {
@@ -1051,6 +1055,55 @@ StartVoting()
 	}
 	
 	g_TotalClients = g_Clients;
+	
+	// Kick targets automatically vote no if they're in the pool
+	new NativeVotesType:voteType = Data_GetType(g_hCurVote);
+	
+	switch (voteType)
+	{
+		case NativeVotesType_Kick, NativeVotesType_KickCheating, NativeVotesType_KickIdle, NativeVotesType_KickScamming:
+		{
+			new target = Data_GetTarget(g_hCurVote);
+			
+			if (target > 0 && target <= MaxClients && IsClientConnected(target) && Internal_IsClientInVotePool(target))
+			{
+				switch (g_GameVersion)
+				{
+					case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+					{
+						FakeClientCommand(target, "Vote No");
+					}
+					
+					case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+					{
+						FakeClientCommand(target, "vote option2");
+					}
+				}
+			}
+		}
+	}
+	
+	// Initiators always vote yes when they're in the pool.
+	if (voteType != NativeVotesType_Custom_Mult && voteType != NativeVotesType_NextLevelMult)
+	{
+		new initiator = Data_GetInitiator(g_hCurVote);
+		
+		if (initiator > 0 && initiator <= MaxClients && IsClientConnected(initiator) && Internal_IsClientInVotePool(initiator))
+		{
+			switch (g_GameVersion)
+			{
+				case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+				{
+					FakeClientCommand(initiator, "Vote Yes");
+				}
+				
+				case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+				{
+					FakeClientCommand(initiator, "vote option1");
+				}
+			}
+		}
+	}
 }
 
 public Action:DisplayTimer(Handle:timer, any:data)
@@ -1132,7 +1185,7 @@ Internal_WasCancelled()
 	return g_bWasCancelled;
 }
 
-Internal_GetCurrentVote()
+stock Internal_GetCurrentVote()
 {
 	return g_hCurVote;
 }
@@ -1182,18 +1235,18 @@ bool:Internal_RedrawToClient(client, bool:revotes)
 	
 	if (g_ClientVotes[client] >= 0)
 	{
-		if ((g_VoteFlags & VOTEFLAG_NO_REVOTES) || !revote || g_VoteTime <= VOTE_DELAY_TIME)
+		if ((g_VoteFlags & VOTEFLAG_NO_REVOTES) || !revotes || g_VoteTime <= VOTE_DELAY_TIME)
 		{
 			return false;
 		}
 		
 		// Display the vote fail screen for a few seconds
-		Game_DisplayVoteFail(g_CurVote, NativeVotesFail_Generic);
+		Game_DisplayVoteFail(g_hCurVote, NativeVotesFail_Generic);
 		
 		g_Clients++;
-		g_Votes[g_ClientVotes[client]]--;
+		SetArrayCell(g_hVotes, g_ClientVotes[client], GetArrayCell(g_hVotes, g_ClientVotes[client]) - 1);
 		g_ClientVotes[client] = VOTE_PENDING;
-		g_Revoting[client] = true;
+		g_bRevoting[client] = true;
 		g_NumVotes--;
 	}
 	
@@ -1201,7 +1254,7 @@ bool:Internal_RedrawToClient(client, bool:revotes)
 	
 	CreateDataTimer(VOTE_DELAY_TIME, RedrawTimer, data, TIMER_FLAG_NO_MAPCHANGE);
 	WritePackCell(data, client);
-	WritePackCell(data, g_CurVote);
+	WritePackCell(data, _:g_hCurVote);
 	
 	return true;
 }
@@ -1218,6 +1271,18 @@ public Action:RedrawTimer(Handle:timer, Handle:data)
 	}
 	
 	return Plugin_Stop;
+}
+
+CancelVoting()
+{
+	if (g_bCancelled || g_hCurVote == INVALID_HANDLE)
+	{
+		return;
+	}
+	
+	g_bCancelled = true;
+	
+	EndVoting();
 }
 
 
@@ -1366,9 +1431,12 @@ public Native_RemoveItem(Handle:plugin, numParams)
 	if (vote == INVALID_HANDLE)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
-		return;
+		return false;
 	}
-	//TODO
+	
+	new position = GetNativeCell(2);
+	
+	return Data_RemoveItem(vote, position);
 }
 
 public Native_RemoveAllItems(Handle:plugin, numParams)
@@ -1379,7 +1447,8 @@ public Native_RemoveAllItems(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
-	//TODO
+	
+	Data_RemoveAllItems(vote);
 }
 
 public Native_GetItem(Handle:plugin, numParams)
@@ -1390,7 +1459,24 @@ public Native_GetItem(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
-	//TODO
+	
+	new position = GetNativeCell(2);
+	
+	new infoLength = GetNativeCell(4);
+	new String:info[infoLength];
+	Data_GetItemInfo(vote, position, info, infoLength);
+	SetNativeString(3, info, infoLength);
+	
+	if (numParams >= 6)
+	{
+		new displayLength = GetNativeCell(6);
+		if (displayLength > 0)
+		{
+			new String:display[displayLength];
+			Data_GetItemDisplay(vote, position, display, displayLength);
+			SetNativeString(5, display, displayLength);
+		}
+	}
 }
 
 public Native_GetItemCount(Handle:plugin, numParams)
@@ -1399,8 +1485,10 @@ public Native_GetItemCount(Handle:plugin, numParams)
 	if (vote == INVALID_HANDLE)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
-		return;
+		return 0;
 	}
+	
+	return Data_GetItemCount(vote);
 }
 
 public Native_GetDetails(Handle:plugin, numParams)
@@ -1471,6 +1559,17 @@ public Native_SetOptionFlags(Handle:plugin, numParams)
 	//TODO
 }
 
+public Native_Cancel(Handle:plugin, numParams)
+{
+	if (!Internal_IsVoteInProgress())
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "No vote is in progress");
+		return;
+	}
+	
+	CancelVoting();
+}
+
 public Native_SetResultCallback(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1529,13 +1628,33 @@ public Native_IsClientInVotePool(Handle:plugin, numParams)
 
 public Native_RedrawClientVote(Handle:plugin, numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	new client = GetNativeCell(1);
+	
+	if (client < 1 || client > MaxClients || !IsClientConnected(client))
 	{
-		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
-		return;
+		ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", client);
+		return false;
 	}
-	//TODO
+	
+	if (!Internal_IsVoteInProgress())
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "No vote is in progress");
+		return false;
+	}
+	
+	if (!Internal_IsClientInVotePool(client))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Client is not in the voting pool");
+		return false;
+	}
+	
+	new bool:revote = true;
+	if (numParams >= 2 && !bool:GetNativeCell(2))
+	{
+		revote = false;
+	}
+	
+	return Internal_RedrawToClient(client, revote);
 }
 
 public Native_GetType(Handle:plugin, numParams)
@@ -1639,6 +1758,11 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 	
 	new NativeVotesPassType:passType = NativeVotesPassType:GetNativeCell(2);
 	
+	if (!Game_CheckVotePassType(passType))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Invalid vote pass type: %d", passType);
+	}
+
 	new size;
 	GetNativeStringLength(3, size);
 	
@@ -1732,6 +1856,22 @@ public Native_SetTarget(Handle:plugin,  numParams)
 			Data_SetDetails(vote, name);
 		}
 	}
+}
+
+public Native_RegisterVoteManager(Handle:plugin, numParams)
+{
+	ThrowNativeError(SP_ERROR_NATIVE, "Vote Manager not yet implemented");
+}
+
+public Native_DisplayCallVoteFail(Handle:plugin, numParams)
+{
+	new client = GetNativeCell(1);
+	
+	new NativeVotesCallFailType:reason = NativeVotesCallFailType:GetNativeCell(2);
+	
+	new time = GetNativeCell(3);
+	
+	Game_DisplayCallVoteFail(client, reason, time);
 }
 
 
@@ -1939,6 +2079,36 @@ bool:Game_CheckVoteType(NativeVotesType:type)
 	return returnVal;
 }
 
+bool:Game_CheckVotePassType(NativeVotesPassType:type)
+{
+	new bool:returnVal = false;
+	
+	switch(g_GameVersion)
+	{
+		case SOURCE_SDK_EPISODE2VALVE:
+		{
+			returnVal = TF2_CheckVotePassType(type);
+		}
+		
+		case SOURCE_SDK_LEFT4DEAD:
+		{
+			returnVal = L4D_CheckVotePassType(type);
+		}
+		
+		case SOURCE_SDK_LEFT4DEAD2:
+		{
+			returnVal = L4D2_CheckVotePassType(type);
+		}
+		
+		case SOURCE_SDK_CSGO:
+		{
+			returnVal = CSGO_CheckVotePassType(type);
+		}
+	}
+	
+	return returnVal;
+}
+
 bool:Game_DisplayVoteToOne(Handle:vote, client)
 {
 	if (g_bCancelled)
@@ -2044,6 +2214,29 @@ Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details
 			L4D2_DisplayVotePassEx(vote, passType, details);
 		}
 		
+	}
+}
+
+Game_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
+{
+	switch (g_GameVersion)
+	{
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			TF2CSGO_DisplayCallVoteFail(client, reason, time);
+		}
+		
+		case SOURCE_SDK_LEFT4DEAD:
+		{
+			//L4D_DisplayCallVoteFail(client, reason, time);
+			L4D_DisplayCallVoteFail();
+		}
+		
+		case SOURCE_SDK_LEFT4DEAD2:
+		{
+			//L4D2_DisplayCallVoteFail(client, reason, time);
+			L4D2_DisplayCallVoteFail();
+		}
 	}
 }
 
@@ -2331,7 +2524,8 @@ L4D_DisplayVoteFail()
 	// Not used in L4D?
 }
 
-L4D_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
+//L4D_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
+L4D_DisplayCallVoteFail()
 {
 	// Need to check around and find out what L4D does
 }
@@ -2351,7 +2545,7 @@ bool:L4D_CheckVoteType(NativeVotesType:voteType)
 	return false;
 }
 
-bool:L4D_CheckVotePassType(NativeVotesPass:passType)
+bool:L4D_CheckVotePassType(NativeVotesPassType:passType)
 {
 	switch(passType)
 	{
@@ -2481,7 +2675,8 @@ L4D2_DisplayVoteFail(Handle:vote, client=0)
 	EndMessage();
 }
 
-L4D2_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
+//L4D2_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
+L4D2_DisplayCallVoteFail()
 {
 	// Have to look this up.  It may be identical to TF2
 }
@@ -2501,7 +2696,7 @@ bool:L4D2_CheckVoteType(NativeVotesType:voteType)
 	return false;
 }
 
-bool:L4D2_CheckVotePassType(NativeVotesPass:passType)
+bool:L4D2_CheckVotePassType(NativeVotesPassType:passType)
 {
 	switch(passType)
 	{
@@ -2703,12 +2898,12 @@ TF2CSGO_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
 
 	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
 	{
-		PbSetInt(callVoteFail, "reason", reason);
+		PbSetInt(callVoteFail, "reason", _:reason);
 		PbSetInt(callVoteFail, "time", time);
 	}
 	else
 	{
-		BfWriteByte(callVoteFail, reason);
+		BfWriteByte(callVoteFail, _:reason);
 		BfWriteShort(callVoteFail, time);
 	}
 	EndMessage();
@@ -2842,7 +3037,7 @@ bool:TF2_CheckVoteType(NativeVotesType:voteType)
 	return false;
 }
 
-bool:TF2_CheckVotePassType(NativeVotesPass:passType)
+bool:TF2_CheckVotePassType(NativeVotesPassType:passType)
 {
 	switch(passType)
 	{
@@ -3000,7 +3195,7 @@ bool:CSGO_CheckVoteType(NativeVotesType:voteType)
 	return false;
 }
 
-bool:CSGO_CheckVotePassType(NativeVotesPass:passType)
+bool:CSGO_CheckVotePassType(NativeVotesPassType:passType)
 {
 	switch(passType)
 	{

@@ -198,7 +198,8 @@ bool:Data_InsertItem(Handle:vote, position, const String:info[], const String:di
 	
 	if (infoArray == INVALID_HANDLE || displayArray == INVALID_HANDLE ||
 		GetArraySize(infoArray) >= Game_GetMaxItems() ||
-		GetArraySize(displayArray) >= Game_GetMaxItems())
+		GetArraySize(displayArray) >= Game_GetMaxItems() ||
+		position >= GetArraySize(infoArray))
 	{
 		return false;
 	}
@@ -210,6 +211,32 @@ bool:Data_InsertItem(Handle:vote, position, const String:info[], const String:di
 	SetArrayString(displayArray, position, display);
 	
 	return true;
+}
+
+bool:Data_RemoveItem(Handle:vote, position)
+{
+	new Handle:infoArray = Handle:KvGetNum(vote, INFO, _:INVALID_HANDLE);
+	new Handle:displayArray = Handle:KvGetNum(vote, DISPLAY, _:INVALID_HANDLE);
+	
+	if (infoArray == INVALID_HANDLE || displayArray == INVALID_HANDLE ||
+		position >= GetArraySize(infoArray) || position < 0)
+	{
+		return false;
+	}
+	
+	RemoveFromArray(infoArray, position);
+	RemoveFromArray(displayArray, position);
+
+	return true;
+}
+
+Data_RemoveAllItems(Handle:vote)
+{
+	new Handle:infoArray = Handle:KvGetNum(vote, INFO, _:INVALID_HANDLE);
+	new Handle:displayArray = Handle:KvGetNum(vote, DISPLAY, _:INVALID_HANDLE);
+	
+	ClearArray(infoArray);
+	ClearArray(displayArray);
 }
 
 Data_CloseVote(Handle:vote)
