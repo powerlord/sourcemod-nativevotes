@@ -5,11 +5,6 @@
 #include <sourcemod>
 #include <sdktools>
 
-// SourceMod 1.4 compatibility shim
-#if !defined SOURCE_SDK_CSGO
-	#define SOURCE_SDK_CSGO					80		/**< Engine released after CS:GO (no SDK yet) */
-#endif
-
 #define LOGFILE "vote_diagnostics.txt"
 
 new g_GameVersion = SOURCE_SDK_UNKNOWN;
@@ -19,9 +14,9 @@ new g_VoteController;
 
 public Plugin:myinfo = 
 {
-	name = "TF Vote Sniffer",
+	name = "L4D,L4D2,TF2,CS:GO Vote Sniffer",
 	author = "Powerlord",
-	description = "Sniff voting events and usermessages",
+	description = "Sniff voting commands, events, and usermessages",
 	version = "1.2",
 	url = "http://www.sourcemod.net/"
 }
