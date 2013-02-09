@@ -132,6 +132,7 @@ public OnPluginStart()
 	g_NominateOwners = CreateArray(1);
 	g_OldMapList = CreateArray(arraySize);
 	g_NextMapList = CreateArray(arraySize);
+	CreateConVar("nativevotes_mapchooser_version", VERSION, "NativeVotes MapChooser version");
 	
 	g_Cvar_EndOfMapVote = CreateConVar("sm_mapvote_endvote", "1", "Specifies if MapChooser should run an end of map vote", _, true, 0.0, true, 1.0);
 
