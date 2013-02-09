@@ -2,7 +2,7 @@
  * vim: set ts=4 :
  * =============================================================================
  * NativeVotes
- * Copyright (C) 2011-2012 Ross Bemrose (Powerlord).  All rights reserved.
+ * Copyright (C) 2011-2013 Ross Bemrose (Powerlord).  All rights reserved.
  * =============================================================================
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -58,8 +58,7 @@ MenuAction_VoteEnd		A vote sequence has succeeded (param1=chosen item)
 						This is not called if NativeVotes_SetResultCallback has been used on the vote.
 						You should call NativeVotes_DisplayPass or NativeVotes_DisplayPassEx after this
 MenuAction_VoteStart	A vote sequence has started (nothing passed).  Use this instead of MenuAction_Start
-MenuAction_VoteCancel	A vote sequence has been cancelled (param1=NativeVotes_FailType reason).
-						The return value can be passed directly to NativeVotes_DisplayFail.
+MenuAction_VoteCancel	A vote sequence has been cancelled (param1=reason)
 */
 
 #define NATIVEVOTES_ACTIONS_DEFAULT		MenuAction_VoteStart|MenuAction_VoteCancel|MenuAction_VoteEnd|MenuAction_End
@@ -152,7 +151,7 @@ enum NativeVotesCallFailType
  * 
  * @param voteType			Vote type
  */
-native bool:NativeVotes_IsVoteTypeSupported(NativesVotesType:voteType);
+native bool:NativeVotes_IsVoteTypeSupported(NativeVotesType:voteType);
 
 /**
  * Creates a new, empty vote.
@@ -165,7 +164,7 @@ native bool:NativeVotes_IsVoteTypeSupported(NativesVotesType:voteType);
  *							the only default actions.
  * @return					A new vote Handle on INVALID_HANDLE if a vote type is unsupported by this game.
  */
-native Handle:NativeVotes_Create(MenuHandler:handler, NativesVotesType:voteType,
+native Handle:NativeVotes_Create(MenuHandler:handler, NativeVotesType:voteType,
 							MenuAction:actions=NATIVEVOTES_ACTIONS_DEFAULT);
 
 /**
@@ -206,7 +205,7 @@ native bool:NativeVotes_Display(Handle:vote, clients[], numClients, time);
  */
 stock bool:NativeVotes_DisplayToAll(Handle:vote, time)
 {
-	new total;
+	new total = 0;
 	decl players[MaxClients];
 	
 	for (new i=1; i<=MaxClients; i++)
@@ -496,7 +495,7 @@ stock NativeVotes_FixResults(num_clients,
 							client_info[][2], 
 							item_info[][2])
 {
-	for (new i = 0; i < num_client, ++i)
+	for (new i = 0; i < num_clients; ++i)
 	{
 		client_info[i][VOTEINFO_CLIENT_INDEX] = client_indexes[i];
 		client_info[i][VOTEINFO_CLIENT_ITEM] = client_votes[i];
@@ -559,7 +558,7 @@ native bool:NativeVotes_RedrawClientVote(client, bool:revotes=true);
  * @return					The built in vote type
  * @error					Invalid Handle
  */
-native NativesVotesType:NativeVotes_GetType(Handle:vote);
+native NativeVotesType:NativeVotes_GetType(Handle:vote);
 
 /**
  * Set the team this vote is for, or NATIVEVOTES_ALL_TEAMS for all teams.

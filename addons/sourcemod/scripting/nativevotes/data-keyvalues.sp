@@ -131,7 +131,6 @@ Data_SetTargetSteam(Handle:vote, const String:steamId[])
 NativeVotesType:Data_GetType(Handle:vote)
 {
 	return NativeVotesType:KvGetNum(vote, "vote_type", _:NativeVotesType_Custom_YesNo);
-	
 }
 
 Handle:Data_GetHandler(Handle:vote)
