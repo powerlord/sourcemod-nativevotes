@@ -688,9 +688,11 @@ functag public Action:NativeVotes_CallVoteSetupHandler(client, NativeVotesType:v
  * @param voteType		Type of vote being called.  This will NEVER be a multiple-choice or custom vote.
  * @param voteArgument	Vote argument or blank if the vote type has no argument.
  * @param target		target userid for kick votes or 0 for all other votes
- * @noreturn
+ * @return				Plugin_Continue to allow the server itself (or another plugin) to process the callvote
+ * 						Plugin_Handled if you processed this vote type
+ * 						Plugin_Stop to block the vote type (not recommended)
  */
-functag public NativeVotes_CallVoteHandler(client, NativeVotesType:voteType, const String:voteArgument[], target);
+functag public Action:NativeVotes_CallVoteHandler(client, NativeVotesType:voteType, const String:voteArgument[], target);
 
 /**
  * Register a plugin as a vote manager.

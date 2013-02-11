@@ -50,7 +50,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION "0.60"
+#define VERSION "0.6.1"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -186,7 +186,7 @@ public OnPluginStart()
 	AddCommandListener(Command_Vote, "Vote"); // L4D, L4D2
 	
 	g_Forward_OnCallVoteSetup = CreateForward(ET_Event, Param_Array);
-	g_Forward_OnCallVote = CreateForward(ET_Ignore, Param_Cell, Param_String, Param_Cell);
+	g_Forward_OnCallVote = CreateForward(ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	
 	AddCommandListener(Command_CallVote, "callvote"); // All games
 	
@@ -207,12 +207,13 @@ public OnConfigsExecuted()
 
 public Action:Command_CallVote(client, const String:command[], argc)
 {
+	new Action:result = Plugin_Continue;
+	
 	switch (argc)
 	{
 		case 0:
 		{
 			new NativeVotesType:voteTypes[MAX_VOTE_ISSUES];
-			new Action:result;
 			
 			Call_StartForward(g_Forward_OnCallVoteSetup);
 			Call_PushCell(client);
@@ -293,14 +294,14 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			Call_PushCell(voteType);
 			Call_PushString(argument);
 			Call_PushCell(target);
-			Call_Finish();
-			
+			Call_Finish(result);
+			// Don't process result here as the return line below will handle it
 		}
 		
 	}
 	
 	// Default to continue if we're not processing things
-	return Plugin_Continue;
+	return result;
 
 }
 
