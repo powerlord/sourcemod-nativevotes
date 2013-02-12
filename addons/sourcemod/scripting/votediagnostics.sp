@@ -17,7 +17,7 @@ public Plugin:myinfo =
 	name = "L4D,L4D2,TF2,CS:GO Vote Sniffer",
 	author = "Powerlord",
 	description = "Sniff voting commands, events, and usermessages",
-	version = "1.2",
+	version = "1.2.1",
 	url = "http://www.sourcemod.net/"
 }
 
@@ -109,7 +109,7 @@ public OnPluginStart()
 	AddCommandListener(CommandVote, "Vote");
 	AddCommandListener(CommandCallVote, "callvote");
 	
-	new String:gameName[10];
+	new String:gameName[15];
 	GetGameFolderName(gameName, sizeof(gameName));
 	
 	LogToFile(LOGFILE, "Game: %s", gameName);
