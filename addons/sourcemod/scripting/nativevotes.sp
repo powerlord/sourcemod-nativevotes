@@ -39,11 +39,6 @@
 
 #define MAX_DETAILS_SIZE					64
 
-// SourceMod 1.4 compatibility shim
-#if !defined SOURCE_SDK_CSGO
-	#define SOURCE_SDK_CSGO					80		/**< Engine released after CS:GO (no SDK yet) */
-#endif
- 
 #define VOTE_DELAY_TIME 					3.0
 
 // SourceMod uses these internally, so... we do too.
