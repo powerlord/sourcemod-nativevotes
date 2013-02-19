@@ -30,7 +30,9 @@
  */
  
 #include <menus>
- 
+
+// NativeVotes 0.6 series
+
 #if defined _nativevotes_included
  #endinput
 #endif
