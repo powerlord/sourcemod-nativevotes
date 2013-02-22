@@ -45,7 +45,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION "0.6.1"
+#define VERSION 							"0.6.2"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -483,7 +483,7 @@ OnVoteResults(Handle:vote, const votes[][], num_votes, item_count, const client_
 	{
 		/* Call MenuAction_VoteEnd instead.  See if there are any extra winners. */
 		new num_items = 1;
-		for (new i = 1; i < num_items; i++)
+		for (new i = 1; i < num_votes; i++)
 		{
 			if (votes[i][VOTEINFO_ITEM_VOTES] != votes[0][VOTEINFO_ITEM_VOTES])
 			{
@@ -833,7 +833,7 @@ bool:DoClientVote(Handle:vote, clients[], num_clients)
 	
 	for (new i = 0; i < num_clients; ++i)
 	{
-		if (clients[i] < 1 || clients[i] > MaxClients || IsFakeClient(clients[i]) || !IsClientInGame(clients[i]))
+		if (clients[i] < 1 || clients[i] > MaxClients || !IsClientInGame(clients[i]) || IsFakeClient(clients[i]))
 		{
 			continue;
 		}
