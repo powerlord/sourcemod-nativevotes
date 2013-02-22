@@ -1030,8 +1030,8 @@ Internal_GetClients(client_vote[][])
 	{
 		if (g_ClientVotes[i] >= VOTE_PENDING)
 		{
-			client_vote[i][VOTEINFO_CLIENT_INDEX] = i;
-			client_vote[i][VOTEINFO_CLIENT_ITEM] = g_ClientVotes[i];
+			client_vote[num_clients][VOTEINFO_CLIENT_INDEX] = i;
+			client_vote[num_clients][VOTEINFO_CLIENT_ITEM] = g_ClientVotes[i];
 			num_clients++;
 		}
 	}
