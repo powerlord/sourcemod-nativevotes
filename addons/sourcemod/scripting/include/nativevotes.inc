@@ -749,6 +749,7 @@ public SharedPlugin:__pl_nativevotes =
 public __pl_nativevotes_SetNTVOptional()
 {
 	MarkNativeAsOptional("NativeVotes_Create");
+	MarkNativeAsOptional("NativeVotes_Close");
 	MarkNativeAsOptional("NativeVotes_Display");
 	MarkNativeAsOptional("NativeVotes_AddItem");
 	MarkNativeAsOptional("NativeVotes_InsertItem");
