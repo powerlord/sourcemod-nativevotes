@@ -43,9 +43,15 @@
 
 bool:Data_GetItemInfo(Handle:vote, item, String:choice[], choiceSize)
 {
+	if (item > Data_GetItemCount(vote))
+	{
+		return false;
+	}
+	
 	new Handle:array = Handle:KvGetNum(vote, INFO, _:INVALID_HANDLE);
 
-	if (array == INVALID_HANDLE || item > Data_GetItemCount(vote))
+	// Shouldn't happen, but just in case...
+	if (array == INVALID_HANDLE)
 	{
 		return false;
 	}
@@ -56,9 +62,15 @@ bool:Data_GetItemInfo(Handle:vote, item, String:choice[], choiceSize)
 
 bool:Data_GetItemDisplay(Handle:vote, item, String:choice[], choiceSize)
 {
+	if (item > Data_GetItemCount(vote))
+	{
+		return false;
+	}
+	
 	new Handle:array = Handle:KvGetNum(vote, DISPLAY, _:INVALID_HANDLE);
 
-	if (array == INVALID_HANDLE || item > Data_GetItemCount(vote))
+	// Shouldn't happen, but just in case...
+	if (array == INVALID_HANDLE)
 	{
 		return false;
 	}
