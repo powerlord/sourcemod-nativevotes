@@ -45,7 +45,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.6.2"
+#define VERSION 							"0.6.3"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
