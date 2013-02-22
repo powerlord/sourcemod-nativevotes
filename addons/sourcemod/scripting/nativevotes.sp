@@ -180,7 +180,7 @@ public OnPluginStart()
 	AddCommandListener(Command_Vote, "vote"); // TF2, CS:GO
 	AddCommandListener(Command_Vote, "Vote"); // L4D, L4D2
 	
-	g_Forward_OnCallVoteSetup = CreateForward(ET_Event, Param_Array);
+	g_Forward_OnCallVoteSetup = CreateForward(ET_Event, Param_CellParam_Array);
 	g_Forward_OnCallVote = CreateForward(ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	
 	AddCommandListener(Command_CallVote, "callvote"); // All games

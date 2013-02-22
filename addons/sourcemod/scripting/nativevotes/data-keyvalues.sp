@@ -43,7 +43,7 @@
 
 bool:Data_GetItemInfo(Handle:vote, item, String:choice[], choiceSize)
 {
-	if (item > Data_GetItemCount(vote))
+	if (item >= Data_GetItemCount(vote))
 	{
 		return false;
 	}
@@ -62,7 +62,7 @@ bool:Data_GetItemInfo(Handle:vote, item, String:choice[], choiceSize)
 
 bool:Data_GetItemDisplay(Handle:vote, item, String:choice[], choiceSize)
 {
-	if (item > Data_GetItemCount(vote))
+	if (item >= Data_GetItemCount(vote))
 	{
 		return false;
 	}
