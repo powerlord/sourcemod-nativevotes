@@ -200,6 +200,28 @@ public OnConfigsExecuted()
 	}
 }
 
+public OnClientDisconnect_Post(client)
+{
+	if (!Internal_IsVoteInProgress())
+	{
+		return;
+	}
+
+	new item;
+	if ((item = g_ClientVotes[client]) >= VOTE_PENDING)
+	{
+		if (item >= 0) // This if looks redundant, but just in case...
+		{
+			SetArrayCell(g_hVotes, item, GetArrayCell(g_hVotes, item) - 1);
+		}
+		
+		g_ClientVotes[client] = VOTE_NOT_VOTING;
+		
+		BuildVoteLeaders();
+		DrawHintProgress();
+	}
+}
+
 public Action:Command_CallVote(client, const String:command[], argc)
 {
 	new Action:result = Plugin_Continue;
