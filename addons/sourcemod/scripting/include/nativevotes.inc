@@ -479,11 +479,17 @@ functag public NativeVotes_VoteHandler(Handle:vote,
  * 
  * client_info and item_info are the resulting arrays.
  * 
- * Not recommend, as you'll have to do custom processing of NativeVotes success/fail anyway.
+ * Note: When declaring client_info and item_info, you'll probably want to declare them like this:
+ * new client_info[num_clients][2];
+ * new item_info[num_items][2];
  * 
  * @param num_clients		Number of clients who could vote.
- * @param client_info		Array of clients.  Use VOTEINFO_CLIENT_ defines.
+ * @param client_indexes	Array of client indexes. Parallel with client_votes.
+ * @param client_votes		Array of client votes. Parallel with client_indexes.
  * @param num_items			Number of unique items that were selected.
+ * @param item_indexes		Array of vote item indexes. Parallel with item_votes..
+ * @param item_votes		Array of vote vote counts. Parallel with item_indexes.
+ * @param client_info		Array of clients.  Use VOTEINFO_CLIENT_ defines.
  * @param item_info			Array of items, sorted by count.  Use VOTEINFO_ITEM
  *							defines.
  * @noreturn
