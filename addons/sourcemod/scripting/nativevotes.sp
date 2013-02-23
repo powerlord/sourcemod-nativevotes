@@ -45,7 +45,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.7.0"
+#define VERSION 							"0.7.1"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -202,7 +202,7 @@ public OnConfigsExecuted()
 
 public OnClientDisconnect_Post(client)
 {
-	if (!Internal_IsVoteInProgress() || !IsClientInVotePool(client))
+	if (!Internal_IsVoteInProgress() || !Internal_IsClientInVotePool(client))
 	{
 		return;
 	}
