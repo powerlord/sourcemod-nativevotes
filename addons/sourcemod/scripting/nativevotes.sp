@@ -45,7 +45,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.6.3"
+#define VERSION 							"0.7.0"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -180,7 +180,7 @@ public OnPluginStart()
 	AddCommandListener(Command_Vote, "vote"); // TF2, CS:GO
 	AddCommandListener(Command_Vote, "Vote"); // L4D, L4D2
 	
-	g_Forward_OnCallVoteSetup = CreateForward(ET_Event, Param_CellParam_Array);
+	g_Forward_OnCallVoteSetup = CreateForward(ET_Event, Param_Cell, Param_Array);
 	g_Forward_OnCallVote = CreateForward(ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	
 	AddCommandListener(Command_CallVote, "callvote"); // All games
@@ -202,23 +202,32 @@ public OnConfigsExecuted()
 
 public OnClientDisconnect_Post(client)
 {
-	if (!Internal_IsVoteInProgress())
+	if (!Internal_IsVoteInProgress() || !IsClientInVotePool(client))
 	{
 		return;
 	}
 
-	new item;
-	if ((item = g_ClientVotes[client]) >= VOTE_PENDING)
+	new item = g_ClientVotes[client];
+	if (item >= VOTE_PENDING)
 	{
-		if (item >= 0) // This if looks redundant, but just in case...
+		if (item > VOTE_PENDING)
 		{
 			SetArrayCell(g_hVotes, item, GetArrayCell(g_hVotes, item) - 1);
 		}
 		
 		g_ClientVotes[client] = VOTE_NOT_VOTING;
 		
+		g_TotalClients--;
+		
+		Game_UpdateClientCount(g_TotalClients);
+		Game_UpdateVoteCounts(g_hVotes, g_TotalClients);
 		BuildVoteLeaders();
 		DrawHintProgress();
+		
+		if (item == VOTE_PENDING)
+		{
+			DecrementPlayerCount();
+		}
 	}
 }
 
@@ -890,24 +899,10 @@ bool:InitializeVoting(Handle:vote, time, flags)
 		g_bRevoting[i] = false;
 	}
 	
-	g_Items = Data_GetItemCount(vote);
-	
-	if (GetArraySize(g_hVotes) < g_Items)
+	// Clear all items
+	for (new i = 0; i < GetArraySize(g_hVotes); ++i)
 	{
-		/* Only clear the items we need to... */
-		new size = GetArraySize(g_hVotes);
-		for (new i = 0; i < size; ++i)
-		{
-			SetArrayCell(g_hVotes, i, 0);
-		}
-		ResizeArray(g_hVotes, g_Items);
-	}
-	else
-	{
-		for (new i = 0; i < g_Items; ++i)
-		{
-			SetArrayCell(g_hVotes, i, 0);
-		}
+		SetArrayCell(g_hVotes, i, 0);
 	}
 	
 	g_bWasCancelled = false;
@@ -1020,7 +1015,7 @@ Internal_GetResults(votes[][], slots, &num_votes=0)
 	
 	num_votes = 0;
 	
-	for (new i = 0; i < GetArraySize(g_hVotes); i++)
+	for (new i = 0; i < g_Items; i++)
 	{
 		new voteCount = GetArrayCell(g_hVotes, i);
 		if (voteCount > 0)

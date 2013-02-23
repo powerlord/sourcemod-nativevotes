@@ -498,6 +498,22 @@ Game_DisplayVoteSetup(client, const NativeVotesType:voteTypes[])
 	}
 }
 
+Game_UpdateClientCount(num_clients)
+{
+	switch(g_GameVersion)
+	{
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			TF2CSGO_UpdateClientCount(num_clients);
+		}
+
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		{
+			L4DL4D2_UpdateClientCount(num_clients);
+		}
+	}
+}
+
 //----------------------------------------------------------------------------
 // L4D/L4D2 shared functions
 
@@ -528,6 +544,11 @@ L4DL4D2_UpdateVoteCounts(Handle:votes, totalClients)
 	
 	SetEntProp(g_VoteController, Prop_Send, "m_votesYes", yesVotes);
 	SetEntProp(g_VoteController, Prop_Send, "m_votesNo", noVotes);
+}
+
+L4DL4D2_UpdateClientCount(num_clients)
+{
+	SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
 }
 
 L4DL4D2_VoteTypeToTranslation(NativeVotesType:voteType, String:translation[], maxlength)
@@ -946,6 +967,11 @@ TF2CSGO_UpdateVoteCounts(Handle:votes)
 	}
 }
 
+TF2CSGO_UpdateClientCount(num_clients)
+{
+	SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", num_clients);
+}
+
 TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 {
 	new Handle:optionsEvent = CreateEvent("vote_options");
@@ -1016,7 +1042,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", team);
 	for (new i = 0; i < 5; i++)
 	{
-		SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, 4, i);
+		SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, _, i);
 	}
 	SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", num_clients);
 	SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", bYesNo);
