@@ -854,6 +854,9 @@ bool:StartVote(Handle:vote, num_clients, clients[], max_time, flags)
 	
 	StartVoting();
 	
+	BuildVoteLeaders();
+	DrawHintProgress();
+	
 	return true;
 }
 
