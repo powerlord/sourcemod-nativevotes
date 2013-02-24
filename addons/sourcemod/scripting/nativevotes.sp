@@ -45,7 +45,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.7.3"
+#define VERSION 							"0.7.4"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -1613,8 +1613,8 @@ public Native_DisplayPass(Handle:plugin, numParams)
 	new size;
 	GetNativeStringLength(2, size);
 	
-	decl String:winner[size];
-	GetNativeString(2, winner, size);
+	decl String:winner[size + 1];
+	GetNativeString(2, winner, size + 1);
 
 	Game_DisplayVotePass(vote, winner);
 }
@@ -1638,8 +1638,8 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 	new size;
 	GetNativeStringLength(3, size);
 	
-	decl String:winner[size];
-	GetNativeString(3, winner, size);
+	decl String:winner[size + 1];
+	GetNativeString(3, winner, size + 1);
 	
 	Game_DisplayVotePassEx(vote, passType, winner);
 }
