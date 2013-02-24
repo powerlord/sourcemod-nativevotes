@@ -45,7 +45,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.7.2"
+#define VERSION 							"0.7.3"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -685,24 +685,11 @@ BuildVoteLeaders()
 	}
 	
 	// Since we can't have structs, we get "struct" with this instead
-	new num_items;
 	
 	new slots = Game_GetMaxItems();
 	new votes[slots][2];
 	
-	for (new i = 0; i < GetArraySize(g_hVotes); i++)
-	{
-		new voteCount = GetArrayCell(g_hVotes, i);
-		if (voteCount > 0)
-		{
-			votes[num_items][VOTEINFO_ITEM_INDEX] = i;
-			votes[num_items][VOTEINFO_ITEM_VOTES] = voteCount;
-			num_items++;
-		}
-	}
-	
-	/* Sort the item list descending */
-	SortCustom2D(votes, slots, SortVoteItems);
+	new num_items = Internal_GetResults(votes, slots);
 	
 	/* Take the top 3 (if applicable) and draw them */
 	g_LeaderList[0] = '\0';
@@ -1033,7 +1020,7 @@ Internal_GetResults(votes[][], slots, &num_votes=0)
 	}
 	
 	/* Sort the item list descending like we promised */
-	SortCustom2D(votes, slots, SortVoteItems);
+	SortCustom2D(votes, num_items, SortVoteItems);
 
 	return num_items;
 }
