@@ -689,7 +689,7 @@ BuildVoteLeaders()
 	new slots = Game_GetMaxItems();
 	new votes[slots][2];
 	
-	new num_items = Internal_GetResults(votes, slots);
+	new num_items = Internal_GetResults(votes);
 	
 	/* Take the top 3 (if applicable) and draw them */
 	g_LeaderList[0] = '\0';
@@ -767,7 +767,7 @@ EndVoting()
 	new slots = Game_GetMaxItems();
 	new votes[slots][2];
 	new num_votes;
-	new num_items = Internal_GetResults(votes, slots, num_votes);
+	new num_items = Internal_GetResults(votes, num_votes);
 	
 	if (!num_votes)
 	{
@@ -841,7 +841,6 @@ bool:StartVote(Handle:vote, num_clients, clients[], max_time, flags)
 	
 	StartVoting();
 	
-	BuildVoteLeaders();
 	DrawHintProgress();
 	
 	return true;
@@ -995,7 +994,7 @@ public Action:DisplayTimer(Handle:timer, any:data)
 	return Plugin_Continue;
 }
 
-Internal_GetResults(votes[][], slots, &num_votes=0)
+Internal_GetResults(votes[][], &num_votes=0)
 {
 	if (!Internal_IsVoteInProgress())
 	{
