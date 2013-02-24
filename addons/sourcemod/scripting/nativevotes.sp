@@ -45,7 +45,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.7.1"
+#define VERSION 							"0.7.2"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -405,7 +405,7 @@ OnVoteSelect(Handle:vote, client, item)
 			g_NumVotes++;
 			
 			Game_UpdateVoteCounts(g_hVotes, g_TotalClients);
-
+			
 			if (GetConVarBool(g_Cvar_VoteChat) || GetConVarBool(g_Cvar_VoteConsole) || GetConVarBool(g_Cvar_VoteClientConsole))
 			{
 				decl String:choice[128];
@@ -436,7 +436,7 @@ OnVoteSelect(Handle:vote, client, item)
 					{
 						PrintToChatAll("[%s] %t", LOGTAG, phrase, name, choice);
 					}
-
+					
 					if (GetConVarBool(g_Cvar_VoteClientConsole))
 					{
 						for (new i = 1; i <= MaxClients; i++)
@@ -452,10 +452,10 @@ OnVoteSelect(Handle:vote, client, item)
 			
 			BuildVoteLeaders();
 			DrawHintProgress();
+			
+			OnSelect(g_hCurVote, client, item);
+			DecrementPlayerCount();
 		}
-		
-		OnSelect(g_hCurVote, client, item);
-		DecrementPlayerCount();
 	}
 }
 
@@ -898,6 +898,8 @@ bool:InitializeVoting(Handle:vote, time, flags)
 		g_ClientVotes[i] = VOTE_NOT_VOTING;
 		g_bRevoting[i] = false;
 	}
+	
+	g_Items = Data_GetItemCount(vote);
 	
 	// Clear all items
 	for (new i = 0; i < GetArraySize(g_hVotes); ++i)
