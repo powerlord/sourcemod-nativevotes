@@ -32,7 +32,10 @@
 #include <sourcemod>
 #include <sdktools>
 
+#pragma semicolon 1
+
 #include "include/nativevotes.inc"
+
 #include "nativevotes/data-keyvalues.sp"
 
 #define LOGTAG "NV"

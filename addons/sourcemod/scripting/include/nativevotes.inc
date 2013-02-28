@@ -744,7 +744,7 @@ stock NativeVotes_GetInfo(param2, &winningVotes, &totalVotes)
  */
 public SharedPlugin:__pl_nativevotes = 
 {
-	name = "NativeVotes",
+	name = "nativevotes",
 	file = "nativevotes.smx",
 #if defined REQUIRE_PLUGINS
 	required = 1,
