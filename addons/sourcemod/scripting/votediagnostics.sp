@@ -92,16 +92,20 @@ public OnPluginStart()
 			HookEventEx("vote_failed", L4D_EventVoteFailed);
 			HookEventEx("vote_cast_yes", L4D_EventVoteYes);
 			HookEventEx("vote_cast_no", L4D_EventVoteNo);
+			
+			HookUserMessage(GetUserMessageId("VoteRegistered"), L4DL4D2_MessageVoteRegistered);
+			HookUserMessage(GetUserMessageId("CallVoteFailed"), L4DL4D2_MessageCallVoteFailed);
 		}
 		
 		case SOURCE_SDK_LEFT4DEAD2:
 		{
 			HookEventEx("vote_changed", L4DL4D2_EventVoteChanged);
-			HookUserMessage(GetUserMessageId("VoteRegistered"), L4D2_MessageVoteRegistered);
-
+			
+			HookUserMessage(GetUserMessageId("VoteRegistered"), L4DL4D2_MessageVoteRegistered);
 			HookUserMessage(GetUserMessageId("VoteStart"), L4D2_MessageVoteStart);
 			HookUserMessage(GetUserMessageId("VotePass"), L4D2_MessageVotePass);
 			HookUserMessage(GetUserMessageId("VoteFail"), L4D2_MessageVoteFail);
+			HookUserMessage(GetUserMessageId("CallVoteFailed"), L4DL4D2_MessageCallVoteFailed);
 		}
 	}
 	
@@ -141,6 +145,41 @@ public L4DL4D2_EventVoteChanged(Handle:event, const String:name[], bool:dontBroa
 	LogMessage("Vote Changed event: yesVotes: %d, noVotes: %d, potentialVotes: %d",
 		yesVotes, noVotes, potentialVotes);
 	
+}
+
+/*
+VoteRegistered Structure
+	- Byte      Choice voted for, 0 = No, 1 = Yes
+
+*/  
+public Action:L4DL4D2_MessageVoteRegistered(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
+{
+	new choice = BfReadByte(message);
+	
+	LogToFile(LOGFILE, "VoteRegistered Usermessage: choice: %d", choice);
+	return Plugin_Continue;
+}
+
+/*
+CallVoteFailed
+    - Byte		Failure reason code (1-2, 5-15)
+    - Short		Time until new vote allowed for code 2
+
+message CCSUsrMsg_CallVoteFailed
+{
+	optional int32 reason = 1;
+	optional int32 time = 2;
+}
+*/
+public Action:L4DL4D2_MessageCallVoteFailed(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
+{
+	new reason;
+	new time;
+	
+	reason = BfReadByte(message);
+	
+	LogToFile(LOGFILE, "CallVoteFailed Usermessage: reason: %d", reason, time);
+	return Plugin_Continue;
 }
 
 /*
@@ -291,19 +330,6 @@ public Action:L4D2_MessageVoteFail(UserMsg:msg_id, Handle:message, const players
 	new team = BfReadByte(message);
 	
 	LogToFile(LOGFILE, "VoteFail Usermessage: team: %d", team);
-	return Plugin_Continue;
-}
-
-/*
-VoteRegistered Structure
-	- Byte      Choice voted for, 0 = No, 1 = Yes
-
-*/  
-public Action:L4D2_MessageVoteRegistered(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
-{
-	new choice = BfReadByte(message);
-	
-	LogToFile(LOGFILE, "VoteRegistered Usermessage: choice: %d", choice);
 	return Plugin_Continue;
 }
 

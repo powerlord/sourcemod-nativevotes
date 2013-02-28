@@ -133,19 +133,20 @@ enum NativeVotesFailType
  */
 enum NativeVotesCallFailType
 {
-	NativeVotesCallFail_Loading = 1,		/**< Players are still loading. */
-	NativeVotesCallFail_Recent = 2,			/**< You can't call another vote yet: Argument is seconds until you can call another vote. */
-	NativeVotesCallFail_Disabled = 5,		/**< Server has disabled that issue. */
-	NativeVotesCallFail_MapNotFound = 6,	/**< Server does not have that map. */
-	NativeVotesCallFail_SpecifyMap = 7,		/**< You must specify a map. */
-	NativeVotesCallFail_Failed = 8,			/**< This vote failed recently. */
-	NativeVotesCallFail_WrongTeam = 9,		/**< Team can't call this vote. */
-	NativeVotesCallFail_Waiting = 10,		/**< Vote can't be called during Waiting For Players. */
-	NativeVotesCallFail_Unknown = 11,		/**< Unknown, buggy in TF2. */
-	NativeVotesCallFail_CantKickAdmin = 12,	/**< Can't kick server admin. */
-	NativeVotesCallFail_ScramblePending = 13,	/**< Team Scramble is pending.. */
-	NativeVotesCallFail_Spectators = 14,		/**< Spectators aren't allowed to call votes. */
-	NativeVotesCallFail_LevelSet = 15,		/**< Next level already set. */
+	NativeVotesCallFail_Generic = 0,			/**< Generic fail. */
+	NativeVotesCallFail_Loading = 1,			/**< L4D/L4D2: Players are still loading. */
+	NativeVotesCallFail_Recent = 2,				/**< TF2:/CS:GO: You can't call another vote yet: Argument is seconds until you can call another vote. */
+	NativeVotesCallFail_Disabled = 5,			/**< TF2:/CS:GO: Server has disabled that issue. */
+	NativeVotesCallFail_MapNotFound = 6,		/**< TF2:/CS:GO: Server does not have that map. */
+	NativeVotesCallFail_SpecifyMap = 7,			/**< TF2:/CS:GO: You must specify a map. */
+	NativeVotesCallFail_Failed = 8,				/**< TF2:/CS:GO: This vote failed recently. */
+	NativeVotesCallFail_WrongTeam = 9,			/**< TF2:/CS:GO: Team can't call this vote. */
+	NativeVotesCallFail_Waiting = 10,			/**< TF2:/CS:GO: Vote can't be called during Waiting For Players. */
+	NativeVotesCallFail_Unknown = 11,			/**< TF2:/CS:GO: Unknown, buggy in TF2. */
+	NativeVotesCallFail_CantKickAdmin = 12,		/**< TF2:/CS:GO: Can't kick server admin. */
+	NativeVotesCallFail_ScramblePending = 13,	/**< TF2:/CS:GO: Team Scramble is pending.. */
+	NativeVotesCallFail_Spectators = 14,		/**< TF2:/CS:GO: Spectators aren't allowed to call votes. */
+	NativeVotesCallFail_LevelSet = 15,			/**< TF2:/CS:GO: Next level already set. */
 };
 
 /*

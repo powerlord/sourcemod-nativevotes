@@ -360,7 +360,7 @@ Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason)
 		
 		case SOURCE_SDK_LEFT4DEAD:
 		{
-			L4D_DisplayVoteFail();
+			L4D_DisplayVoteFail(vote);
 		}
 		
 		case SOURCE_SDK_LEFT4DEAD2:
@@ -440,7 +440,13 @@ Game_ClientSelectedItem(Handle:vote, client, item)
 		{
 			TF2CSGO_ClientSelectedItem(vote, client, item);
 		}
-
+		
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		{
+			L4DL4D2_ClientSelectedItem(client, item);
+		}
+		
+/*
 		case SOURCE_SDK_LEFT4DEAD:
 		{
 			L4D_ClientSelectedItem(vote, client, item);
@@ -450,6 +456,7 @@ Game_ClientSelectedItem(Handle:vote, client, item)
 		{
 			L4D2_ClientSelectedItem(client, item);
 		}
+*/
 	}
 }
 
@@ -523,6 +530,24 @@ L4DL4D2_ParseVote(const String:option[])
 	}
 	
 	return NATIVEVOTES_VOTE_INVALID;
+}
+
+L4DL4D2_ClientSelectedItem(client, item)
+{
+	new choice;
+	
+	if (item == NATIVEVOTES_VOTE_NO)
+	{
+		choice = 0;
+	}
+	else if (item == NATIVEVOTES_VOTE_YES)
+	{
+		choice = 1;
+	}
+	
+	new Handle:voteCast = StartMessageOne("VoteRegistered", client, USERMSG_RELIABLE);
+	BfWriteByte(voteCast, choice);
+	EndMessage();
 }
 
 L4DL4D2_UpdateVoteCounts(Handle:votes, totalClients)
@@ -653,6 +678,7 @@ L4DL4D2_VotePassToTranslation(NativeVotesPassType:passType, String:translation[]
 //----------------------------------------------------------------------------
 // L4D functions
 
+/*
 L4D_ClientSelectedItem(Handle:vote, client, item)
 {
 	if (item > NATIVEVOTES_VOTE_INVALID && item <= Game_GetMaxItems())
@@ -686,6 +712,7 @@ L4D_ClientSelectedItem(Handle:vote, client, item)
 		
 	}
 }
+*/
 
 L4D_DisplayVote(Handle:vote, num_clients)
 {
@@ -740,10 +767,13 @@ L4D_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[
 	FireEvent(passEvent);
 }
 
-L4D_DisplayVoteFail()
+L4D_DisplayVoteFail(Handle:vote)
 {
 	L4D_VoteEnded();
-	// Not used in L4D?
+
+	new Handle:failEvent = CreateEvent("vote_failed");
+	SetEventInt(failEvent, "team", Data_GetTeam(vote));
+	FireEvent(failEvent);
 }
 
 bool:L4D_CheckVoteType(NativeVotesType:voteType)
@@ -778,24 +808,6 @@ bool:L4D_CheckVotePassType(NativeVotesPassType:passType)
 
 //----------------------------------------------------------------------------
 // L4D2 functions
-
-L4D2_ClientSelectedItem(client, item)
-{
-	new choice;
-	
-	if (item == NATIVEVOTES_VOTE_NO)
-	{
-		choice = 0;
-	}
-	else if (item == NATIVEVOTES_VOTE_YES)
-	{
-		choice = 1;
-	}
-	
-	new Handle:voteCast = StartMessageOne("VoteRegistered", client, USERMSG_RELIABLE);
-	BfWriteByte(voteCast, choice);
-	EndMessage();
-}
 
 L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 {
