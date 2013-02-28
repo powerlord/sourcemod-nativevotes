@@ -425,16 +425,9 @@ Game_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
 			TF2CSGO_DisplayCallVoteFail(client, reason, time);
 		}
 		
-		case SOURCE_SDK_LEFT4DEAD:
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
 		{
-			//L4D_DisplayCallVoteFail(client, reason, time);
-			L4D_DisplayCallVoteFail();
-		}
-		
-		case SOURCE_SDK_LEFT4DEAD2:
-		{
-			//L4D2_DisplayCallVoteFail(client, reason, time);
-			L4D2_DisplayCallVoteFail();
+			L4DL4D2_DisplayCallVoteFail(client, reason);
 		}
 	}
 }
@@ -549,6 +542,15 @@ L4DL4D2_UpdateVoteCounts(Handle:votes, totalClients)
 L4DL4D2_UpdateClientCount(num_clients)
 {
 	SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
+}
+
+L4DL4D2_DisplayCallVoteFail(client, NativeVotesCallFailType:reason)
+{
+	new Handle:callVoteFail = StartMessageOne("CallVoteFailed", client, USERMSG_RELIABLE);
+
+	BfWriteByte(callVoteFail, _:reason);
+	
+	EndMessage();
 }
 
 L4DL4D2_VoteTypeToTranslation(NativeVotesType:voteType, String:translation[], maxlength)
@@ -744,12 +746,6 @@ L4D_DisplayVoteFail()
 	// Not used in L4D?
 }
 
-//L4D_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
-L4D_DisplayCallVoteFail()
-{
-	// Need to check around and find out what L4D does
-}
-
 bool:L4D_CheckVoteType(NativeVotesType:voteType)
 {
 	switch(voteType)
@@ -893,12 +889,6 @@ L4D2_DisplayVoteFail(Handle:vote, client=0)
 	
 	BfWriteByte(voteFailed, Data_GetTeam(vote));
 	EndMessage();
-}
-
-//L4D2_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
-L4D2_DisplayCallVoteFail()
-{
-	// Have to look this up.  It may be identical to TF2
 }
 
 bool:L4D2_CheckVoteType(NativeVotesType:voteType)
