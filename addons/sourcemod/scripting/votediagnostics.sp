@@ -17,7 +17,7 @@ public Plugin:myinfo =
 	name = "L4D,L4D2,TF2,CS:GO Vote Sniffer",
 	author = "Powerlord",
 	description = "Sniff voting commands, events, and usermessages",
-	version = "1.2.1",
+	version = "1.2.2",
 	url = "http://www.sourcemod.net/"
 }
 
@@ -575,6 +575,40 @@ public Action:TF2CSGO_MessageCallVoteFailed(UserMsg:msg_id, Handle:message, cons
 	
 	LogToFile(LOGFILE, "CallVoteFailed Usermessage: reason: %d, time: %d", reason, time);
 	return Plugin_Continue;
+}
+
+/*
+	"endmatch_mapvote_selecting_map"
+	{
+		"count"			"byte"	// Number of "ties"
+		"slot1"			"byte"
+		"slot2"			"byte"
+		"slot3"			"byte"
+		"slot4"			"byte"
+		"slot5"			"byte"
+		"slot6"			"byte"
+		"slot7"			"byte"
+		"slot8"			"byte"
+		"slot9"			"byte"
+		"slot10"		"byte"
+	}
+*/
+public CSGO_EventMapVote(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new count = GetEventInt(event, "count");
+	new slot1 = GetEventInt(event, "slot1");
+	new slot2 = GetEventInt(event, "slot2");
+	new slot3 = GetEventInt(event, "slot3");
+	new slot4 = GetEventInt(event, "slot4");
+	new slot5 = GetEventInt(event, "slot5");
+	new slot6 = GetEventInt(event, "slot6");
+	new slot7 = GetEventInt(event, "slot7");
+	new slot8 = GetEventInt(event, "slot8");
+	new slot9 = GetEventInt(event, "slot9");
+	new slot10 = GetEventInt(event, "slot10");
+	
+	LogToFile(LOGFILE, "Endmatch_Mapvote_SelectingMap event: count: %d, slot1: %d, slot2: %d, slot3: %d, slot4: %d, slot5: %d, slot6: %d, slot7: %d, slot8: %d, slot9: %d, slot10: %d ",
+	count, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, slot9, slot10);
 }
 
 /*
