@@ -349,68 +349,76 @@ bool:Game_DisplayVote(Handle:vote, clients[], num_clients)
 	return true;
 }
 
-Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason)
+Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason, client=0)
 {
 	switch(g_GameVersion)
 	{
 		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
 		{
-			TF2CSGO_DisplayVoteFail(vote, reason);
+			TF2CSGO_DisplayVoteFail(vote, reason, client);
 		}
 		
 		case SOURCE_SDK_LEFT4DEAD:
 		{
-			L4D_DisplayVoteFail(vote);
+			if (!client)
+			{
+				L4D_DisplayVoteFail(vote);
+			}
 		}
 		
 		case SOURCE_SDK_LEFT4DEAD2:
 		{
-			L4D2_DisplayVoteFail(vote);
-		}
-		
-	}
-	
-}
-
-Game_DisplayVotePass(Handle:vote, String:details[])
-{
-	switch (g_GameVersion)
-	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			TF2CSGO_DisplayVotePass(vote, details);
-		}
-
-		case SOURCE_SDK_LEFT4DEAD:
-		{
-			L4D_DisplayVotePass(vote, details);
-		}
-
-		case SOURCE_SDK_LEFT4DEAD2:
-		{
-			L4D2_DisplayVotePass(vote, details);
+			L4D2_DisplayVoteFail(vote, client);
 		}
 		
 	}
 }
 
-Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[])
+Game_DisplayVotePass(Handle:vote, String:details[], client=0)
 {
 	switch (g_GameVersion)
 	{
 		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
 		{
-			TF2CSGO_DisplayVotePassEx(vote, passType, details);
+			TF2CSGO_DisplayVotePass(vote, details, client);
 		}
 
 		case SOURCE_SDK_LEFT4DEAD:
 		{
-			L4D_DisplayVotePassEx(vote, passType, details);
+			if (!client)
+			{
+				L4D_DisplayVotePass(vote, details);
+			}
 		}
 
 		case SOURCE_SDK_LEFT4DEAD2:
 		{
-			L4D2_DisplayVotePassEx(vote, passType, details);
+			L4D2_DisplayVotePass(vote, details, client);
+		}
+		
+	}
+}
+
+Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[], client=0)
+{
+	switch (g_GameVersion)
+	{
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			TF2CSGO_DisplayVotePassEx(vote, passType, details, client);
+		}
+
+		case SOURCE_SDK_LEFT4DEAD:
+		{
+			if (!client)
+			{
+				L4D_DisplayVotePassEx(vote, passType, details);
+			}
+		}
+
+		case SOURCE_SDK_LEFT4DEAD2:
+		{
+			L4D2_DisplayVotePassEx(vote, passType, details, client);
 		}
 		
 	}
@@ -855,12 +863,12 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 	
 }
 
-L4D2_DisplayVotePass(Handle:vote, String:details[])
+L4D2_DisplayVotePass(Handle:vote, String:details[], client=0)
 {
-	L4D2_DisplayVotePassEx(vote, VoteTypeToVotePass(Data_GetType(vote)), details);
+	L4D2_DisplayVotePassEx(vote, VoteTypeToVotePass(Data_GetType(vote)), details, client);
 }
 
-L4D2_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[])
+L4D2_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[], client=0)
 {
 	decl String:translation[64];
 	
@@ -879,7 +887,15 @@ L4D2_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details
 	
 	L4DL4D2_VotePassToTranslation(passType, translation, sizeof(translation));
 	
-	new Handle:votePass = StartMessageAll("VotePass", USERMSG_RELIABLE);
+	new Handle:votePass;
+	if (!client)
+	{
+		votePass = StartMessageAll("VotePass", USERMSG_RELIABLE);
+	}
+	else
+	{
+		votePass = StartMessageOne("VotePass", client, USERMSG_RELIABLE);
+	}
 	
 	BfWriteByte(votePass, Data_GetTeam(vote));
 	BfWriteString(votePass, translation);
@@ -1052,12 +1068,12 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	//SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", voteType);
 }
 
-TF2CSGO_DisplayVotePass(Handle:vote, String:details[])
+TF2CSGO_DisplayVotePass(Handle:vote, String:details[], client=0)
 {
-	TF2CSGO_DisplayVotePassEx(vote, VoteTypeToVotePass(Data_GetType(vote)), details);
+	TF2CSGO_DisplayVotePassEx(vote, VoteTypeToVotePass(Data_GetType(vote)), details, client);
 }
 
-TF2CSGO_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[])
+TF2CSGO_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[], client=0)
 {
 	decl String:translation[64];
 	
@@ -1074,7 +1090,16 @@ TF2CSGO_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:deta
 		}
 	}
 	
-	new Handle:votePass = StartMessageAll("VotePass", USERMSG_RELIABLE);
+	new Handle:votePass = INVALID_HANDLE;
+	
+	if (!client)
+	{
+		votePass = StartMessageAll("VotePass", USERMSG_RELIABLE);
+	}
+	else
+	{
+		votePass = StartMessageOne("VotePass", client, USERMSG_RELIABLE);
+	}
 
 	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
 	{

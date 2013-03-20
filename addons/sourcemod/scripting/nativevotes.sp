@@ -48,7 +48,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.7.5"
+#define VERSION 							"0.7.6"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -1115,15 +1115,15 @@ bool:Internal_RedrawToClient(client, bool:revotes)
 			return false;
 		}
 		
-		// Display the vote fail screen for a few seconds
-		Game_DisplayVoteFail(g_hCurVote, NativeVotesFail_Generic);
-		
 		g_Clients++;
 		SetArrayCell(g_hVotes, g_ClientVotes[client], GetArrayCell(g_hVotes, g_ClientVotes[client]) - 1);
 		g_ClientVotes[client] = VOTE_PENDING;
 		g_bRevoting[client] = true;
 		g_NumVotes--;
 	}
+	
+	// Display the vote fail screen for a few seconds
+	Game_DisplayVoteFail(g_hCurVote, NativeVotesFail_Generic, client);
 	
 	new Handle:data;
 	
