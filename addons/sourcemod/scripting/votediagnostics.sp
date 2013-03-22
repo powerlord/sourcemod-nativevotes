@@ -399,7 +399,7 @@ public Action:TF2CSGO_MessageVoteSetup(UserMsg:msg_id, Handle:message, const pla
 		for(new i = 0; i < count; i++)
 		{
 			decl String:option[MAX_ARG_SIZE];
-			PbReadRepeatedString(message, "potential_issues", i, option, MAX_ARG_SIZE);
+			PbReadString(message, "potential_issues", option, MAX_ARG_SIZE, i);
 			StrCat(options, MAX_ARG_SIZE, option);
 			StrCat(options, MAX_ARG_SIZE, " ");
 		}
