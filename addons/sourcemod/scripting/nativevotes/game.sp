@@ -1274,11 +1274,15 @@ bool:TF2_CheckVoteType(NativeVotesType:voteType)
 {
 	switch(voteType)
 	{
-		case NativeVotesType_Custom_YesNo, NativeVotesType_Custom_Mult, NativeVotesType_Restart,
-		NativeVotesType_Kick, NativeVotesType_KickIdle, NativeVotesType_KickScamming,
-		NativeVotesType_KickCheating, NativeVotesType_ChgLevel, NativeVotesType_NextLevel,
-		NativeVotesType_NextLevelMult, NativeVotesType_ScrambleNow, NativeVotesType_ScrambleEnd,
+		case NativeVotesType_Custom_YesNo, NativeVotesType_Restart,
+		NativeVotesType_Kick, NativeVotesType_KickIdle, NativeVotesType_KickScamming, NativeVotesType_KickCheating,
+		NativeVotesType_ChgLevel, NativeVotesType_NextLevel, NativeVotesType_ScrambleNow, NativeVotesType_ScrambleEnd,
 		NativeVotesType_ChgMission:
+		{
+			return true;
+		}
+		
+		case NativeVotesType_Custom_Mult, NativeVotesType_NextLevelMult:
 		{
 			return true;
 		}
@@ -1432,14 +1436,20 @@ bool:CSGO_CheckVoteType(NativeVotesType:voteType)
 {
 	switch(voteType)
 	{
-		case NativeVotesType_Custom_YesNo, NativeVotesType_Custom_Mult, NativeVotesType_Restart,
-		NativeVotesType_Kick, NativeVotesType_KickIdle, NativeVotesType_KickScamming,
-		NativeVotesType_KickCheating, NativeVotesType_ChgLevel, NativeVotesType_NextLevel,
-		NativeVotesType_NextLevelMult, NativeVotesType_ScrambleNow, NativeVotesType_SwapTeams,
+		case NativeVotesType_Custom_YesNo, NativeVotesType_Restart,
+		NativeVotesType_Kick, NativeVotesType_KickIdle, NativeVotesType_KickScamming, NativeVotesType_KickCheating,
+		NativeVotesType_ChgLevel, NativeVotesType_NextLevel, NativeVotesType_ScrambleNow, NativeVotesType_SwapTeams,
 		NativeVotesType_Surrender, NativeVotesType_Rematch, NativeVotesType_Continue:
 		{
 			return true;
 		}
+		
+		case NativeVotesType_Custom_Mult, NativeVotesType_NextLevelMult:
+		{
+			// Until Valve fixes their menu code, this is false.
+			return false;
+		}
+		
 	}
 	
 	return false;
