@@ -1,11 +1,12 @@
 /**
  * vim: set ts=4 :
  * =============================================================================
- * SourceMod Mapchooser Plugin
+ * SourceMod NativeVotes Mapchooser Plugin
  * Creates a map vote at appropriate times, setting sm_nextmap to the winning
  * vote
  *
- * SourceMod (C)2004-2007 AlliedModders LLC.  All rights reserved.
+ * SourceMod (C)2004-2013 AlliedModders LLC.  All rights reserved.
+ * Updated by Powerlord to support NativeVotes
  * =============================================================================
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -50,7 +51,7 @@
 #undef REQUIRE_PLUGIN
 #include <nativevotes>
 
-#define VERSION "1.5"
+#define VERSION "1.5.1"
 
 public Plugin:myinfo =
 {
@@ -126,7 +127,7 @@ public OnPluginStart()
 	LoadTranslations("mapchooser.phrases");
 	LoadTranslations("common.phrases");
 	
-	new arraySize = ByteCountToCells(33);
+	new arraySize = ByteCountToCells(PLATFORM_MAX_PATH);
 	g_MapList = CreateArray(arraySize);
 	g_NominateList = CreateArray(arraySize);
 	g_NominateOwners = CreateArray(1);
@@ -290,7 +291,7 @@ public OnMapEnd()
 	g_VoteTimer = INVALID_HANDLE;
 	g_RetryTimer = INVALID_HANDLE;
 	
-	decl String:map[32];
+	decl String:map[PLATFORM_MAX_PATH];
 	GetCurrentMap(map, sizeof(map));
 	PushArrayString(g_OldMapList, map);
 				
@@ -309,7 +310,7 @@ public OnClientDisconnect(client)
 		return;
 	}
 	
-	new String:oldmap[33];
+	new String:oldmap[PLATFORM_MAX_PATH];
 	GetArrayString(g_NominateList, index, oldmap, sizeof(oldmap));
 	Call_StartForward(g_NominationsResetForward);
 	Call_PushString(oldmap);
@@ -329,7 +330,7 @@ public Action:Command_SetNextmap(client, args)
 		return Plugin_Handled;
 	}
 
-	decl String:map[64];
+	decl String:map[PLATFORM_MAX_PATH];
 	GetCmdArg(1, map, sizeof(map));
 
 	if (!IsMapValid(map))
@@ -625,7 +626,7 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 	 * like sm_mapvote from the adminmenu in the future.
 	 */
 	 
-	decl String:map[32];
+	decl String:map[PLATFORM_MAX_PATH];
 	
 	/* No input given - User our internal nominations and maplist */
 	if (inputlist == INVALID_HANDLE)
@@ -633,9 +634,22 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 		new nominateCount = GetArraySize(g_NominateList);
 		new voteSize = GetConVarInt(g_Cvar_IncludeMaps);
 		
+		// New in 1.5.1 to fix missing extend vote
+		if (g_NativeVotes)
+		{
+			if (voteSize > NativeVotes_GetMaxItems())
+			{
+				voteSize = NativeVotes_GetMaxItems();
+			}
+			
+			if (GetConVarBool(g_Cvar_Extend) && g_Extends < GetConVarInt(g_Cvar_Extend))
+			{
+				voteSize--;
+			}
+		}
+		
 		/* Smaller of the two - It should be impossible for nominations to exceed the size though (cvar changed mid-map?) */
 		new nominationsToAdd = nominateCount >= voteSize ? voteSize : nominateCount;
-		
 		
 		for (new i=0; i<nominationsToAdd; i++)
 		{
@@ -742,7 +756,7 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 	{
 		if (g_NativeVotes)
 		{
-			NativeVotes_AddItem(g_VoteMenu, VOTE_EXTEND, "Extend Map");
+			NativeVotes_AddItem(g_VoteMenu, VOTE_EXTEND, NATIVEVOTES_EXTEND);
 		}
 		else
 		{
@@ -789,7 +803,7 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 						   num_items,
 						   const item_info[][2])
 {
-	decl String:map[32];
+	decl String:map[PLATFORM_MAX_PATH];
 	
 	if (g_NativeVotes)
 	{
@@ -916,21 +930,31 @@ public Handler_NV_MapVoteFinished(Handle:menu,
 		
 		if (winningvotes <= required)
 		{
+			//Added in 1.5.1
+			NativeVotes_DisplayFail(menu, NativeVotesFail_NotEnoughVotes);
+			
 			/* Insufficient Winning margin - Lets do a runoff */
 			g_VoteMenu = NativeVotes_Create(Handler_MapVoteMenu, NativeVotesType_NextLevelMult, MenuAction:MENU_ACTIONS_ALL);
 			NativeVotes_SetResultCallback(g_VoteMenu, Handler_NV_VoteFinishedGeneric);
 
-			decl String:map[32];
-			decl String:info1[32];
-			decl String:info2[32];
+			decl String:map1[PLATFORM_MAX_PATH];
+			decl String:map2[PLATFORM_MAX_PATH];
+			decl String:info1[PLATFORM_MAX_PATH];
+			decl String:info2[PLATFORM_MAX_PATH];
 			
-			NativeVotes_GetItem(menu, item_indexes[0], map, sizeof(map), info1, sizeof(info1));
-			NativeVotes_AddItem(g_VoteMenu, map, info1);
-			NativeVotes_GetItem(menu, item_indexes[1], map, sizeof(map), info2, sizeof(info2));
-			NativeVotes_AddItem(g_VoteMenu, map, info2);
+			new Handle:data;
 			
-			new voteDuration = GetConVarInt(g_Cvar_VoteDuration);
-			NativeVotes_DisplayToAll(g_VoteMenu, voteDuration);
+			NativeVotes_GetItem(menu, item_indexes[0], map1, sizeof(map1), info1, sizeof(info1));
+			NativeVotes_GetItem(menu, item_indexes[1], map2, sizeof(map2), info2, sizeof(info2));
+			
+			CreateDataTimer(2.0, Timer_Runoff, data, TIMER_FLAG_NO_MAPCHANGE);
+			
+			WritePackString(data, map1);
+			WritePackString(data, info1);
+			WritePackString(data, map2);
+			WritePackString(data, info2);
+			
+			ResetPack(data);
 			
 			/* Notify */
 			new Float:map1percent = float(item_votes[0])/ float(num_votes) * 100;
@@ -945,6 +969,31 @@ public Handler_NV_MapVoteFinished(Handle:menu,
 	}
 	
 	Handler_NV_VoteFinishedGeneric(menu, num_votes, num_clients, client_indexes, client_votes, num_items, item_indexes, item_votes);
+}
+
+// New in 1.5.1, used to fix revote not working properly
+public Action:Timer_Runoff(Handle:timer, Handle:data)
+{
+	decl String:map[PLATFORM_MAX_PATH];
+	decl String:info[PLATFORM_MAX_PATH];
+	
+	g_VoteMenu = NativeVotes_Create(Handler_MapVoteMenu, NativeVotesType_NextLevelMult, MenuAction:MENU_ACTIONS_ALL);
+	NativeVotes_SetResultCallback(g_VoteMenu, Handler_NV_VoteFinishedGeneric);
+	
+	ResetPack(data);
+	
+	ReadPackString(data, map, sizeof(map));
+	ReadPackString(data, info, sizeof(info));
+	NativeVotes_AddItem(g_VoteMenu, map, info);
+
+	ReadPackString(data, map, sizeof(map));
+	ReadPackString(data, info, sizeof(info));
+	NativeVotes_AddItem(g_VoteMenu, map, info);
+
+	new voteDuration = GetConVarInt(g_Cvar_VoteDuration);
+	NativeVotes_DisplayToAll(g_VoteMenu, voteDuration);
+	
+	return Plugin_Continue;
 }
 
 public Handler_MapVoteFinished(Handle:menu,
@@ -966,9 +1015,9 @@ public Handler_MapVoteFinished(Handle:menu,
 			SetMenuTitle(g_VoteMenu, "Runoff Vote Nextmap");
 			SetVoteResultCallback(g_VoteMenu, Handler_VoteFinishedGeneric);
 
-			decl String:map[32];
-			decl String:info1[32];
-			decl String:info2[32];
+			decl String:map[PLATFORM_MAX_PATH];
+			decl String:info1[PLATFORM_MAX_PATH];
+			decl String:info2[PLATFORM_MAX_PATH];
 			
 			GetMenuItem(menu, item_info[0][VOTEINFO_ITEM_INDEX], map, sizeof(map), _, info1, sizeof(info1));
 			AddMenuItem(g_VoteMenu, map, info1);
@@ -1025,7 +1074,7 @@ public Handler_MapVoteMenu(Handle:menu, MenuAction:action, param1, param2)
 		{
 			if (GetMenuItemCount(menu) - 1 == param2)
 			{
-				decl String:map[64], String:buffer[255];
+				decl String:map[PLATFORM_MAX_PATH], String:buffer[255];
 				GetMenuItem(menu, param2, map, sizeof(map));
 				if (strcmp(map, VOTE_EXTEND, false) == 0)
 				{
@@ -1057,7 +1106,7 @@ public Handler_MapVoteMenu(Handle:menu, MenuAction:action, param1, param2)
 						count = GetMenuItemCount(menu);
 					}
 					new item = GetRandomInt(0, count - 1);
-					decl String:map[32];
+					decl String:map[PLATFORM_MAX_PATH];
 					if (g_NativeVotes)
 					{
 						NativeVotes_GetItem(menu, item, map, sizeof(map));
@@ -1108,7 +1157,7 @@ public Action:Timer_ChangeMap(Handle:hTimer, Handle:dp)
 {
 	g_ChangeMapInProgress = false;
 	
-	new String:map[65];
+	new String:map[PLATFORM_MAX_PATH];
 	
 	if (dp == INVALID_HANDLE)
 	{
@@ -1146,7 +1195,7 @@ CreateNextVote()
 	assert(g_NextMapList)
 	ClearArray(g_NextMapList);
 	
-	decl String:map[32];
+	decl String:map[PLATFORM_MAX_PATH];
 	new Handle:tempMaps  = CloneArray(g_MapList);
 	
 	GetCurrentMap(map, sizeof(map));
@@ -1195,7 +1244,7 @@ NominateResult:InternalNominateMap(String:map[], bool:force, owner)
 	/* Look to replace an existing nomination by this client - Nominations made with owner = 0 aren't replaced */
 	if (owner && ((index = FindValueInArray(g_NominateOwners, owner)) != -1))
 	{
-		new String:oldmap[33];
+		new String:oldmap[PLATFORM_MAX_PATH];
 		GetArrayString(g_NominateList, index, oldmap, sizeof(oldmap));
 		Call_StartForward(g_NominationsResetForward);
 		Call_PushString(oldmap);
@@ -1207,7 +1256,31 @@ NominateResult:InternalNominateMap(String:map[], bool:force, owner)
 	}
 	
 	/* Too many nominated maps. */
-	if (g_NominateCount >= GetConVarInt(g_Cvar_IncludeMaps) && !force)
+	new maxIncludes = 0;
+	if (g_NativeVotes)
+	{
+		maxIncludes = NativeVotes_GetMaxItems();
+		
+		if (GetConVarInt(g_Cvar_IncludeMaps) < maxIncludes)
+		{
+			maxIncludes = GetConVarInt(g_Cvar_IncludeMaps);
+		}
+		
+		if (GetConVarBool(g_Cvar_Extend) && g_Extends < GetConVarInt(g_Cvar_Extend))
+		{
+			maxIncludes--;
+		}
+	}
+	else
+	{
+		maxIncludes = GetConVarInt(g_Cvar_IncludeMaps);
+	}
+	
+	if (g_NominateCount >= maxIncludes && !force)
+	{
+		return Nominate_VoteFull;
+	}
+	else if ((g_NominateCount >= GetConVarInt(g_Cvar_IncludeMaps) || (g_NativeVotes && g_NominateCount > NativeVotes_GetMaxItems())) && !force)
 	{
 		return Nominate_VoteFull;
 	}
@@ -1225,7 +1298,7 @@ NominateResult:InternalNominateMap(String:map[], bool:force, owner)
 	
 	while (GetArraySize(g_NominateList) > GetConVarInt(g_Cvar_IncludeMaps))
 	{
-		new String:oldmap[33];
+		new String:oldmap[PLATFORM_MAX_PATH];
 		GetArrayString(g_NominateList, 0, oldmap, sizeof(oldmap));
 		Call_StartForward(g_NominationsResetForward);
 		Call_PushString(oldmap);
@@ -1262,7 +1335,7 @@ bool:InternalRemoveNominationByMap(String:map[])
 {	
 	for (new i = 0; i < GetArraySize(g_NominateList); i++)
 	{
-		new String:oldmap[33];
+		new String:oldmap[PLATFORM_MAX_PATH];
 		GetArrayString(g_NominateList, i, oldmap, sizeof(oldmap));
 
 		if(strcmp(map, oldmap, false) == 0)
@@ -1306,7 +1379,7 @@ bool:InternalRemoveNominationByOwner(owner)
 
 	if (owner && ((index = FindValueInArray(g_NominateOwners, owner)) != -1))
 	{
-		new String:oldmap[33];
+		new String:oldmap[PLATFORM_MAX_PATH];
 		GetArrayString(g_NominateList, index, oldmap, sizeof(oldmap));
 
 		Call_StartForward(g_NominationsResetForward);
@@ -1364,7 +1437,7 @@ public Native_GetExcludeMapList(Handle:plugin, numParams)
 		return;	
 	}
 	new size = GetArraySize(g_OldMapList);
-	decl String:map[33];
+	decl String:map[PLATFORM_MAX_PATH];
 	
 	for (new i=0; i<size; i++)
 	{
@@ -1383,7 +1456,7 @@ public Native_GetNominatedMapList(Handle:plugin, numParams)
 	if (maparray == INVALID_HANDLE)
 		return;
 
-	decl String:map[33];
+	decl String:map[PLATFORM_MAX_PATH];
 
 	for (new i = 0; i < GetArraySize(g_NominateList); i++)
 	{
