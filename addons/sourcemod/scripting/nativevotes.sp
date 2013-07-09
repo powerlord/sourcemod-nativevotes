@@ -48,7 +48,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.7.7"
+#define VERSION 							"0.7.8"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -236,6 +236,11 @@ public OnClientDisconnect_Post(client)
 
 public Action:Command_CallVote(client, const String:command[], argc)
 {
+	if (Internal_IsVoteInProgress())
+	{
+		return Plugin_Handled;
+	}
+	
 	new Action:result = Plugin_Continue;
 	
 	switch (argc)
@@ -1082,6 +1087,8 @@ Internal_Reset()
 		KillTimer(g_hDisplayTimer);
 		g_hDisplayTimer = INVALID_HANDLE;
 	}
+	
+	Game_ResetVote();
 }
 
 bool:Internal_IsVoteInProgress()

@@ -522,6 +522,22 @@ Game_UpdateClientCount(num_clients)
 	}
 }
 
+Game_ResetVote()
+{
+	switch(g_GameVersion)
+	{
+		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		{
+			TF2CSGO_ResetVote();
+		}
+
+		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		{
+			L4DL4D2_ResetVote();
+		}
+	}
+}
+
 //----------------------------------------------------------------------------
 // L4D/L4D2 shared functions
 
@@ -683,6 +699,16 @@ L4DL4D2_VotePassToTranslation(NativeVotesPassType:passType, String:translation[]
 	}
 }
 
+L4DL4D2_ResetVote()
+{
+	SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", NATIVEVOTES_ALL_TEAMS);
+	SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
+	SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
+	SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", 0);
+	SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", 0);
+}
+
+
 //----------------------------------------------------------------------------
 // L4D functions
 
@@ -733,7 +759,7 @@ L4D_DisplayVote(Handle:vote, num_clients)
 	decl String:details[MAX_DETAILS_SIZE];
 	Data_GetDetails(vote, details, MAX_DETAILS_SIZE);
 	
-	new team = Data_GetInitiator(vote);
+	new team = Data_GetTeam(vote);
 	
 	new Handle:voteStart = CreateEvent("vote_started");
 	SetEventInt(voteStart, "team", team);
@@ -827,6 +853,8 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 
 	decl String:details[MAX_DETAILS_SIZE];
 	
+	new team = Data_GetTeam(vote);
+	
 	switch (voteType)
 	{
 		case NativeVotesType_AlltalkOn:
@@ -854,13 +882,19 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 	}
 
 	new Handle:voteStart = StartMessage("VoteStart", clients, num_clients, USERMSG_RELIABLE);
-	BfWriteByte(voteStart, Data_GetTeam(vote));
+	BfWriteByte(voteStart, team);
 	BfWriteByte(voteStart, initiator);
 	BfWriteString(voteStart, translation);
 	BfWriteString(voteStart, details);
 	BfWriteString(voteStart, initiatorName);
 	EndMessage();
 	
+	SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", team);
+	SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
+	SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
+	SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
+	// TODO: Need to look these values up
+	//SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", Data_GetType(vote));
 }
 
 L4D2_DisplayVotePass(Handle:vote, String:details[], client=0)
@@ -1265,6 +1299,18 @@ TF2CSGO_DisplayVoteSetup(client, const NativeVotesType:voteTypes[])
 	}
 	
 	EndMessage();
+}
+
+TF2CSGO_ResetVote()
+{
+	SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", NATIVEVOTES_ALL_TEAMS);
+	for (new i = 0; i < 5; i++)
+	{
+		SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, _, i);
+	}
+	SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", 0);
+	SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", true);
+	SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", 0);
 }
 
 //----------------------------------------------------------------------------
