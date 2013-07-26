@@ -48,7 +48,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.7.8"
+#define VERSION 							"0.7.9"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -1480,13 +1480,13 @@ public Native_SetResultCallback(Handle:plugin, numParams)
 
 public Native_CheckVoteDelay(Handle:plugin, numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	new curTime = GetTime();
+	if (g_NextVote <= curTime)
 	{
-		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
-		return;
+		return 0;
 	}
-	//TODO
+	
+	return (g_NextVote - curTime);
 }
 
 public Native_IsClientInVotePool(Handle:plugin, numParams)
