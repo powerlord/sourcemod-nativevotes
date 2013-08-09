@@ -125,6 +125,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	}
 	
 	MarkNativeAsOptional("GetUserMessageType");
+	MarkNativeAsOptional("GetEngineVersion");
 	
 	CreateNative("NativeVotes_IsVoteTypeSupported", Native_IsVoteTypeSupported);
 	CreateNative("NativeVotes_Create", Native_Create);
