@@ -48,7 +48,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.7.9"
+#define VERSION 							"0.7.10"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -947,18 +947,7 @@ StartVoting()
 			
 			if (target > 0 && target <= MaxClients && IsClientConnected(target) && Internal_IsClientInVotePool(target))
 			{
-				switch (g_GameVersion)
-				{
-					case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
-					{
-						FakeClientCommand(target, "Vote No");
-					}
-					
-					case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-					{
-						FakeClientCommand(target, "vote option2");
-					}
-				}
+				Game_VoteNo(target);
 			}
 		}
 	}
@@ -970,18 +959,7 @@ StartVoting()
 		
 		if (initiator > 0 && initiator <= MaxClients && IsClientConnected(initiator) && Internal_IsClientInVotePool(initiator))
 		{
-			switch (g_GameVersion)
-			{
-				case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
-				{
-					FakeClientCommand(initiator, "Vote Yes");
-				}
-				
-				case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-				{
-					FakeClientCommand(initiator, "vote option1");
-				}
-			}
+			Game_VoteYes(initiator);
 		}
 	}
 }

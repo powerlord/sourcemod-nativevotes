@@ -174,36 +174,58 @@
 // Generic functions
 // 
 
-new g_GameVersion = SOURCE_SDK_UNKNOWN;
+new EngineVersion:g_EngineVersion = Engine_Unknown;
 
 bool:Game_IsGameSupported()
 {
-	// Guess which game we're using.
-	g_GameVersion = GuessSDKVersion(); // This value won't change
-	
-	switch(g_GameVersion)
+	if (GetFeatureStatus(FeatureType_Native, "GetEngineVersion") == FeatureStatus_Available)
 	{
-		case SOURCE_SDK_EPISODE2VALVE:
+		// Which engine are we using?
+		g_EngineVersion = GetEngineVersion(); // This value won't change
+	}
+	else
+	{
+		// Guess which game we're using.
+		new gameVersion = GuessSDKVersion(); // This value won't change
+		
+		switch(gameVersion)
 		{
-			decl String:gameFolder[8];
-			GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
-			if (StrEqual(gameFolder, "tf", false) || StrEqual(gameFolder, "tf_beta", false))
+			case SOURCE_SDK_EPISODE2VALVE:
 			{
-				return true;
-			}
-			else
-			{
+				decl String:gameFolder[8];
+				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
+				if (StrEqual(gameFolder, "tf", false) || StrEqual(gameFolder, "tf_beta", false))
+				{
+					g_EngineVersion = Engine_TF2;
+				}
 				// Fail for HL2:MP, DoD:S, and CS:S (on 1.4; CSS is its own engine on 1.5)
-				return false;
+			}
+			
+			case SOURCE_SDK_LEFT4DEAD:
+			{
+				g_EngineVersion = Engine_Left4Dead;
+			}
+			
+			case SOURCE_SDK_LEFT4DEAD2:
+			{
+				g_EngineVersion = Engine_Left4Dead2;
+			}
+			
+			case SOURCE_SDK_CSGO:
+			{
+				g_EngineVersion = Engine_CSGO;
 			}
 		}
-		
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2, SOURCE_SDK_CSGO:
+	}
+	
+	switch (g_EngineVersion)
+	{
+		case Engine_Left4Dead, Engine_Left4Dead2, Engine_CSGO, Engine_TF2:
 		{
 			return true;
 		}
 	}
-
+	
 	return false;
 }
 
@@ -213,14 +235,14 @@ Game_ParseVote(const String:option[])
 {
 	new item = NATIVEVOTES_VOTE_INVALID;
 	
-	switch(g_GameVersion)
+	switch(g_EngineVersion)
 	{
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead, Engine_Left4Dead2:
 		{
 			item = L4DL4D2_ParseVote(option);
 		}
 		
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		case Engine_CSGO, Engine_TF2:
 		{
 			item = TF2CSGO_ParseVote(option);
 		}
@@ -232,14 +254,14 @@ Game_ParseVote(const String:option[])
 
 Game_GetMaxItems()
 {
-	switch (g_GameVersion)
+	switch (g_EngineVersion)
 	{
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead, Engine_Left4Dead2:
 		{
 			return L4DL4D2_COUNT;
 		}
 		
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		case Engine_CSGO, Engine_TF2:
 		{
 			return TF2CSGO_COUNT;
 		}
@@ -252,26 +274,26 @@ bool:Game_CheckVoteType(NativeVotesType:type)
 {
 	new bool:returnVal = false;
 	
-	switch(g_GameVersion)
+	switch(g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE:
-		{
-			returnVal = TF2_CheckVoteType(type);
-		}
-		
-		case SOURCE_SDK_LEFT4DEAD:
+		case Engine_Left4Dead:
 		{
 			returnVal = L4D_CheckVoteType(type);
 		}
 		
-		case SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead2:
 		{
 			returnVal = L4D2_CheckVoteType(type);
 		}
 		
-		case SOURCE_SDK_CSGO:
+		case Engine_CSGO:
 		{
 			returnVal = CSGO_CheckVoteType(type);
+		}
+
+		case Engine_TF2:
+		{
+			returnVal = TF2_CheckVoteType(type);
 		}
 	}
 	
@@ -282,26 +304,26 @@ bool:Game_CheckVotePassType(NativeVotesPassType:type)
 {
 	new bool:returnVal = false;
 	
-	switch(g_GameVersion)
+	switch(g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE:
-		{
-			returnVal = TF2_CheckVotePassType(type);
-		}
-		
-		case SOURCE_SDK_LEFT4DEAD:
+		case Engine_Left4Dead:
 		{
 			returnVal = L4D_CheckVotePassType(type);
 		}
 		
-		case SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead2:
 		{
 			returnVal = L4D2_CheckVotePassType(type);
 		}
 		
-		case SOURCE_SDK_CSGO:
+		case Engine_CSGO:
 		{
 			returnVal = CSGO_CheckVotePassType(type);
+		}
+		
+		case Engine_TF2:
+		{
+			returnVal = TF2_CheckVotePassType(type);
 		}
 	}
 	
@@ -328,21 +350,21 @@ bool:Game_DisplayVote(Handle:vote, clients[], num_clients)
 		return false;
 	}
 	
-	switch(g_GameVersion)
+	switch(g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			TF2CSGO_DisplayVote(vote, clients, num_clients);
-		}
-		
-		case SOURCE_SDK_LEFT4DEAD:
+		case Engine_Left4Dead:
 		{
 			L4D_DisplayVote(vote, num_clients);
 		}
 		
-		case SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead2:
 		{
 			L4D2_DisplayVote(vote, clients, num_clients);
+		}
+		
+		case Engine_CSGO, Engine_TF2:
+		{
+			TF2CSGO_DisplayVote(vote, clients, num_clients);
 		}
 	}
 
@@ -351,14 +373,9 @@ bool:Game_DisplayVote(Handle:vote, clients[], num_clients)
 
 Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason, client=0)
 {
-	switch(g_GameVersion)
+	switch(g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			TF2CSGO_DisplayVoteFail(vote, reason, client);
-		}
-		
-		case SOURCE_SDK_LEFT4DEAD:
+		case Engine_Left4Dead:
 		{
 			if (!client)
 			{
@@ -366,24 +383,23 @@ Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason, client=0)
 			}
 		}
 		
-		case SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead2:
 		{
 			L4D2_DisplayVoteFail(vote, client);
 		}
 		
+		case Engine_CSGO, Engine_TF2:
+		{
+			TF2CSGO_DisplayVoteFail(vote, reason, client);
+		}
 	}
 }
 
 Game_DisplayVotePass(Handle:vote, String:details[], client=0)
 {
-	switch (g_GameVersion)
+	switch (g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			TF2CSGO_DisplayVotePass(vote, details, client);
-		}
-
-		case SOURCE_SDK_LEFT4DEAD:
+		case Engine_Left4Dead:
 		{
 			if (!client)
 			{
@@ -391,24 +407,23 @@ Game_DisplayVotePass(Handle:vote, String:details[], client=0)
 			}
 		}
 
-		case SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead2:
 		{
 			L4D2_DisplayVotePass(vote, details, client);
 		}
 		
+		case Engine_CSGO, Engine_TF2:
+		{
+			TF2CSGO_DisplayVotePass(vote, details, client);
+		}
 	}
 }
 
 Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[], client=0)
 {
-	switch (g_GameVersion)
+	switch (g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			TF2CSGO_DisplayVotePassEx(vote, passType, details, client);
-		}
-
-		case SOURCE_SDK_LEFT4DEAD:
+		case Engine_Left4Dead:
 		{
 			if (!client)
 			{
@@ -416,51 +431,54 @@ Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details
 			}
 		}
 
-		case SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead2:
 		{
 			L4D2_DisplayVotePassEx(vote, passType, details, client);
 		}
 		
+		case Engine_CSGO, Engine_TF2:
+		{
+			TF2CSGO_DisplayVotePassEx(vote, passType, details, client);
+		}
 	}
 }
 
 Game_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
 {
-	switch (g_GameVersion)
+	switch (g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			TF2CSGO_DisplayCallVoteFail(client, reason, time);
-		}
-		
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead, Engine_Left4Dead2:
 		{
 			L4DL4D2_DisplayCallVoteFail(client, reason);
+		}
+		
+		case Engine_CSGO, Engine_TF2:
+		{
+			TF2CSGO_DisplayCallVoteFail(client, reason, time);
 		}
 	}
 }
 
 Game_ClientSelectedItem(Handle:vote, client, item)
 {
-	switch(g_GameVersion)
+	switch(g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			TF2CSGO_ClientSelectedItem(vote, client, item);
-		}
-		
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead, Engine_Left4Dead2:
 		{
 			L4DL4D2_ClientSelectedItem(client, item);
 		}
 		
+		case Engine_CSGO, Engine_TF2:
+		{
+			TF2CSGO_ClientSelectedItem(vote, client, item);
+		}
 /*
-		case SOURCE_SDK_LEFT4DEAD:
+		case Engine_Left4Dead:
 		{
 			L4D_ClientSelectedItem(vote, client, item);
 		}
 		
-		case SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead2:
 		{
 			L4D2_ClientSelectedItem(client, item);
 		}
@@ -470,70 +488,101 @@ Game_ClientSelectedItem(Handle:vote, client, item)
 
 Game_UpdateVoteCounts(Handle:hVoteCounts, totalClients)
 {
-	switch(g_GameVersion)
+	switch(g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			TF2CSGO_UpdateVoteCounts(hVoteCounts);
-		}
-
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead, Engine_Left4Dead2:
 		{
 			L4DL4D2_UpdateVoteCounts(hVoteCounts, totalClients);
+		}
+		
+		case Engine_CSGO, Engine_TF2:
+		{
+			TF2CSGO_UpdateVoteCounts(hVoteCounts);
 		}
 	}
 }
 
 Game_DisplayVoteSetup(client, const NativeVotesType:voteTypes[])
 {
-	switch (g_GameVersion)
+	switch (g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			TF2CSGO_DisplayVoteSetup(client, voteTypes);
-		}
-
-		case SOURCE_SDK_LEFT4DEAD:
+		case Engine_Left4Dead:
 		{
 			//L4D_DisplayVoteSetup(client, voteTypes);
 		}
 		
-		case SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead2:
 		{
 			//L4D2_DisplayVoteSetup(client, voteTypes);
 		}
 		
+		case Engine_CSGO, Engine_TF2:
+		{
+			TF2CSGO_DisplayVoteSetup(client, voteTypes);
+		}
 	}
 }
 
 Game_UpdateClientCount(num_clients)
 {
-	switch(g_GameVersion)
+	switch(g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			TF2CSGO_UpdateClientCount(num_clients);
-		}
-
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead, Engine_Left4Dead2:
 		{
 			L4DL4D2_UpdateClientCount(num_clients);
+		}
+		
+		case Engine_CSGO, Engine_TF2:
+		{
+			TF2CSGO_UpdateClientCount(num_clients);
 		}
 	}
 }
 
 Game_ResetVote()
 {
-	switch(g_GameVersion)
+	switch(g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
+		case Engine_Left4Dead, Engine_Left4Dead2:
+		{
+			L4DL4D2_ResetVote();
+		}
+		
+		case Engine_CSGO, Engine_TF2:
 		{
 			TF2CSGO_ResetVote();
 		}
+	}
+}
 
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2:
+Game_VoteYes(client)
+{
+	switch (g_EngineVersion)
+	{
+		case Engine_Left4Dead, Engine_Left4Dead2:
 		{
-			L4DL4D2_ResetVote();
+			FakeClientCommand(client, "Vote Yes");
+		}
+		
+		case Engine_CSGO, Engine_TF2:
+		{
+			FakeClientCommand(client, "vote option1");
+		}
+	}
+}
+
+Game_VoteNo(client)
+{
+	switch (g_EngineVersion)
+	{
+		case Engine_Left4Dead, Engine_Left4Dead2:
+		{
+			FakeClientCommand(client, "Vote No");
+		}
+		
+		case Engine_CSGO, Engine_TF2:
+		{
+			FakeClientCommand(client, "vote option2");
 		}
 	}
 }
@@ -1048,17 +1097,17 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	
 	new NativeVotesType:voteType = Data_GetType(vote);
 	
-	switch(g_GameVersion)
+	switch(g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE:
-		{
-			bYesNo = TF2_VoteTypeToTranslation(voteType, translation, sizeof(translation));
-		}
-		
-		case SOURCE_SDK_CSGO:
+		case Engine_CSGO:
 		{
 			bYesNo = CSGO_VoteTypeToTranslation(voteType, translation, sizeof(translation));
 			CSGO_VoteTypeToVoteOtherTeamString(voteType, otherTeamString, sizeof(otherTeamString));
+		}
+		
+		case Engine_TF2:
+		{
+			bYesNo = TF2_VoteTypeToTranslation(voteType, translation, sizeof(translation));
 		}
 	}
 	
@@ -1111,16 +1160,16 @@ TF2CSGO_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:deta
 {
 	decl String:translation[64];
 	
-	switch(g_GameVersion)
+	switch(g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE:
-		{
-			TF2_VotePassToTranslation(passType, translation, sizeof(translation));
-		}
-		
-		case SOURCE_SDK_CSGO:
+		case Engine_CSGO:
 		{
 			CSGO_VotePassToTranslation(passType, translation, sizeof(translation));
+		}
+		
+		case Engine_TF2:
+		{
+			TF2_VotePassToTranslation(passType, translation, sizeof(translation));
 		}
 	}
 	
