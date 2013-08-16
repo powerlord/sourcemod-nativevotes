@@ -54,7 +54,12 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 
 bool:CheckVoteController()
 {
-	new entity = EntRefToEntIndex(g_VoteController);
+	new entity = -1;
+	if (g_VoteController != -1)
+	{
+		entity = EntRefToEntIndex(g_VoteController);
+	}
+	
 	if (entity == -1)
 	{
 		entity = FindEntityByClassname(-1, "vote_controller");

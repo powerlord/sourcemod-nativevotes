@@ -174,6 +174,8 @@
 // Generic functions
 // 
 
+new g_VoteController;
+
 new EngineVersion:g_EngineVersion = Engine_Unknown;
 
 bool:Game_IsGameSupported()
@@ -227,6 +229,28 @@ bool:Game_IsGameSupported()
 	}
 	
 	return false;
+}
+
+bool:CheckVoteController()
+{
+	new entity = -1;
+	if (g_VoteController != -1)
+	{
+		entity = EntRefToEntIndex(g_VoteController);
+	}
+	
+	if (entity == -1)
+	{
+		entity = FindEntityByClassname(-1, "vote_controller");
+		if (entity == -1)
+		{
+			LogError("Could not find Vote Controller.");
+			return false;
+		}
+		
+		g_VoteController = EntIndexToEntRef(entity);
+	}
+	return true;
 }
 
 // All logic for choosing a game-specific function should happen here.
@@ -633,13 +657,19 @@ L4DL4D2_UpdateVoteCounts(Handle:votes, totalClients)
 	SetEventInt(changeEvent, "potentialVotes", totalClients);
 	FireEvent(changeEvent);
 	
-	SetEntProp(g_VoteController, Prop_Send, "m_votesYes", yesVotes);
-	SetEntProp(g_VoteController, Prop_Send, "m_votesNo", noVotes);
+	if (CheckVoteController())
+	{
+		SetEntProp(g_VoteController, Prop_Send, "m_votesYes", yesVotes);
+		SetEntProp(g_VoteController, Prop_Send, "m_votesNo", noVotes);
+	}
 }
 
 L4DL4D2_UpdateClientCount(num_clients)
 {
-	SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
+	if (CheckVoteController())
+	{
+		SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
+	}
 }
 
 L4DL4D2_DisplayCallVoteFail(client, NativeVotesCallFailType:reason)
@@ -750,11 +780,14 @@ L4DL4D2_VotePassToTranslation(NativeVotesPassType:passType, String:translation[]
 
 L4DL4D2_ResetVote()
 {
-	SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", NATIVEVOTES_ALL_TEAMS);
-	SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
-	SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
-	SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", 0);
-	SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", -1);
+	if (CheckVoteController())
+	{
+		SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", NATIVEVOTES_ALL_TEAMS);
+		SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
+		SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
+		SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", 0);
+		SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", -1);
+	}
 }
 
 
@@ -817,12 +850,15 @@ L4D_DisplayVote(Handle:vote, num_clients)
 	SetEventString(voteStart, "param1", details);
 	FireEvent(voteStart);
 	
-	SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", team);
-	SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
-	SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
-	SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
-	// TODO: Need to look these values up
-	//SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", Data_GetType(vote));
+	if (CheckVoteController())
+	{
+		SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", team);
+		SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
+		SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
+		SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
+		// TODO: Need to look these values up
+		SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", 0); // For now, set to 0 to block in-game votes
+	}
 }
 
 L4D_VoteEnded()
@@ -938,12 +974,15 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 	BfWriteString(voteStart, initiatorName);
 	EndMessage();
 	
-	SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", team);
-	SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
-	SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
-	SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
-	// TODO: Need to look these values up
-	//SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", Data_GetType(vote));
+	if (CheckVoteController())
+	{
+		SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", team);
+		SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
+		SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
+		SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
+		// TODO: Need to look these values up
+		SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", 0); // For now set to 0 to block ingame votes
+	}
 }
 
 L4D2_DisplayVotePass(Handle:vote, String:details[], client=0)
@@ -1061,16 +1100,22 @@ TF2CSGO_ClientSelectedItem(Handle:vote, client, item)
 
 TF2CSGO_UpdateVoteCounts(Handle:votes)
 {
-	new size = GetArraySize(votes);
-	for (new i = 0; i < size; i++)
+	if (CheckVoteController())
 	{
-		SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", GetArrayCell(votes, i), 4, i);
+		new size = GetArraySize(votes);
+		for (new i = 0; i < size; i++)
+		{
+			SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", GetArrayCell(votes, i), 4, i);
+		}
 	}
 }
 
 TF2CSGO_UpdateClientCount(num_clients)
 {
-	SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", num_clients);
+	if (CheckVoteController())
+	{
+		SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", num_clients);
+	}
 }
 
 TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
@@ -1126,8 +1171,8 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		PbSetString(voteStart, "details_str", details);
 		PbSetBool(voteStart, "is_yes_no_vote", bYesNo);
 		PbSetString(voteStart, "other_team_str", otherTeamString);
-		// TODO: Need to look these values up
-		//PbSetInt(voteStart, "vote_type", 0); // Need to check values for this
+		// TODO: Need to look these values up. These values may correspond to the order votes show up in for VoteSetup
+		PbSetInt(voteStart, "vote_type", 0); // For now, set to 0 to block in-game votes
 	}
 	else
 	{
@@ -1140,15 +1185,18 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 
 	EndMessage();
 	
-	SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", team);
-	for (new i = 0; i < 5; i++)
+	if (CheckVoteController())
 	{
-		SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, _, i);
+		SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", team);
+		for (new i = 0; i < 5; i++)
+		{
+			SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, _, i);
+		}
+		SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", num_clients);
+		SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", bYesNo);
+		// TODO: Need to look these values up. These values may correspond to the order votes show up in for VoteSetup
+		SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", 0); // For now, set to 0 to block in-game votes
 	}
-	SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", num_clients);
-	SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", bYesNo);
-	// TODO: Need to look these values up
-	//SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", voteType);
 }
 
 TF2CSGO_DisplayVotePass(Handle:vote, String:details[], client=0)
@@ -1352,14 +1400,17 @@ TF2CSGO_DisplayVoteSetup(client, const NativeVotesType:voteTypes[])
 
 TF2CSGO_ResetVote()
 {
-	SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", NATIVEVOTES_ALL_TEAMS);
-	for (new i = 0; i < 5; i++)
-	{
-		SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, _, i);
+	if (CheckVoteController())
+	{	
+		SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", NATIVEVOTES_ALL_TEAMS);
+		for (new i = 0; i < 5; i++)
+		{
+			SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, _, i);
+		}
+		SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", 0);
+		SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", true);
+		SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", -1);
 	}
-	SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", 0);
-	SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", true);
-	SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", -1);
 }
 
 //----------------------------------------------------------------------------

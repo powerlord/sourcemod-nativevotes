@@ -48,7 +48,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.7.10"
+#define VERSION 							"0.7.11"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -65,8 +65,6 @@
 //----------------------------------------------------------------------------
 // Global Variables
 new g_NextVote = 0;
-
-new g_VoteController;
 
 //----------------------------------------------------------------------------
 // CVars
@@ -118,14 +116,14 @@ public Plugin:myinfo =
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 {
+	MarkNativeAsOptional("GetUserMessageType");
+	MarkNativeAsOptional("GetEngineVersion");
+	
 	if (!Game_IsGameSupported())
 	{
 		strcopy(error, err_max, "Unsupported game");
 		return APLRes_Failure;
 	}
-	
-	MarkNativeAsOptional("GetUserMessageType");
-	MarkNativeAsOptional("GetEngineVersion");
 	
 	CreateNative("NativeVotes_IsVoteTypeSupported", Native_IsVoteTypeSupported);
 	CreateNative("NativeVotes_Create", Native_Create);
@@ -192,16 +190,6 @@ public OnPluginStart()
 	g_hVotes = CreateArray(_, Game_GetMaxItems());
 	
 	AutoExecConfig(true, "nativevotes");
-}
-
-public OnConfigsExecuted()
-{
-	// This is done every map for safety reasons... it usually doesn't change
-	g_VoteController = EntIndexToEntRef(FindEntityByClassname(-1, "vote_controller"));
-	if (g_VoteController == INVALID_ENT_REFERENCE)
-	{
-		LogError("Could not find Vote Controller.");
-	}
 }
 
 public OnClientDisconnect_Post(client)
