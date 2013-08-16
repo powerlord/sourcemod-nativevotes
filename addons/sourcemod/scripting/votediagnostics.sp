@@ -7,8 +7,9 @@
 
 #define LOGFILE "vote_diagnostics.txt"
 
-new g_GameVersion = SOURCE_SDK_UNKNOWN;
-new g_VoteController;
+new EngineVersion:g_EngineVersion = Engine_Unknown;
+
+new g_VoteController = -1;
 
 #define MAX_ARG_SIZE 65
 
@@ -17,73 +18,115 @@ public Plugin:myinfo =
 	name = "L4D,L4D2,TF2,CS:GO Vote Sniffer",
 	author = "Powerlord",
 	description = "Sniff voting commands, events, and usermessages",
-	version = "1.2.2",
+	version = "1.2.3",
 	url = "http://www.sourcemod.net/"
 }
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 {
+	// Necessary for SourceMod 1.4 support
+	MarkNativeAsOptional("GetUserMessageType");
+	MarkNativeAsOptional("GetEngineVersion");
+
 	if (!Game_IsGameSupported())
 	{
 		strcopy(error, err_max, "Unsupported game");
 		return APLRes_Failure;
 	}
 
-	// Necessary for SourceMod 1.4 support
-	MarkNativeAsOptional("GetUserMessageType");
-
+	if (!late)
+	{
+		switch (g_EngineVersion)
+		{
+			case Engine_Left4Dead, Engine_Left4Dead2:
+			{
+				CreateTimer(30.0, L4DL4D2_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+			}
+			
+			case Engine_CSGO, Engine_TF2:
+			{
+				CreateTimer(30.0, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+			}
+		}
+	}
 	return APLRes_Success;
 }
 
+bool:CheckVoteController()
+{
+	new entity = EntRefToEntIndex(g_VoteController);
+	if (entity == -1)
+	{
+		entity = FindEntityByClassname(-1, "vote_controller");
+		if (entity == -1)
+		{
+			LogError("Could not find Vote Controller.");
+			return false;
+		}
+		
+		g_VoteController = EntIndexToEntRef(entity);
+	}
+	return true;
+}
 
 bool:Game_IsGameSupported()
 {
-	// Guess which game we're using.
-	g_GameVersion = GuessSDKVersion(); // This value won't change
-	
-	switch(g_GameVersion)
+	if (GetFeatureStatus(FeatureType_Native, "GetEngineVersion") == FeatureStatus_Available)
 	{
-		case SOURCE_SDK_EPISODE2VALVE:
+		// Which engine are we using?
+		g_EngineVersion = GetEngineVersion(); // This value won't change
+	}
+	else
+	{
+		// Guess which game we're using.
+		new gameVersion = GuessSDKVersion(); // This value won't change
+		
+		switch(gameVersion)
 		{
-			decl String:gameFolder[8];
-			GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
-			if (StrEqual(gameFolder, "tf", false) || StrEqual(gameFolder, "tf_beta", false))
+			case SOURCE_SDK_EPISODE2VALVE:
 			{
-				return true;
-			}
-			else
-			{
+				decl String:gameFolder[8];
+				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
+				if (StrEqual(gameFolder, "tf", false) || StrEqual(gameFolder, "tf_beta", false))
+				{
+					g_EngineVersion = Engine_TF2;
+				}
 				// Fail for HL2:MP, DoD:S, and CS:S (on 1.4; CSS is its own engine on 1.5)
-				return false;
+			}
+			
+			case SOURCE_SDK_LEFT4DEAD:
+			{
+				g_EngineVersion = Engine_Left4Dead;
+			}
+			
+			case SOURCE_SDK_LEFT4DEAD2:
+			{
+				g_EngineVersion = Engine_Left4Dead2;
+			}
+			
+			case SOURCE_SDK_CSGO:
+			{
+				g_EngineVersion = Engine_CSGO;
 			}
 		}
-		
-		case SOURCE_SDK_LEFT4DEAD, SOURCE_SDK_LEFT4DEAD2, SOURCE_SDK_CSGO:
+	}
+	
+	switch (g_EngineVersion)
+	{
+		case Engine_Left4Dead, Engine_Left4Dead2, Engine_CSGO, Engine_TF2:
 		{
 			return true;
 		}
 	}
-
+	
 	return false;
 }
 
 public OnPluginStart()
 {
-	switch (g_GameVersion)
+	switch (g_EngineVersion)
 	{
-		case SOURCE_SDK_EPISODE2VALVE, SOURCE_SDK_CSGO:
-		{
-			HookEventEx("vote_cast", TF2CSGO_EventVoteCast);
-			HookEventEx("vote_options", TF2CSGO_EventVoteOptions);
-			
-			HookUserMessage(GetUserMessageId("VoteSetup"), TF2CSGO_MessageVoteSetup);
-			HookUserMessage(GetUserMessageId("VoteStart"), TF2CSGO_MessageVoteStart);
-			HookUserMessage(GetUserMessageId("VotePass"), TF2CSGO_MessageVotePass);
-			HookUserMessage(GetUserMessageId("VoteFailed"), TF2CSGO_MessageVoteFail);
-			HookUserMessage(GetUserMessageId("CallVoteFailed"), TF2CSGO_MessageCallVoteFailed);
-		}
-		
-		case SOURCE_SDK_LEFT4DEAD:
+		case Engine_Left4Dead:
 		{
 			HookEventEx("vote_changed", L4DL4D2_EventVoteChanged);
 			HookEventEx("vote_ended", L4D_EventVoteEnded);
@@ -97,7 +140,7 @@ public OnPluginStart()
 			HookUserMessage(GetUserMessageId("CallVoteFailed"), L4DL4D2_MessageCallVoteFailed);
 		}
 		
-		case SOURCE_SDK_LEFT4DEAD2:
+		case Engine_Left4Dead2:
 		{
 			HookEventEx("vote_changed", L4DL4D2_EventVoteChanged);
 			
@@ -106,6 +149,18 @@ public OnPluginStart()
 			HookUserMessage(GetUserMessageId("VotePass"), L4D2_MessageVotePass);
 			HookUserMessage(GetUserMessageId("VoteFail"), L4D2_MessageVoteFail);
 			HookUserMessage(GetUserMessageId("CallVoteFailed"), L4DL4D2_MessageCallVoteFailed);
+		}
+		
+		case Engine_CSGO, Engine_TF2:
+		{
+			HookEventEx("vote_cast", TF2CSGO_EventVoteCast);
+			HookEventEx("vote_options", TF2CSGO_EventVoteOptions);
+			
+			HookUserMessage(GetUserMessageId("VoteSetup"), TF2CSGO_MessageVoteSetup);
+			HookUserMessage(GetUserMessageId("VoteStart"), TF2CSGO_MessageVoteStart);
+			HookUserMessage(GetUserMessageId("VotePass"), TF2CSGO_MessageVotePass);
+			HookUserMessage(GetUserMessageId("VoteFailed"), TF2CSGO_MessageVoteFail);
+			HookUserMessage(GetUserMessageId("CallVoteFailed"), TF2CSGO_MessageCallVoteFailed);
 		}
 	}
 	
@@ -117,16 +172,6 @@ public OnPluginStart()
 	GetGameFolderName(gameName, sizeof(gameName));
 	
 	LogToFile(LOGFILE, "Game: %s", gameName);
-}
-
-public OnConfigsExecuted()
-{
-	// This is done every map for safety reasons... it usually doesn't change
-	g_VoteController = EntIndexToEntRef(FindEntityByClassname(-1, "vote_controller"));
-	if (g_VoteController == INVALID_ENT_REFERENCE)
-	{
-		LogError("Could not find Vote Controller.");
-	}
 }
 
 /*
@@ -201,7 +246,10 @@ public L4D_EventVoteStarted(Handle:event, const String:name[], bool:dontBroadcas
 	new initiator = GetEventInt(event, "initiator");
 	LogToFile(LOGFILE, "Vote Start Event: issue: \"%s\", param1: \"%s\", team: %d, initiator: %d", issue, param1, team, initiator);
 	
-	LogToFile(LOGFILE, "Active Index for issue %s: %d", issue, GetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex"));
+	if (CheckVoteController())
+	{
+		LogToFile(LOGFILE, "Active Index for issue %s: %d", issue, GetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex"));
+	}
 }
 
 /*
@@ -212,6 +260,8 @@ public L4D_EventVoteStarted(Handle:event, const String:name[], bool:dontBroadcas
 public L4D_EventVoteEnded(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	LogToFile(LOGFILE, "Vote Ended Event");
+	
+	CreateTimer(1.0, L4DL4D2_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 /*
@@ -317,6 +367,8 @@ public Action:L4D2_MessageVotePass(UserMsg:msg_id, Handle:message, const players
 	BfReadString(message, param1, MAX_ARG_SIZE);
 	
 	LogToFile(LOGFILE, "VotePass Usermessage: team: %d, issue: %s, param1: %s", team, issue, param1);
+
+	CreateTimer(1.0, L4DL4D2_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
 	return Plugin_Continue;
 }
 
@@ -330,6 +382,9 @@ public Action:L4D2_MessageVoteFail(UserMsg:msg_id, Handle:message, const players
 	new team = BfReadByte(message);
 	
 	LogToFile(LOGFILE, "VoteFail Usermessage: team: %d", team);
+
+	CreateTimer(1.0, L4DL4D2_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+
 	return Plugin_Continue;
 }
 
@@ -512,6 +567,9 @@ public Action:TF2CSGO_MessageVotePass(UserMsg:msg_id, Handle:message, const play
 	}
 	
 	LogToFile(LOGFILE, "VotePass Usermessage: team: %d, issue: %s, param1: %s, voteType: %d", team, issue, param1, voteType);
+	
+	CreateTimer(1.0, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+
 	return Plugin_Continue;
 }
 
@@ -543,6 +601,50 @@ public Action:TF2CSGO_MessageVoteFail(UserMsg:msg_id, Handle:message, const play
 	}
 	
 	LogToFile(LOGFILE, "VoteFail Usermessage: team: %d, reason: %d", team, reason);
+	
+	CreateTimer(1.0, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+
+	return Plugin_Continue;
+}
+
+public Action:TF2CSGO_LogControllerValues(Handle:timer)
+{
+	if (!CheckVoteController())
+	{
+		return Plugin_Continue;
+	}
+	
+	new team = GetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote");
+	new activeIssue = GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex");
+	new potentialVotes = GetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes");
+	new bool:isYesNo = bool:GetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote");
+	new voteCounts[5];
+	for (new i = 0; i < 5; ++i)
+	{
+		voteCounts[i] = GetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", _, i);
+	}
+	
+	LogToFile(LOGFILE, "Vote Controller, issue: %d, team: %d, potentialVotes: %d, yesNo: %d, count1: %d, count2: %d, count3: %d, count4: %d, count5: %d",
+	activeIssue, team, potentialVotes, isYesNo, voteCounts[0], voteCounts[1], voteCounts[2], voteCounts[3], voteCounts[4]);
+	return Plugin_Continue;
+}
+
+public Action:L4DL4D2_LogControllerValues(Handle:timer)
+{
+	if (!CheckVoteController())
+	{
+		return Plugin_Continue;
+	}
+	
+	new team = GetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote");
+	new activeIssue = GetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex");
+	new potentialVotes = GetEntProp(g_VoteController, Prop_Send, "potentialVotes");
+	new voteCounts[2];
+	voteCounts[0] = GetEntProp(g_VoteController, Prop_Send, "m_votesYes");
+	voteCounts[1] = GetEntProp(g_VoteController, Prop_Send, "m_votesNo");
+	
+	LogToFile(LOGFILE, "Vote Controller, issue: %d, team: %d, potentialVotes: %d, countYes: %d, countNo: %d",
+	activeIssue, team, potentialVotes, voteCounts[0], voteCounts[1]);
 	return Plugin_Continue;
 }
 

@@ -754,7 +754,7 @@ L4DL4D2_ResetVote()
 	SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
 	SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
 	SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", 0);
-	SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", 0);
+	SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", -1);
 }
 
 
@@ -1359,7 +1359,7 @@ TF2CSGO_ResetVote()
 	}
 	SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", 0);
 	SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", true);
-	SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", 0);
+	SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", -1);
 }
 
 //----------------------------------------------------------------------------
