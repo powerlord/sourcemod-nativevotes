@@ -174,7 +174,7 @@
 // Generic functions
 // 
 
-new g_VoteController;
+new g_VoteController = -1;
 
 new EngineVersion:g_EngineVersion = Engine_Unknown;
 
