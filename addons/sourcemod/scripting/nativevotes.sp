@@ -48,7 +48,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.7.12"
+#define VERSION 							"0.8.0"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -1367,11 +1367,8 @@ public Native_SetDetails(Handle:plugin, numParams)
 		return;
 	}
 	
-	new len;
-	GetNativeStringLength(2, len);
-	
-	decl String:details[len + 1];
-	GetNativeString(2, details, len + 1);
+	decl String:details[128];
+	FormatNativeString(0, 2, 3, sizeof(details), _, details);
 	
 	Data_SetDetails(vote, details);
 }
@@ -1587,11 +1584,12 @@ public Native_DisplayPass(Handle:plugin, numParams)
 		return;
 	}
 	
-	new size;
-	GetNativeStringLength(2, size);
+	new String:winner[128];
 	
-	decl String:winner[size + 1];
-	GetNativeString(2, winner, size + 1);
+	if (numParams >= 2)
+	{
+		FormatNativeString(0, 2, 3, sizeof(winner), _, winner);
+	}
 
 	Game_DisplayVotePass(vote, winner);
 }
@@ -1612,11 +1610,12 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "Invalid vote pass type: %d", passType);
 	}
 
-	new size;
-	GetNativeStringLength(3, size);
+	new String:winner[128];
 	
-	decl String:winner[size + 1];
-	GetNativeString(3, winner, size + 1);
+	if (numParams >= 3)
+	{
+		FormatNativeString(0, 3, 4, sizeof(winner), _, winner);
+	}
 	
 	Game_DisplayVotePassEx(vote, passType, winner);
 }
