@@ -135,18 +135,22 @@ enum NativeVotesCallFailType
 {
 	NativeVotesCallFail_Generic = 0,			/**< Generic fail. */
 	NativeVotesCallFail_Loading = 1,			/**< L4D/L4D2: Players are still loading. */
-	NativeVotesCallFail_Recent = 2,				/**< TF2:/CS:GO: You can't call another vote yet: Argument is seconds until you can call another vote. */
-	NativeVotesCallFail_Disabled = 5,			/**< TF2:/CS:GO: Server has disabled that issue. */
-	NativeVotesCallFail_MapNotFound = 6,		/**< TF2:/CS:GO: Server does not have that map. */
-	NativeVotesCallFail_SpecifyMap = 7,			/**< TF2:/CS:GO: You must specify a map. */
-	NativeVotesCallFail_Failed = 8,				/**< TF2:/CS:GO: This vote failed recently. */
-	NativeVotesCallFail_WrongTeam = 9,			/**< TF2:/CS:GO: Team can't call this vote. */
-	NativeVotesCallFail_Waiting = 10,			/**< TF2:/CS:GO: Vote can't be called during Waiting For Players. */
-	NativeVotesCallFail_Unknown = 11,			/**< TF2:/CS:GO: Unknown, buggy in TF2. */
-	NativeVotesCallFail_CantKickAdmin = 12,		/**< TF2:/CS:GO: Can't kick server admin. */
-	NativeVotesCallFail_ScramblePending = 13,	/**< TF2:/CS:GO: Team Scramble is pending.. */
-	NativeVotesCallFail_Spectators = 14,		/**< TF2:/CS:GO: Spectators aren't allowed to call votes. */
-	NativeVotesCallFail_LevelSet = 15,			/**< TF2:/CS:GO: Next level already set. */
+	NativeVotesCallFail_Recent = 2,				/**< TF2/CS:GO: You can't call another vote yet: Argument is seconds until you can call another vote. */
+	NativeVotesCallFail_Disabled = 5,			/**< TF2/CS:GO: Server has disabled that issue. */
+	NativeVotesCallFail_MapNotFound = 6,		/**< TF2/CS:GO: Server does not have that map. */
+	NativeVotesCallFail_SpecifyMap = 7,			/**< TF2/CS:GO: You must specify a map. */
+	NativeVotesCallFail_Failed = 8,				/**< TF2/CS:GO: This vote failed recently. */
+	NativeVotesCallFail_WrongTeam = 9,			/**< TF2/CS:GO: Team can't call this vote. */
+	NativeVotesCallFail_Waiting = 10,			/**< TF2/CS:GO: Vote can't be called during Waiting For Players. */
+	NativeVotesCallFail_PlayerNotFound = 11,	/**< TF2/CS:GO: Player to kick can't be found. Buggy in TF2. */
+	NativeVotesCallFail_Unknown = 11,
+	NativeVotesCallFail_CantKickAdmin = 12,		/**< TF2/CS:GO: Can't kick server admin. */
+	NativeVotesCallFail_ScramblePending = 13,	/**< TF2/CS:GO: Team Scramble is pending.. */
+	NativeVotesCallFail_Spectators = 14,		/**< TF2/CS:GO: Spectators aren't allowed to call votes. */
+	NativeVotesCallFail_LevelSet = 15,			/**< TF2/CS:GO: Next level already set. */
+	NativeVotesCallFail_MapNotValid = 16,		/**< ???: Map is invalid. */
+	NativeVotesCallFail_KickTime = 17,			/**< ???: Cannot kick for time. */
+	NativeVotesCallFail_KickDuringRound = 18,	/**< ???: Cannot kick during a round. */
 };
 
 /*
