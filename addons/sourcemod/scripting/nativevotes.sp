@@ -170,6 +170,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 public OnPluginStart()
 {
 	LoadTranslations("core.phrases");
+	LoadTranslations("nativevotes.phrases.txt");
 	
 	CreateConVar("nativevotes_version", VERSION, "NativeVotes API version", FCVAR_DONTRECORD | FCVAR_NOTIFY);
 
@@ -1096,10 +1097,18 @@ bool:Internal_RedrawToClient(client, bool:revotes)
 		g_ClientVotes[client] = VOTE_PENDING;
 		g_bRevoting[client] = true;
 		g_NumVotes--;
+		Game_UpdateVoteCounts(g_hCurVote, g_TotalClients);
 	}
 	
 	// Display the vote fail screen for a few seconds
-	Game_DisplayVoteFail(g_hCurVote, NativeVotesFail_Generic, client);
+	//Game_DisplayVoteFail(g_hCurVote, NativeVotesFail_Generic, client);
+	
+	// No, display a vote pass screen because that's nicer and we can customize it.
+	// Note: This isn't inside the earlier if because some players have had issues where the display
+	//   doesn't always appear the first time.
+	new String:revotePhrase[128];
+	Format(revotePhrase, sizeof(revotePhrase), "%T", "NativeVotes Revote", client);
+	Game_DisplayVotePassCustom(g_hCurVote, revotePhrase, client);
 	
 	new Handle:data;
 	

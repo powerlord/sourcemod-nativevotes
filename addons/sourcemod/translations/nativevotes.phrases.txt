@@ -1,0 +1,7 @@
+"Phrases"
+{
+	"NativeVotes Revote"
+	{
+		"Clearing your vote so you can revote."
+	}
+}
