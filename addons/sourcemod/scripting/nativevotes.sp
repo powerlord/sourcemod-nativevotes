@@ -40,7 +40,8 @@
 
 #define LOGTAG "NV"
 
-#define MAX_DETAILS_SIZE					64
+#define MAX_VOTE_DETAILS_LENGTH				64	// From Source 2013 SDK
+#define TRANSLATION_LENGTH					192
 
 #define VOTE_DELAY_TIME 					3.0
 
@@ -155,6 +156,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_SetInitiator", Native_SetInitiator);
 	CreateNative("NativeVotes_GetInitiator", Native_GetInitiator);
 	CreateNative("NativeVotes_DisplayPass", Native_DisplayPass);
+	CreateNative("NativeVotes_DisplayPassCustomToOne", Native_DisplayPassCustomToOne);
 	CreateNative("NativeVotes_DisplayPassEx", Native_DisplayPassEx);
 	CreateNative("NativeVotes_DisplayFail", Native_DisplayFail);
 	CreateNative("NativeVotes_RegisterVoteManager", Native_RegisterVoteManager);
@@ -1367,8 +1369,11 @@ public Native_SetDetails(Handle:plugin, numParams)
 		return;
 	}
 	
-	decl String:details[128];
-	FormatNativeString(0, 2, 3, sizeof(details), _, details);
+	new len;
+	GetNativeStringLength(2, len);
+	
+	decl String:details[len];
+	GetNativeString(2, details, len);
 	
 	Data_SetDetails(vote, details);
 }
@@ -1583,15 +1588,31 @@ public Native_DisplayPass(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
-	
-	new String:winner[128];
-	
-	if (numParams >= 2)
-	{
-		FormatNativeString(0, 2, 3, sizeof(winner), _, winner);
-	}
+
+	new len;
+	GetNativeStringLength(2, len);
+	new String:winner[len];
+	GetNativeString(2, winner, len);
 
 	Game_DisplayVotePass(vote, winner);
+}
+
+public Native_DisplayPassCustomToOne(Handle:plugin, numParams)
+{
+	new Handle:vote = GetNativeCell(1);
+	if (vote == INVALID_HANDLE)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
+		return;
+	}
+
+	new client = GetNativeCell(2);
+	
+	new String:translation[TRANSLATION_LENGTH];
+	
+	FormatNativeString(0, 3, 4, TRANSLATION_LENGTH, _, translation);
+
+	Game_DisplayVotePassCustom(vote, translation, client);
 }
 
 public Native_DisplayPassEx(Handle:plugin, numParams)
@@ -1610,13 +1631,11 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "Invalid vote pass type: %d", passType);
 	}
 
-	new String:winner[128];
-	
-	if (numParams >= 3)
-	{
-		FormatNativeString(0, 3, 4, sizeof(winner), _, winner);
-	}
-	
+	new len;
+	GetNativeStringLength(3, len);
+	new String:winner[len];
+	GetNativeString(3, winner, len);
+
 	Game_DisplayVotePassEx(vote, passType, winner);
 }
 

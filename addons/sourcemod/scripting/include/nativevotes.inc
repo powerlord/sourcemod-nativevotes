@@ -30,8 +30,9 @@
  */
  
 #include <menus>
+#include <sourcemod>
 
-// NativeVotes 0.7 series
+// NativeVotes 0.8 series
 
 #if defined _nativevotes_included
  #endinput
@@ -357,7 +358,7 @@ native NativeVotes_GetItemCount(Handle:vote);
  * @noreturn
  * @error					Invalid Handle.
  */
-native NativeVotes_SetDetails(Handle:vote, const String:argument[], any:...);
+native NativeVotes_SetDetails(Handle:vote, const String:argument[]);
 
 /**
  * Returns the text of a vote's details if set.
@@ -620,31 +621,59 @@ native NativeVotes_GetInitiator(Handle:vote);
 /**
  * Display vote passed screen
  *
- * You MUST call one of NativeVotes_DisplayPass, NativeVotes_DisplayPassEx,
- * or NativeVotes_DisplayFail to hide the vote screen for users who didn't vote,
- * and to clear out their selection for the next vote.
+ * You MUST call one of the NativeVotesDisplayPass* or NativeVotes_DisplayFail functions
+ * to hide the vote screen for users who didn't vote, and to clear out their selection
+ * for the next vote.
  * 
  * @param vote				Vote handle
  * @param details			Normally the item that won the vote or format string. Also used for custom vote winners
  * @param ...				Variable number of format parameters.
  * @noreturn
  */
-native NativeVotes_DisplayPass(Handle:vote, String:details[]="", any:...);
+native NativeVotes_DisplayPass(Handle:vote, const String:details[]="");
 
 /**
- * Display vote passed screen
+ * Display vote passed screen with custom text
  *
- * You MUST call one of NativeVotes_DisplayPass, NativeVotes_DisplayPassEx,
- * or NativeVotes_DisplayFail to hide the vote screen for users who didn't vote,
- * and to clear out their selection for the next vote.
+ * You MUST call one of the NativeVotesDisplayPass* or NativeVotes_DisplayFail functions
+ * to hide the vote screen for users who didn't vote, and to clear out their selection
+ * for the next vote.
+ * 
+ * @param vote				Vote handle
+ * @param format			A format string.
+ * @param any				Variable number of format parameters
+ * @noreturn
+ */
+stock NativeVotes_DisplayPassCustom(Handle:vote, const String:format[], any:...)
+{
+	decl buffer[192];
+	
+	for (new i = 1; i <= MaxClients; ++i)
+	{
+		if (IsClientInGame(i))
+		{
+			SetGlobalTransTarget(i);
+			VFormat(buffer, sizeof(buffer), format, 3);
+			NativeVotes_DisplayPassCustomToOne(vote, i, "%s", details, buffer);
+		}
+	}
+}
+
+/**
+ * Display vote passed screen with custom text to a single user
+ *
+ * You MUST call one of the NativeVotesDisplayPass* or NativeVotes_DisplayFail functions
+ * to hide the vote screen for users who didn't vote, and to clear out their selection
+ * for the next vote.
  * 
  * @param vote				Vote handle
  * @param client			client to display to
- * @param details			Normally the item that won the vote or format string. Also used for custom vote winners
- * @param ...				Variable number of format parameters.
+ * @param format			A format string.
+ * @param details			%%s1 in the format string will be replaced by this
+ * @param any				Variable number of format parameters
  * @noreturn
  */
-native NativeVotes_DisplayPassToOne(Handle:vote, client, String:details[]="", any:...);
+native NativeVotes_DisplayPassCustomToOne(Handle:vote, client, const String:format[], const String:details[], any:...);
 
 /**
  * Display vote passed screen with a custom type.
@@ -660,7 +689,7 @@ native NativeVotes_DisplayPassToOne(Handle:vote, client, String:details[]="", an
  * @param details			Normally the item that won the vote. Also used for custom vote winners
  * @noreturn
  */
-native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, String:details[]="", any:...);
+native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, const String:details[]="");
 
 /**
  * Display failure screen.

@@ -28,6 +28,13 @@
  *
  * Version: $Id$
  */
+#if defined _nativevotes_game_included
+ #endinput
+#endif
+
+#define _nativevotes_game_included
+
+#include <sourcemod>
 
 #define L4DL4D2_COUNT						2
 #define TF2CSGO_COUNT						5
@@ -381,7 +388,7 @@ Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason, client=0)
 	}
 }
 
-Game_DisplayVotePass(Handle:vote, String:details[], client=0)
+Game_DisplayVotePass(Handle:vote, const String:details[], client=0)
 {
 	switch (g_EngineVersion)
 	{
@@ -405,7 +412,7 @@ Game_DisplayVotePass(Handle:vote, String:details[], client=0)
 	}
 }
 
-Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[], client=0)
+Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const String:details[], client=0)
 {
 	switch (g_EngineVersion)
 	{
@@ -425,6 +432,27 @@ Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details
 		case Engine_CSGO, Engine_TF2:
 		{
 			TF2CSGO_DisplayVotePassEx(vote, passType, details, client);
+		}
+	}
+}
+
+Game_DisplayVotePassCustom(Handle:vote, const String:translation[], client)
+{
+	switch (g_EngineVersion)
+	{
+		case Engine_Left4Dead:
+		{
+			ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes_DisplayPassCustom is not supported on L4D");
+		}
+
+		case Engine_Left4Dead2:
+		{
+			L4D2_VotePass(vote, translation, "", client);
+		}
+		
+		case Engine_CSGO, Engine_TF2:
+		{
+			TF2CSGO_VotePass(vote, translation, "", client);
 		}
 	}
 }
@@ -794,14 +822,14 @@ L4D_ClientSelectedItem(Handle:vote, client, item)
 
 L4D_DisplayVote(Handle:vote, num_clients)
 {
-	new String:translation[64];
+	new String:translation[TRANSLATION_LENGTH];
 
 	new NativeVotesType:voteType = Data_GetType(vote);
 	
 	L4DL4D2_VoteTypeToTranslation(voteType, translation, sizeof(translation));
 
-	decl String:details[MAX_DETAILS_SIZE];
-	Data_GetDetails(vote, details, MAX_DETAILS_SIZE);
+	decl String:details[MAX_VOTE_DETAILS_LENGTH];
+	Data_GetDetails(vote, details, MAX_VOTE_DETAILS_LENGTH);
 	
 	new team = Data_GetTeam(vote);
 	
@@ -829,16 +857,21 @@ L4D_VoteEnded()
 	FireEvent(endEvent);
 }
 
-L4D_DisplayVotePass(Handle:vote, String:details[])
+L4D_DisplayVotePass(Handle:vote, const String:details[])
 {
 	L4D_DisplayVotePassEx(vote, VoteTypeToVotePass(Data_GetType(vote)), details);
 }
 
-L4D_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[])
+L4D_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const String:details[])
 {
-	decl String:translation[64];
+	decl String:translation[TRANSLATION_LENGTH];
 	L4DL4D2_VotePassToTranslation(passType, translation, sizeof(translation));
-	
+
+	L4D_VotePass(vote, translation, details);
+}
+
+L4D_VotePass(Handle:vote, const String:translation[], const String:details[])
+{
 	L4D_VoteEnded();
 	
 	new Handle:passEvent = CreateEvent("vote_passed");
@@ -892,13 +925,13 @@ bool:L4D_CheckVotePassType(NativeVotesPassType:passType)
 
 L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 {
-	new String:translation[64];
+	new String:translation[TRANSLATION_LENGTH];
 
 	new NativeVotesType:voteType = Data_GetType(vote);
 	
 	L4DL4D2_VoteTypeToTranslation(voteType, translation, sizeof(translation));
 
-	decl String:details[MAX_DETAILS_SIZE];
+	decl String:details[MAX_VOTE_DETAILS_LENGTH];
 	
 	new team = Data_GetTeam(vote);
 	
@@ -906,17 +939,17 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 	{
 		case NativeVotesType_AlltalkOn:
 		{
-			strcopy(details, MAX_DETAILS_SIZE, L4D2_VOTE_ALLTALK_ENABLE);
+			strcopy(details, MAX_VOTE_DETAILS_LENGTH, L4D2_VOTE_ALLTALK_ENABLE);
 		}
 		
 		case NativeVotesType_AlltalkOff:
 		{
-			strcopy(details, MAX_DETAILS_SIZE, L4D2_VOTE_ALLTALK_DISABLE);
+			strcopy(details, MAX_VOTE_DETAILS_LENGTH, L4D2_VOTE_ALLTALK_DISABLE);
 		}
 		
 		default:
 		{
-			Data_GetDetails(vote, details, MAX_DETAILS_SIZE);
+			Data_GetDetails(vote, details, MAX_VOTE_DETAILS_LENGTH);
 		}
 	}
 	
@@ -947,30 +980,38 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 	}
 }
 
-L4D2_DisplayVotePass(Handle:vote, String:details[], client=0)
+L4D2_DisplayVotePass(Handle:vote, const String:details[], client=0)
 {
 	L4D2_DisplayVotePassEx(vote, VoteTypeToVotePass(Data_GetType(vote)), details, client);
 }
 
-L4D2_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[], client=0)
+L4D2_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const String:details[], client=0)
 {
-	decl String:translation[64];
+	decl String:translation[TRANSLATION_LENGTH];
+	
+	L4DL4D2_VotePassToTranslation(passType, translation, sizeof(translation));
 	
 	switch (passType)
 	{
 		case NativeVotesPass_AlltalkOn:
 		{
-			strcopy(details, MAX_DETAILS_SIZE, L4D2_VOTE_ALLTALK_ENABLE);
+			L4D2_VotePass(vote, translation, L4D2_VOTE_ALLTALK_ENABLE, client);
 		}
 		
 		case NativeVotesPass_AlltalkOff:
 		{
-			strcopy(details, MAX_DETAILS_SIZE, L4D2_VOTE_ALLTALK_DISABLE);
+			L4D2_VotePass(vote, translation, L4D2_VOTE_ALLTALK_DISABLE, client);
+		}
+		
+		default:
+		{
+			L4D2_VotePass(vote, translation, details, client);
 		}
 	}
-	
-	L4DL4D2_VotePassToTranslation(passType, translation, sizeof(translation));
-	
+}
+
+L4D2_VotePass(Handle:vote, const String:translation[], const String:details[], client=0)
+{
 	new Handle:votePass;
 	if (!client)
 	{
@@ -1091,35 +1132,48 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		decl String:option[8];
 		Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, i+1);
 		
-		decl String:display[64];
+		decl String:display[TRANSLATION_LENGTH];
 		Data_GetItemDisplay(vote, i, display, sizeof(display));
 		SetEventString(optionsEvent, option, display);
 	}
 	SetEventInt(optionsEvent, "count", maxCount);
 	FireEvent(optionsEvent);
 	
-	new String:translation[64];
-	new String:otherTeamString[64];
+	new String:translation[TRANSLATION_LENGTH];
+	new String:otherTeamString[TRANSLATION_LENGTH];
 	new bool:bYesNo = true;
 	
 	new NativeVotesType:voteType = Data_GetType(vote);
 	
-	switch(g_EngineVersion)
+	new String:details[MAX_VOTE_DETAILS_LENGTH];
+
+	if (voteType == NativeVotesType_Custom_YesNo || voteType == NativeVotesType_Custom_Mult)
 	{
-		case Engine_CSGO:
+		if (voteType == NativeVotesType_Custom_Mult)
 		{
-			bYesNo = CSGO_VoteTypeToTranslation(voteType, translation, sizeof(translation));
-			CSGO_VoteTypeToVoteOtherTeamString(voteType, otherTeamString, sizeof(otherTeamString));
+			bYesNo = false;
 		}
 		
-		case Engine_TF2:
+		Data_GetDetails(vote, translation, 192);
+	}
+	else
+	{
+		Data_GetDetails(vote, details, MAX_VOTE_DETAILS_LENGTH);
+		
+		switch(g_EngineVersion)
 		{
-			bYesNo = TF2_VoteTypeToTranslation(voteType, translation, sizeof(translation));
+			case Engine_CSGO:
+			{
+				bYesNo = CSGO_VoteTypeToTranslation(voteType, translation, sizeof(translation));
+				CSGO_VoteTypeToVoteOtherTeamString(voteType, otherTeamString, sizeof(otherTeamString));
+			}
+			
+			case Engine_TF2:
+			{
+				bYesNo = TF2_VoteTypeToTranslation(voteType, translation, sizeof(translation));
+			}
 		}
 	}
-	
-	decl String:details[MAX_DETAILS_SIZE];
-	Data_GetDetails(vote, details, MAX_DETAILS_SIZE);
 	
 	new team = Data_GetTeam(vote);
 	
@@ -1161,14 +1215,14 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	}
 }
 
-TF2CSGO_DisplayVotePass(Handle:vote, String:details[], client=0)
+TF2CSGO_DisplayVotePass(Handle:vote, const String:details[], client=0)
 {
 	TF2CSGO_DisplayVotePassEx(vote, VoteTypeToVotePass(Data_GetType(vote)), details, client);
 }
 
-TF2CSGO_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:details[], client=0)
+TF2CSGO_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const String:details[], client=0)
 {
-	decl String:translation[64];
+	decl String:translation[TRANSLATION_LENGTH];
 	
 	switch(g_EngineVersion)
 	{
@@ -1183,6 +1237,11 @@ TF2CSGO_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, String:deta
 		}
 	}
 	
+	TF2CSGO_VotePass(vote, translation, details, client);
+}
+
+TF2CSGO_VotePass(Handle:vote, const String:translation[], const String:details[], client=0)
+{
 	new Handle:votePass = INVALID_HANDLE;
 	
 	if (!client)
