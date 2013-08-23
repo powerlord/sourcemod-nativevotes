@@ -669,11 +669,10 @@ stock NativeVotes_DisplayPassCustom(Handle:vote, const String:format[], any:...)
  * @param vote				Vote handle
  * @param client			client to display to
  * @param format			A format string.
- * @param details			%%s1 in the format string will be replaced by this
  * @param any				Variable number of format parameters
  * @noreturn
  */
-native NativeVotes_DisplayPassCustomToOne(Handle:vote, client, const String:format[], const String:details[], any:...);
+native NativeVotes_DisplayPassCustomToOne(Handle:vote, client, const String:format[], any:...);
 
 /**
  * Display vote passed screen with a custom type.
