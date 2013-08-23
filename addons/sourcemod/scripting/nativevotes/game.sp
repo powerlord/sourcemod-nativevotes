@@ -1154,7 +1154,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 			bYesNo = false;
 		}
 		
-		Data_GetDetails(vote, translation, 192);
+		Data_GetDetails(vote, translation, TRANSLATION_LENGTH);
 	}
 	else
 	{
