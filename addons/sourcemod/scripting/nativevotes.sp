@@ -1821,3 +1821,108 @@ NativeVotesPassType:VoteTypeToVotePass(NativeVotesType:voteType)
 	return passType;
 }
 
+// Using this stock REQUIRES you to add the following to AskPluginLoad2:
+// MarkNativeAsOptional("GetEngineVersion");
+stock EngineVersion:GetEngineVersionCompat()
+{
+	new EngineVersion:version;
+	if (GetFeatureStatus(FeatureType_Native, "GetEngineVersion") != FeatureStatus_Available)
+	{
+		new sdkVersion = GuessSDKVersion();
+		switch (sdkVersion)
+		{
+			case SOURCE_SDK_ORIGINAL:
+			{
+				version = Engine_Original;
+			}
+			
+			case SOURCE_SDK_DARKMESSIAH:
+			{
+				version = Engine_DarkMessiah;
+			}
+			
+			case SOURCE_SDK_EPISODE1:
+			{
+				version = Engine_SourceSDK2006;
+			}
+			
+			case SOURCE_SDK_EPISODE2:
+			{
+				version = Engine_SourceSDK2007;
+			}
+			
+			case SOURCE_SDK_BLOODYGOODTIME:
+			{
+				version = Engine_BloodyGoodTime;
+			}
+			
+			case SOURCE_SDK_EYE:
+			{
+				version = Engine_EYE;
+			}
+			
+			case SOURCE_SDK_CSS:
+			{
+				version = Engine_CSS;
+			}
+			
+			case SOURCE_SDK_EPISODE2VALVE:
+			{
+				decl String:gameFolder[8];
+				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
+				if (StrEqual(gameFolder, "dod", false))
+				{
+					version = Engine_DODS;
+				}
+				else if (StrEqual(gameFolder, "hl2mp", false))
+				{
+					version = Engine_HL2DM;
+				}
+				else
+				{
+					version = Engine_TF2;
+				}
+			}
+			
+			case SOURCE_SDK_LEFT4DEAD:
+			{
+				version = Engine_Left4Dead;
+			}
+			
+			case SOURCE_SDK_LEFT4DEAD2:
+			{
+				decl String:gameFolder[8];
+				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
+				if (StrEqual(gameFolder, "nd", false))
+				{
+					version = Engine_NuclearDawn;
+				}
+				else
+				{
+					version = Engine_Left4Dead2;
+				}
+			}
+			
+			case SOURCE_SDK_ALIENSWARM:
+			{
+				version = Engine_AlienSwarm;
+			}
+			
+			case SOURCE_SDK_CSGO:
+			{
+				version = Engine_CSGO;
+			}
+			
+			default:
+			{
+				version = Engine_Unknown;
+			}
+		}
+	}
+	else
+	{
+		version = GetEngineVersion();
+	}
+	
+	return version;
+}

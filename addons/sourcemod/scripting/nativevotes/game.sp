@@ -180,45 +180,7 @@ new EngineVersion:g_EngineVersion = Engine_Unknown;
 
 bool:Game_IsGameSupported()
 {
-	if (GetFeatureStatus(FeatureType_Native, "GetEngineVersion") == FeatureStatus_Available)
-	{
-		// Which engine are we using?
-		g_EngineVersion = GetEngineVersion(); // This value won't change
-	}
-	else
-	{
-		// Guess which game we're using.
-		new gameVersion = GuessSDKVersion(); // This value won't change
-		
-		switch(gameVersion)
-		{
-			case SOURCE_SDK_EPISODE2VALVE:
-			{
-				decl String:gameFolder[8];
-				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
-				if (StrEqual(gameFolder, "tf", false) || StrEqual(gameFolder, "tf_beta", false))
-				{
-					g_EngineVersion = Engine_TF2;
-				}
-				// Fail for HL2:MP, DoD:S, and CS:S (on 1.4; CSS is its own engine on 1.5)
-			}
-			
-			case SOURCE_SDK_LEFT4DEAD:
-			{
-				g_EngineVersion = Engine_Left4Dead;
-			}
-			
-			case SOURCE_SDK_LEFT4DEAD2:
-			{
-				g_EngineVersion = Engine_Left4Dead2;
-			}
-			
-			case SOURCE_SDK_CSGO:
-			{
-				g_EngineVersion = Engine_CSGO;
-			}
-		}
-	}
+	g_EngineVersion = GetEngineVersionCompat();
 	
 	switch (g_EngineVersion)
 	{
