@@ -962,13 +962,36 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 		GetClientName(initiator, initiatorName, MAX_NAME_LENGTH);
 	}
 
-	new Handle:voteStart = StartMessage("VoteStart", clients, num_clients, USERMSG_RELIABLE);
-	BfWriteByte(voteStart, team);
-	BfWriteByte(voteStart, initiator);
-	BfWriteString(voteStart, translation);
-	BfWriteString(voteStart, details);
-	BfWriteString(voteStart, initiatorName);
-	EndMessage();
+	for (new i = 0; i < num_clients; ++i)
+	{
+		g_newMenuTitle[0] = '\0';
+		
+		new MenuAction:actions = Data_GetActions(vote);
+		
+		new Action:changeTitle = Plugin_Continue;
+		if (actions & MenuAction_Display)
+		{
+			g_curDisplayClient = clients[i];
+			DoAction(vote, MenuAction_Display, clients[i], 0, changeTitle);
+		}
+		
+		g_curDisplayClient = 0;
+	
+		new Handle:voteStart = StartMessageOne("VoteStart", clients[i], USERMSG_RELIABLE);
+		BfWriteByte(voteStart, team);
+		BfWriteByte(voteStart, initiator);
+		if (changeTitle == Plugin_Changed)
+		{
+			BfWriteString(voteStart, g_newMenuTitle);
+		}
+		else
+		{
+			BfWriteString(voteStart, translation);
+		}
+		BfWriteString(voteStart, details);
+		BfWriteString(voteStart, initiatorName);
+		EndMessage();
+	}
 	
 	if (CheckVoteController())
 	{

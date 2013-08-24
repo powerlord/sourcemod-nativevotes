@@ -781,6 +781,7 @@ native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, t
 
 /**
  * Redraws the vote title from inside a MenuAction_Display callback
+ * Not supported on L4D
  * 
  * @param text			Vote title to draw
  * @error 				If called from outside MenuAction_Display
@@ -790,6 +791,7 @@ native NativeVotes_RedrawVoteTitle(const String:text[]);
 
 /**
  * Redraws the vote text from inside a MenuAction_DisplayItem callback.
+ * Only supported on multiple-choice votes
  * 
  * @param text			Vote text to draw.
  * @error 				If called from outside MenuAction_DisplayItem
