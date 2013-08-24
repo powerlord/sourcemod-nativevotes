@@ -667,7 +667,7 @@ native NativeVotes_DisplayPassCustomToOne(Handle:vote, client, const String:form
  */
 stock NativeVotes_DisplayPassCustom(Handle:vote, const String:format[], any:...)
 {
-	decl buffer[192];
+	decl String:buffer[192];
 	
 	for (new i = 1; i <= MaxClients; ++i)
 	{
@@ -675,7 +675,7 @@ stock NativeVotes_DisplayPassCustom(Handle:vote, const String:format[], any:...)
 		{
 			SetGlobalTransTarget(i);
 			VFormat(buffer, sizeof(buffer), format, 3);
-			NativeVotes_DisplayPassCustomToOne(vote, i, "%s", details, buffer);
+			NativeVotes_DisplayPassCustomToOne(vote, i, "%s", buffer);
 		}
 	}
 }
