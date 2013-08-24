@@ -1242,7 +1242,6 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 				g_curItemClient = clients[i];
 				g_newMenuItem[0] = '\0';
 				
-				PrintToChat(g_curItemClient, "Attempting to change menu item %d", j);
 				changeItem = Action:DoAction(vote, MenuAction_DisplayItem, clients[i], j);
 				g_curItemClient = 0;
 				
