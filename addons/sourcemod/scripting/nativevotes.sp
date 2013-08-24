@@ -92,6 +92,11 @@ new g_TotalClients;
 new g_Items;
 new Handle:g_hVotes;
 new Handle:g_hCurVote;
+new g_curDisplayClient = 0;
+new String:g_newMenuTitle[TRANSLATION_LENGTH];
+new g_curItemClient = 0;
+new String:g_newMenuItem[TRANSLATION_LENGTH];
+
 new bool:g_bStarted;
 new bool:g_bCancelled;
 new bool:g_bWasCancelled;
@@ -161,6 +166,8 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_DisplayFail", Native_DisplayFail);
 	CreateNative("NativeVotes_RegisterVoteManager", Native_RegisterVoteManager);
 	CreateNative("NativeVotes_DisplayCallVoteFail", Native_DisplayCallVoteFail);
+	CreateNative("NativeVotes_RedrawVoteTitle", Native_RedrawVoteTitle);
+	CreateNative("NativeVotes_RedrawVoteItem", Native_RedrawVoteItem);
 	
 	RegPluginLibrary("nativevotes");
 	
@@ -459,22 +466,27 @@ OnVoteSelect(Handle:vote, client, item)
 	}
 }
 
-
 //MenuAction_Select
 OnSelect(Handle:vote, client, item)
 {
-	DoAction(vote, MenuAction_Select, client, item);
+	new MenuAction:actions = Data_GetActions(vote);
+	if (actions & MenuAction_Select)
+	{
+		DoAction(vote, MenuAction_Select, client, item);
+	}
 }
 
 //MenuAction_End
 OnEnd(Handle:vote, item)
 {
+	// Always called
 	DoAction(vote, MenuAction_End, item, 0);
 }
 
 
 stock OnVoteEnd(Handle:vote, item)
 {
+	// Always called
 	DoAction(vote, MenuAction_VoteEnd, item, 0);
 }
 
@@ -482,13 +494,19 @@ OnVoteStart(Handle:vote)
 {
 	// Fire both Start and VoteStart in the other plugin.
 	
-	DoAction(vote, MenuAction_Start, 0, 0);
+	new MenuAction:actions = Data_GetActions(vote);
+	if (actions & MenuAction_Start)
+	{
+		DoAction(vote, MenuAction_Start, 0, 0);
+	}
 	
+	// Always called
 	DoAction(vote, MenuAction_VoteStart, 0, 0);
 }
 
 OnVoteCancel(Handle:vote, reason)
 {
+	// Always called
 	DoAction(vote, MenuAction_VoteCancel, reason, 0);
 }
 
@@ -1750,6 +1768,25 @@ public Native_DisplayCallVoteFail(Handle:plugin, numParams)
 	Game_DisplayCallVoteFail(client, reason, time);
 }
 
+public Native_RedrawVoteTitle(Handle:plugin, numParams)
+{
+	if (!g_curDisplayClient)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "You can only call this once from a MenuAction_Display callback");
+	}
+	
+	GetNativeString(1, g_newMenuTitle, TRANSLATION_LENGTH);
+}
+
+public Native_RedrawVoteItem(Handle:plugin, numParams)
+{
+	if (!g_curItemClient)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "You can only call this once from a MenuAction_DisplayItem callback");
+	}
+	
+	GetNativeString(1, g_newMenuItem, TRANSLATION_LENGTH);
+}
 
 //----------------------------------------------------------------------------
 // Data functions

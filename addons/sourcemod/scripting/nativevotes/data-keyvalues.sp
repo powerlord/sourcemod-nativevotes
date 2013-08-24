@@ -184,6 +184,11 @@ Handle:Data_CreateVote(NativeVotesType:voteType, MenuAction:actions)
 	return vote;
 }
 
+MenuAction:Data_GetActions(Handle:vote)
+{
+	return MenuAction:KvGetNum(vote, "actions");
+}
+
 bool:Data_AddItem(Handle:vote, const String:info[], const String:display[])
 {
 	new Handle:infoArray = Handle:KvGetNum(vote, INFO, _:INVALID_HANDLE);

@@ -54,6 +54,8 @@
 /*
 The following MenuActions are supported.  Arguments are also listed, as they differ slightly from the default
 MenuAction_Start		A menu has been started (nothing passed). Only exists for compat reasons.
+MenuAction_Display		A menu is about to be displayed (param1=client). If you choose to change the vote text,
+ 						use RedrawVoteTitle()
 MenuAction_Select		An item was selected (param1=client, param2=item). For subplugin support.
 MenuAction_End			A vote has fully ended and the vote object is ready to be cleaned up
 						param1 is MenuEnd reason, either MenuEnd_VotingCancelled or MenuEnd_VotingDone
@@ -774,6 +776,22 @@ native NativeVotes_RegisterVoteManager(NativeVotes_CallVoteHandler:callHandler, 
 native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time);
 
 /**
+ * Redraws the vote title from inside a MenuAction_Display callback
+ * 
+ * @param text			Vote title to draw
+ * @noreturn
+ */
+native NativeVotes_RedrawVoteTitle(const String:text[]);
+
+/**
+ * Redraws the vote text from inside a MenuAction_DisplayItem callback.
+ * 
+ * @param text			Vote text to draw.
+ * @noreturn
+ */
+native NativeVotes_RedrawVoteItem(const String:text[]);
+
+/**
  * Retrieves voting information from MenuAction_VoteEnd.
  *
  * @param param2		Second parameter of MenuAction_VoteEnd.
@@ -806,7 +824,6 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_IsVoteTypeSupported");
 	MarkNativeAsOptional("NativeVotes_Create");
 	MarkNativeAsOptional("NativeVotes_Close");
-	MarkNativeAsOptional("NativeVotes_Display");
 	MarkNativeAsOptional("NativeVotes_AddItem");
 	MarkNativeAsOptional("NativeVotes_InsertItem");
 	MarkNativeAsOptional("NativeVotes_RemoveItem");
@@ -815,24 +832,31 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_GetItemCount");
 	MarkNativeAsOptional("NativeVotes_SetDetails");
 	MarkNativeAsOptional("NativeVotes_GetDetails");
+	MarkNativeAsOptional("NativeVotes_SetTarget");
+	MarkNativeAsOptional("NativeVotes_GetTarget");
+	MarkNativeAsOptional("NativeVotes_GetTargetSteam");
 	MarkNativeAsOptional("NativeVotes_IsVoteInProgress");
 	MarkNativeAsOptional("NativeVotes_GetMaxItems");
 	MarkNativeAsOptional("NativeVotes_SetOptionFlags");
 	MarkNativeAsOptional("NativeVotes_GetOptionFlags");
+	MarkNativeAsOptional("NativeVotes_Cancel");
 	MarkNativeAsOptional("NativeVotes_SetResultCallback");
 	MarkNativeAsOptional("NativeVotes_CheckVoteDelay");
 	MarkNativeAsOptional("NativeVotes_IsClientInVotePool");
+	MarkNativeAsOptional("NativeVotes_RedrawClientVote");
 	MarkNativeAsOptional("NativeVotes_RedrawClientVote");
 	MarkNativeAsOptional("NativeVotes_GetType");
 	MarkNativeAsOptional("NativeVotes_SetTeam");
 	MarkNativeAsOptional("NativeVotes_GetTeam");
 	MarkNativeAsOptional("NativeVotes_SetInitiator");
 	MarkNativeAsOptional("NativeVotes_GetInitiator");
+	MarkNativeAsOptional("NativeVotes_Display");
 	MarkNativeAsOptional("NativeVotes_DisplayPass");
-	MarkNativeAsOptional("NativeVotes_DisplayPassEx");
 	MarkNativeAsOptional("NativeVotes_DisplayPassCustomToOne");
+	MarkNativeAsOptional("NativeVotes_DisplayPassEx");
 	MarkNativeAsOptional("NativeVotes_DisplayFail");
-	MarkNativeAsOptional("NativeVotes_GetTarget");
-	MarkNativeAsOptional("NativeVotes_GetTargetSteam");
-	MarkNativeAsOptional("NativeVotes_SetTarget");
+	MarkNativeAsOptional("NativeVotes_RegisterVoteManager");
+	MarkNativeAsOptional("NativeVotes_DisplayCallVoteFail");
+	MarkNativeAsOptional("NativeVotes_RedrawVoteTitle");
+	MarkNativeAsOptional("NativeVotes_RedrawVoteItem");
 }

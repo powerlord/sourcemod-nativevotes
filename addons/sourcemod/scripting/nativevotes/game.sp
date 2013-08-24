@@ -182,13 +182,14 @@
 // 
 
 new g_VoteController = -1;
+new g_bUserBuf = false;
 
 new EngineVersion:g_EngineVersion = Engine_Unknown;
 
 bool:Game_IsGameSupported()
 {
 	g_EngineVersion = GetEngineVersionCompat();
-	
+	g_bUserBuf = GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf;
 	switch (g_EngineVersion)
 	{
 		case Engine_Left4Dead, Engine_Left4Dead2, Engine_CSGO, Engine_TF2:
@@ -1123,32 +1124,18 @@ TF2CSGO_UpdateClientCount(num_clients)
 
 TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 {
-	new Handle:optionsEvent = CreateEvent("vote_options");
-	
-	new maxCount = Data_GetItemCount(vote);
-	
-	for (new i = 0; i < maxCount; i++)
-	{
-		decl String:option[8];
-		Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, i+1);
-		
-		decl String:display[TRANSLATION_LENGTH];
-		Data_GetItemDisplay(vote, i, display, sizeof(display));
-		SetEventString(optionsEvent, option, display);
-	}
-	SetEventInt(optionsEvent, "count", maxCount);
-	FireEvent(optionsEvent);
+	new NativeVotesType:voteType = Data_GetType(vote);
 	
 	new String:translation[TRANSLATION_LENGTH];
 	new String:otherTeamString[TRANSLATION_LENGTH];
 	new bool:bYesNo = true;
-	
-	new NativeVotesType:voteType = Data_GetType(vote);
+	new bool:bCustom = false;
 	
 	new String:details[MAX_VOTE_DETAILS_LENGTH];
 
 	if (voteType == NativeVotesType_Custom_YesNo || voteType == NativeVotesType_Custom_Mult)
 	{
+		bCustom = true;
 		if (voteType == NativeVotesType_Custom_Mult)
 		{
 			bYesNo = false;
@@ -1175,32 +1162,115 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		}
 	}
 	
+	// According to Source SDK 2013, vote_options is only sent for a multiple choice vote.
+	if (!bYesNo)
+	{
+		new Handle:optionsEvent = CreateEvent("vote_options");
+		
+		new maxCount = Data_GetItemCount(vote);
+		
+		for (new i = 0; i < maxCount; i++)
+		{
+			decl String:option[8];
+			Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, i+1);
+			
+			decl String:display[TRANSLATION_LENGTH];
+			Data_GetItemDisplay(vote, i, display, sizeof(display));
+			SetEventString(optionsEvent, option, display);
+		}
+		SetEventInt(optionsEvent, "count", maxCount);
+		FireEvent(optionsEvent);
+	}
+	
 	new team = Data_GetTeam(vote);
 	
-	new Handle:voteStart = StartMessage("VoteStart", clients, num_clients, USERMSG_RELIABLE);
+	for (new i = 0; i < num_clients; ++i)
+	{
+		g_newMenuTitle[0] = '\0';
+		
+		new MenuAction:actions = Data_GetActions(vote);
+		
+		new Action:changeTitle = Plugin_Continue;
+		if (actions & MenuAction_Display)
+		{
+			g_curDisplayClient = clients[i];
+			DoAction(vote, MenuAction_Display, clients[i], 0, changeTitle);
+		}
+		
+		g_curDisplayClient = 0;
+		
+		if (!bYesNo && actions & MenuAction_DisplayItem)
+		{
+			new maxCount = Data_GetItemCount(vote);
+			
+			new Handle:optionsEvent = CreateEvent("vote_options");
+			
+			for (new j = 0; j < maxCount; j++)
+			{
+				g_curItemClient = clients[i];
+				g_newMenuItem[0] = '\0';
+				
+				DoAction(vote, MenuAction_DisplayItem, clients[j], j);
+				g_curItemClient = 0;
+				
+				decl String:option[8];
+				Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, j+1);
+				
+				decl String:display[TRANSLATION_LENGTH];
+				if (changeTitle == Plugin_Changed)
+				{
+					strcopy(display, TRANSLATION_LENGTH, g_newMenuItem);
+				}
+				else
+				{
+					Data_GetItemDisplay(vote, j, display, sizeof(display));
+				}
+				SetEventString(optionsEvent, option, display);
+			}
+			SetEventInt(optionsEvent, "count", maxCount);
+			FireEvent(optionsEvent);
+		}
+		
+		new Handle:voteStart = StartMessageOne("VoteStart", clients[i], USERMSG_RELIABLE);
+		
+		if(g_bUserBuf)
+		{
+			PbSetInt(voteStart, "team", team);
+			PbSetInt(voteStart, "ent_idx", Data_GetInitiator(vote));
+			if (bCustom && g_newMenuTitle[0] != '\0')
+			{
+				PbSetString(voteStart, "disp_str", g_newMenuTitle);
+			}
+			else
+			{
+				PbSetString(voteStart, "disp_str", translation);
+			}
+			PbSetString(voteStart, "details_str", details);
+			PbSetBool(voteStart, "is_yes_no_vote", bYesNo);
+			PbSetString(voteStart, "other_team_str", otherTeamString);
+			// TODO: Need to look these values up. These values may correspond to the order votes show up in for VoteSetup
+			PbSetInt(voteStart, "vote_type", 0); // For now, set to 0 to block in-game votes
+		}
+		else
+		{
+			BfWriteByte(voteStart, team);
+			BfWriteByte(voteStart, Data_GetInitiator(vote));
+			if (bCustom && g_newMenuTitle[0] != '\0')
+			{
+				BfWriteString(voteStart, g_newMenuTitle);
+			}
+			else
+			{
+				BfWriteString(voteStart, translation);
+			}
+			BfWriteString(voteStart, details);
+			BfWriteBool(voteStart, bYesNo);
+		}
+		EndMessage();
+	}
 	
-	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
-	{
-		PbSetInt(voteStart, "team", team);
-		PbSetInt(voteStart, "ent_idx", Data_GetInitiator(vote));
-		PbSetString(voteStart, "disp_str", translation);
-		PbSetString(voteStart, "details_str", details);
-		PbSetBool(voteStart, "is_yes_no_vote", bYesNo);
-		PbSetString(voteStart, "other_team_str", otherTeamString);
-		// TODO: Need to look these values up. These values may correspond to the order votes show up in for VoteSetup
-		PbSetInt(voteStart, "vote_type", 0); // For now, set to 0 to block in-game votes
-	}
-	else
-	{
-		BfWriteByte(voteStart, team);
-		BfWriteByte(voteStart, Data_GetInitiator(vote));
-		BfWriteString(voteStart, translation);
-		BfWriteString(voteStart, details);
-		BfWriteBool(voteStart, bYesNo);
-	}
+	g_curDisplayClient = 0;
 
-	EndMessage();
-	
 	if (CheckVoteController())
 	{
 		SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", team);
@@ -1253,7 +1323,7 @@ TF2CSGO_VotePass(Handle:vote, const String:translation[], const String:details[]
 		votePass = StartMessageOne("VotePass", client, USERMSG_RELIABLE);
 	}
 
-	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
+	if(g_bUserBuf)
 	{
 		PbSetInt(votePass, "team", Data_GetTeam(vote));
 		PbSetString(votePass, "disp_str", translation);
@@ -1281,7 +1351,7 @@ TF2CSGO_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason, client=0)
 		voteFailed = StartMessageOne("VoteFailed", client, USERMSG_RELIABLE);
 	}
 	
-	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
+	if(g_bUserBuf)
 	{
 		PbSetInt(voteFailed, "team", Data_GetTeam(vote));
 		PbSetInt(voteFailed, "reason", _:reason);
@@ -1298,7 +1368,7 @@ TF2CSGO_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
 {
 	new Handle:callVoteFail = StartMessageOne("CallVoteFailed", client, USERMSG_RELIABLE);
 
-	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
+	if(g_bUserBuf)
 	{
 		PbSetInt(callVoteFail, "reason", _:reason);
 		PbSetInt(callVoteFail, "time", time);
@@ -1400,7 +1470,7 @@ TF2CSGO_DisplayVoteSetup(client, const NativeVotesType:voteTypes[])
 	
 	new Handle:voteSetup = StartMessageOne("VoteSetup", client, USERMSG_RELIABLE);
 	
-	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
+	if(g_bUserBuf)
 	{
 		for (new i = 0; i < count; ++i)
 		{
