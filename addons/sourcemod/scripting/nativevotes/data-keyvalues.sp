@@ -163,7 +163,7 @@ Handle:Data_GetResultCallback(Handle:vote)
 
 Handle:Data_CreateVote(NativeVotesType:voteType, MenuAction:actions)
 {
-	new Handle:handler = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
+	new Handle:handler = CreateForward(ET_Single, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
 	new Handle:voteResults = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Array, Param_Array, Param_Cell, Param_Array, Param_Array);
 	
 	new Handle:vote = CreateKeyValues("NativeVote");

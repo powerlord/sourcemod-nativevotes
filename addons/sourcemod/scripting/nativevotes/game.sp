@@ -977,7 +977,7 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 		if (actions & MenuAction_Display)
 		{
 			g_curDisplayClient = clients[i];
-			DoAction(vote, MenuAction_Display, clients[i], 0, changeTitle);
+			changeTitle = Action:DoAction(vote, MenuAction_Display, clients[i], 0);
 		}
 		
 		g_curDisplayClient = 0;
@@ -985,15 +985,15 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 		new Handle:voteStart = StartMessageOne("VoteStart", clients[i], USERMSG_RELIABLE);
 		BfWriteByte(voteStart, team);
 		BfWriteByte(voteStart, initiator);
+		BfWriteString(voteStart, translation);
 		if (changeTitle == Plugin_Changed)
 		{
 			BfWriteString(voteStart, g_newMenuTitle);
 		}
 		else
 		{
-			BfWriteString(voteStart, translation);
+			BfWriteString(voteStart, details);
 		}
-		BfWriteString(voteStart, details);
 		BfWriteString(voteStart, initiatorName);
 		EndMessage();
 	}
@@ -1213,16 +1213,28 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		if (actions & MenuAction_Display)
 		{
 			g_curDisplayClient = clients[i];
-			DoAction(vote, MenuAction_Display, clients[i], 0, changeTitle);
+			changeTitle = Action:DoAction(vote, MenuAction_Display, clients[i], 0);
 		}
 		
 		g_curDisplayClient = 0;
+		new maxCount = Data_GetItemCount(vote);
+		
+		new Handle:optionsEvent = CreateEvent("vote_options");
+		for (new j = 0; j < maxCount; j++)
+		{
+			decl String:option[8];
+			Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, j+1);
+			
+			decl String:display[TRANSLATION_LENGTH];
+			Data_GetItemDisplay(vote, j, display, TRANSLATION_LENGTH);
+			SetEventString(optionsEvent, option, display);
+		}
+		SetEventInt(optionsEvent, "count", maxCount);
+		FireEvent(optionsEvent);
 		
 		if (!bYesNo && actions & MenuAction_DisplayItem)
 		{
-			new maxCount = Data_GetItemCount(vote);
-			
-			new Handle:optionsEvent = CreateEvent("vote_options");
+			optionsEvent = CreateEvent("vote_options");
 			
 			for (new j = 0; j < maxCount; j++)
 			{
@@ -1230,7 +1242,8 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 				g_curItemClient = clients[i];
 				g_newMenuItem[0] = '\0';
 				
-				DoAction(vote, MenuAction_DisplayItem, clients[j], j, changeItem);
+				PrintToChat(g_curItemClient, "Attempting to change menu item %d", j);
+				changeItem = Action:DoAction(vote, MenuAction_DisplayItem, clients[i], j);
 				g_curItemClient = 0;
 				
 				decl String:option[8];
@@ -1257,15 +1270,15 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		{
 			PbSetInt(voteStart, "team", team);
 			PbSetInt(voteStart, "ent_idx", Data_GetInitiator(vote));
+			PbSetString(voteStart, "disp_str", translation);
 			if (bCustom && changeTitle == Plugin_Changed)
 			{
-				PbSetString(voteStart, "disp_str", g_newMenuTitle);
+				PbSetString(voteStart, "details_str", g_newMenuTitle);
 			}
 			else
 			{
-				PbSetString(voteStart, "disp_str", translation);
+				PbSetString(voteStart, "details_str", details);
 			}
-			PbSetString(voteStart, "details_str", details);
 			PbSetBool(voteStart, "is_yes_no_vote", bYesNo);
 			PbSetString(voteStart, "other_team_str", otherTeamString);
 			// TODO: Need to look these values up. These values may correspond to the order votes show up in for VoteSetup
@@ -1275,15 +1288,15 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		{
 			BfWriteByte(voteStart, team);
 			BfWriteByte(voteStart, Data_GetInitiator(vote));
+			BfWriteString(voteStart, translation);
 			if (bCustom && changeTitle == Plugin_Changed)
 			{
 				BfWriteString(voteStart, g_newMenuTitle);
 			}
 			else
 			{
-				BfWriteString(voteStart, translation);
+				BfWriteString(voteStart, details);
 			}
-			BfWriteString(voteStart, details);
 			BfWriteBool(voteStart, bYesNo);
 		}
 		EndMessage();

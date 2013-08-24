@@ -1195,6 +1195,12 @@ public Native_Create(Handle:plugin, numParams)
 		return _:INVALID_HANDLE;
 	}
 	
+	if (voteType != NativeVotesType_NextLevelMult && voteType != NativeVotesType_Custom_Mult)
+	{
+		Data_AddItem(vote, "yes", "Yes");
+		Data_AddItem(vote, "no", "No");
+	}
+	
 	new Handle:menuForward = Data_GetHandler(vote);
 	
 	AddToForward(menuForward, plugin, handler);
@@ -1268,7 +1274,14 @@ public Native_AddItem(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return false;
 	}
+
+	new NativeVotesType:voteType = Data_GetType(vote);
 	
+	if (voteType != NativeVotesType_NextLevelMult && voteType != NativeVotesType_Custom_Mult)
+	{
+		return false;
+	}
+
 	decl String:info[256];
 	decl String:display[256];
 	GetNativeString(2, info, sizeof(info));
@@ -1283,6 +1296,13 @@ public Native_InsertItem(Handle:plugin, numParams)
 	if (vote == INVALID_HANDLE)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
+		return false;
+	}
+
+	new NativeVotesType:voteType = Data_GetType(vote);
+	
+	if (voteType != NativeVotesType_NextLevelMult && voteType != NativeVotesType_Custom_Mult)
+	{
 		return false;
 	}
 
@@ -1312,6 +1332,13 @@ public Native_RemoveItem(Handle:plugin, numParams)
 		return false;
 	}
 	
+	new NativeVotesType:voteType = Data_GetType(vote);
+	
+	if (voteType != NativeVotesType_NextLevelMult && voteType != NativeVotesType_Custom_Mult)
+	{
+		return false;
+	}
+
 	new position = GetNativeCell(2);
 	
 	return Data_RemoveItem(vote, position);
@@ -1399,8 +1426,8 @@ public Native_SetDetails(Handle:plugin, numParams)
 	new len;
 	GetNativeStringLength(2, len);
 	
-	decl String:details[len];
-	GetNativeString(2, details, len);
+	decl String:details[len+1];
+	GetNativeString(2, details, len+1);
 	
 	Data_SetDetails(vote, details);
 }
@@ -1618,8 +1645,8 @@ public Native_DisplayPass(Handle:plugin, numParams)
 
 	new len;
 	GetNativeStringLength(2, len);
-	new String:winner[len];
-	GetNativeString(2, winner, len);
+	new String:winner[len+1];
+	GetNativeString(2, winner, len+1);
 
 	Game_DisplayVotePass(vote, winner);
 }
@@ -1660,8 +1687,8 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 
 	new len;
 	GetNativeStringLength(3, len);
-	new String:winner[len];
-	GetNativeString(3, winner, len);
+	new String:winner[len+1];
+	GetNativeString(3, winner, len+1);
 
 	Game_DisplayVotePassEx(vote, passType, winner);
 }

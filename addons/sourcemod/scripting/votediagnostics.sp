@@ -473,7 +473,7 @@ public Action:TF2CSGO_MessageVoteStart(UserMsg:msg_id, Handle:message, const pla
 	new String:param1[MAX_ARG_SIZE];
 	new team;
 	new initiator;
-	new multipleChoice;
+	new yesNo;
 	new voteType;
 	
 	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
@@ -482,7 +482,7 @@ public Action:TF2CSGO_MessageVoteStart(UserMsg:msg_id, Handle:message, const pla
 		initiator = PbReadInt(message, "ent_idx");
 		PbReadString(message, "disp_str", issue, MAX_ARG_SIZE);
 		PbReadString(message, "details_str", param1, MAX_ARG_SIZE);
-		multipleChoice = PbReadBool(message, "is_yes_no_vote");
+		yesNo = PbReadBool(message, "is_yes_no_vote");
 		PbReadString(message, "other_team_str", otherTeamIssue, MAX_ARG_SIZE);
 		voteType = PbReadInt(message, "vote_type");
 	}
@@ -492,10 +492,10 @@ public Action:TF2CSGO_MessageVoteStart(UserMsg:msg_id, Handle:message, const pla
 		initiator = BfReadByte(message);
 		BfReadString(message, issue, MAX_ARG_SIZE);
 		BfReadString(message, param1, MAX_ARG_SIZE);
-		multipleChoice = BfReadBool(message);
+		yesNo = BfReadBool(message);
 	}
 
-	LogToFile(LOGFILE, "VoteStart Usermessage: team: %d, initiator: %d, issue: %s, otherTeamIssue: %s, param1: %s, multipleChoice: %d, player count: %d, voteType: %d", team, initiator, issue, otherTeamIssue, param1, multipleChoice, playersNum, voteType);
+	LogToFile(LOGFILE, "VoteStart Usermessage: team: %d, initiator: %d, issue: %s, otherTeamIssue: %s, param1: %s, yesNo: %d, player count: %d, voteType: %d", team, initiator, issue, otherTeamIssue, param1, yesNo, playersNum, voteType);
 	if (CheckVoteController())
 	{
 		LogToFile(LOGFILE, "Active Index for issue %s: %d", issue, GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex"));
