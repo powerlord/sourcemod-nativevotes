@@ -55,7 +55,8 @@
 The following MenuActions are supported.  Arguments are also listed, as they differ slightly from the default
 MenuAction_Start		A menu has been started (nothing passed). Only exists for compat reasons.
 MenuAction_Display		A menu is about to be displayed (param1=client). If you choose to change the vote text,
- 						use RedrawVoteTitle()
+ 						To change the text, use RedrawVoteTitle()
+						If you do so, return 1 or _:Plugin_Changed  Otherwise, return _:Plugin_Continue or 0.
 MenuAction_Select		An item was selected (param1=client, param2=item). For subplugin support.
 MenuAction_End			A vote has fully ended and the vote object is ready to be cleaned up
 						param1 is MenuEnd reason, either MenuEnd_VotingCancelled or MenuEnd_VotingDone
@@ -64,6 +65,9 @@ MenuAction_VoteEnd		A vote sequence has succeeded (param1=chosen item)
 						You should call NativeVotes_DisplayPass or NativeVotes_DisplayPassEx after this
 MenuAction_VoteStart	A vote sequence has started (nothing passed).  Use this instead of MenuAction_Start
 MenuAction_VoteCancel	A vote sequence has been cancelled (param1=reason)
+MenuAction_DisplayItem	Item text is being drawn to the display (param1=client, param2=item)
+						To change the text, use RedrawVoteItem().
+						If you do so, return 1 or _:Plugin_Changed.  Otherwise, return _:Plugin_Continue or 0.
 */
 
 #define NATIVEVOTES_ACTIONS_DEFAULT		MenuAction_VoteStart|MenuAction_VoteCancel|MenuAction_VoteEnd|MenuAction_End
@@ -779,6 +783,7 @@ native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, t
  * Redraws the vote title from inside a MenuAction_Display callback
  * 
  * @param text			Vote title to draw
+ * @error 				If called from outside MenuAction_Display
  * @noreturn
  */
 native NativeVotes_RedrawVoteTitle(const String:text[]);
@@ -787,6 +792,7 @@ native NativeVotes_RedrawVoteTitle(const String:text[]);
  * Redraws the vote text from inside a MenuAction_DisplayItem callback.
  * 
  * @param text			Vote text to draw.
+ * @error 				If called from outside MenuAction_DisplayItem
  * @noreturn
  */
 native NativeVotes_RedrawVoteItem(const String:text[]);
