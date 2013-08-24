@@ -186,104 +186,6 @@ native Handle:NativeVotes_Create(MenuHandler:handler, NativeVotesType:voteType,
 native Handle:NativeVotes_Close(Handle:vote);
 
 /**
- * Broadcasts a vote to a list of clients.  The most selected item will be 
- * returned through MenuAction_VoteEnd.  On a tie, a random item will be returned 
- * from a list of the tied items.
- *
- * Note that MenuAction_VoteStart, MenuAction_VoteCancel, MenuAction_VoteEnd, and MenuAction_End are all
- * default callbacks and do not need to be enabled.
- *
- * @param vote				Vote Handle.
- * @param clients			Array of clients to broadcast to.
- * @param numClients		Number of clients in the array.
- * @param time				Maximum time to leave menu on the screen.
- * @return					True on success, false if a vote is already in progress.
- * @error					Invalid Handle, or a vote is already in progress.
- */
-native bool:NativeVotes_Display(Handle:vote, clients[], numClients, time);
-
-/**
- * Sends a vote menu to all clients.  See NativeVotes_Display() for more information.
- *
- * @param vote				Vote Handle.
- * @param time				Maximum time to leave menu on the screen.
- * @return					True on success, false if this menu already has a vote session
- *							in progress.
- * @error					Invalid Handle, or a vote is already in progress.
- */
-stock bool:NativeVotes_DisplayToAll(Handle:vote, time)
-{
-	new total = 0;
-	decl players[MaxClients];
-	
-	for (new i=1; i<=MaxClients; i++)
-	{
-		if (!IsClientInGame(i) || IsFakeClient(i))
-		{
-			continue;
-		}
-		players[total++] = i;
-	}
-	
-	return NativeVotes_Display(vote, players, total, time);
-}
-
-/**
- * Sends a vote menu to a single team.  See NativeVotes_Display() for more information.
- *
- * @param vote				Vote Handle.
- * @param team				Team to send vote to. 1 = spectators, 2 = RED/Survivors/Terrorists, 3 = BLU/Infected/Counter-Terrorists
- * @param time				Maximum time to leave menu on the screen.
- * @return					True on success, false if this menu already has a vote session
- *							in progress.
- * @error					Invalid Handle, or a vote is already in progress.
- */
-stock bool:NativeVotes_DisplayToTeam(Handle:vote, team, time)
-{
-	NativeVotes_SetTeam(vote, team);
-
-	new total;
-	decl players[MaxClients];
-	
-	for (new i=1; i<=MaxClients; i++)
-	{
-		if (!IsClientInGame(i) || IsFakeClient(i) || (GetClientTeam(i) != team))
-		{
-			continue;
-		}
-		players[total++] = i;
-	}
-	
-	return NativeVotes_Display(vote, players, total, time);
-}
-
-/**
- * Sends a vote menu to all clients who are not spectators or waiting to choose a team.  See NativeVotes_Display() for more information.
- *
- * @param vote				Vote Handle.
- * @param time				Maximum time to leave menu on the screen.
- * @return					True on success, false if this menu already has a vote session
- *							in progress.
- * @error					Invalid Handle, or a vote is already in progress.
- */
-stock bool:NativeVotes_DisplayToAllNonSpectators(Handle:vote, time)
-{
-	new total;
-	decl players[MaxClients];
-	
-	for (new i=1; i<=MaxClients; i++)
-	{
-		if (!IsClientInGame(i) || IsFakeClient(i) || (GetClientTeam(i) < 2))
-		{
-			continue;
-		}
-		players[total++] = i;
-	}
-	
-	return NativeVotes_Display(vote, players, total, time);
-}
-
-/**
  * Appends a new item to the end of a vote.  Only valid for Multiple Choice votes
  *
  * @param vote				NativeVotes Handle.
@@ -619,6 +521,104 @@ native NativeVotes_SetInitiator(Handle:vote, client);
 native NativeVotes_GetInitiator(Handle:vote);
 
 /**
+ * Broadcasts a vote to a list of clients.  The most selected item will be 
+ * returned through MenuAction_VoteEnd.  On a tie, a random item will be returned 
+ * from a list of the tied items.
+ *
+ * Note that MenuAction_VoteStart, MenuAction_VoteCancel, MenuAction_VoteEnd, and MenuAction_End are all
+ * default callbacks and do not need to be enabled.
+ *
+ * @param vote				Vote Handle.
+ * @param clients			Array of clients to broadcast to.
+ * @param numClients		Number of clients in the array.
+ * @param time				Maximum time to leave menu on the screen.
+ * @return					True on success, false if a vote is already in progress.
+ * @error					Invalid Handle, or a vote is already in progress.
+ */
+native bool:NativeVotes_Display(Handle:vote, clients[], numClients, time);
+
+/**
+ * Sends a vote menu to all clients.  See NativeVotes_Display() for more information.
+ *
+ * @param vote				Vote Handle.
+ * @param time				Maximum time to leave menu on the screen.
+ * @return					True on success, false if this menu already has a vote session
+ *							in progress.
+ * @error					Invalid Handle, or a vote is already in progress.
+ */
+stock bool:NativeVotes_DisplayToAll(Handle:vote, time)
+{
+	new total = 0;
+	decl players[MaxClients];
+	
+	for (new i=1; i<=MaxClients; i++)
+	{
+		if (!IsClientInGame(i) || IsFakeClient(i))
+		{
+			continue;
+		}
+		players[total++] = i;
+	}
+	
+	return NativeVotes_Display(vote, players, total, time);
+}
+
+/**
+ * Sends a vote menu to a single team.  See NativeVotes_Display() for more information.
+ *
+ * @param vote				Vote Handle.
+ * @param team				Team to send vote to. 1 = spectators, 2 = RED/Survivors/Terrorists, 3 = BLU/Infected/Counter-Terrorists
+ * @param time				Maximum time to leave menu on the screen.
+ * @return					True on success, false if this menu already has a vote session
+ *							in progress.
+ * @error					Invalid Handle, or a vote is already in progress.
+ */
+stock bool:NativeVotes_DisplayToTeam(Handle:vote, team, time)
+{
+	NativeVotes_SetTeam(vote, team);
+
+	new total;
+	decl players[MaxClients];
+	
+	for (new i=1; i<=MaxClients; i++)
+	{
+		if (!IsClientInGame(i) || IsFakeClient(i) || (GetClientTeam(i) != team))
+		{
+			continue;
+		}
+		players[total++] = i;
+	}
+	
+	return NativeVotes_Display(vote, players, total, time);
+}
+
+/**
+ * Sends a vote menu to all clients who are not spectators or waiting to choose a team.  See NativeVotes_Display() for more information.
+ *
+ * @param vote				Vote Handle.
+ * @param time				Maximum time to leave menu on the screen.
+ * @return					True on success, false if this menu already has a vote session
+ *							in progress.
+ * @error					Invalid Handle, or a vote is already in progress.
+ */
+stock bool:NativeVotes_DisplayToAllNonSpectators(Handle:vote, time)
+{
+	new total;
+	decl players[MaxClients];
+	
+	for (new i=1; i<=MaxClients; i++)
+	{
+		if (!IsClientInGame(i) || IsFakeClient(i) || (GetClientTeam(i) < 2))
+		{
+			continue;
+		}
+		players[total++] = i;
+	}
+	
+	return NativeVotes_Display(vote, players, total, time);
+}
+
+/**
  * Display vote passed screen
  *
  * You MUST call one of the NativeVotesDisplayPass* or NativeVotes_DisplayFail functions
@@ -631,6 +631,21 @@ native NativeVotes_GetInitiator(Handle:vote);
  * @noreturn
  */
 native NativeVotes_DisplayPass(Handle:vote, const String:details[]="");
+
+/**
+ * Display vote passed screen with custom text to a single user
+ *
+ * You MUST call one of the NativeVotesDisplayPass* or NativeVotes_DisplayFail functions
+ * to hide the vote screen for users who didn't vote, and to clear out their selection
+ * for the next vote.
+ * 
+ * @param vote				Vote handle
+ * @param client			client to display to
+ * @param format			A format string.
+ * @param any				Variable number of format parameters
+ * @noreturn
+ */
+native NativeVotes_DisplayPassCustomToOne(Handle:vote, client, const String:format[], any:...);
 
 /**
  * Display vote passed screen with custom text
@@ -658,21 +673,6 @@ stock NativeVotes_DisplayPassCustom(Handle:vote, const String:format[], any:...)
 		}
 	}
 }
-
-/**
- * Display vote passed screen with custom text to a single user
- *
- * You MUST call one of the NativeVotesDisplayPass* or NativeVotes_DisplayFail functions
- * to hide the vote screen for users who didn't vote, and to clear out their selection
- * for the next vote.
- * 
- * @param vote				Vote handle
- * @param client			client to display to
- * @param format			A format string.
- * @param any				Variable number of format parameters
- * @noreturn
- */
-native NativeVotes_DisplayPassCustomToOne(Handle:vote, client, const String:format[], any:...);
 
 /**
  * Display vote passed screen with a custom type.
