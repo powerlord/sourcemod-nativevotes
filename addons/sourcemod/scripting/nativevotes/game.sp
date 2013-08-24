@@ -1160,33 +1160,24 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	new bool:bCustom = false;
 	
 	new String:details[MAX_VOTE_DETAILS_LENGTH];
+	Data_GetDetails(vote, details, MAX_VOTE_DETAILS_LENGTH);
 
 	if (voteType == NativeVotesType_Custom_YesNo || voteType == NativeVotesType_Custom_Mult)
 	{
 		bCustom = true;
-		if (voteType == NativeVotesType_Custom_Mult)
+	}
+	
+	switch(g_EngineVersion)
+	{
+		case Engine_CSGO:
 		{
-			bYesNo = false;
+			bYesNo = CSGO_VoteTypeToTranslation(voteType, translation, sizeof(translation));
+			CSGO_VoteTypeToVoteOtherTeamString(voteType, otherTeamString, sizeof(otherTeamString));
 		}
 		
-		Data_GetDetails(vote, translation, TRANSLATION_LENGTH);
-	}
-	else
-	{
-		Data_GetDetails(vote, details, MAX_VOTE_DETAILS_LENGTH);
-		
-		switch(g_EngineVersion)
+		case Engine_TF2:
 		{
-			case Engine_CSGO:
-			{
-				bYesNo = CSGO_VoteTypeToTranslation(voteType, translation, sizeof(translation));
-				CSGO_VoteTypeToVoteOtherTeamString(voteType, otherTeamString, sizeof(otherTeamString));
-			}
-			
-			case Engine_TF2:
-			{
-				bYesNo = TF2_VoteTypeToTranslation(voteType, translation, sizeof(translation));
-			}
+			bYesNo = TF2_VoteTypeToTranslation(voteType, translation, sizeof(translation));
 		}
 	}
 	
