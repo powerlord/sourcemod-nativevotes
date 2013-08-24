@@ -1207,17 +1207,18 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 			
 			for (new j = 0; j < maxCount; j++)
 			{
+				new Action:changeItem = Plugin_Continue;
 				g_curItemClient = clients[i];
 				g_newMenuItem[0] = '\0';
 				
-				DoAction(vote, MenuAction_DisplayItem, clients[j], j);
+				DoAction(vote, MenuAction_DisplayItem, clients[j], j, changeItem);
 				g_curItemClient = 0;
 				
 				decl String:option[8];
 				Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, j+1);
 				
 				decl String:display[TRANSLATION_LENGTH];
-				if (changeTitle == Plugin_Changed)
+				if (changeItem == Plugin_Changed)
 				{
 					strcopy(display, TRANSLATION_LENGTH, g_newMenuItem);
 				}
@@ -1237,7 +1238,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		{
 			PbSetInt(voteStart, "team", team);
 			PbSetInt(voteStart, "ent_idx", Data_GetInitiator(vote));
-			if (bCustom && g_newMenuTitle[0] != '\0')
+			if (bCustom && changeTitle == Plugin_Changed)
 			{
 				PbSetString(voteStart, "disp_str", g_newMenuTitle);
 			}
@@ -1255,7 +1256,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		{
 			BfWriteByte(voteStart, team);
 			BfWriteByte(voteStart, Data_GetInitiator(vote));
-			if (bCustom && g_newMenuTitle[0] != '\0')
+			if (bCustom && changeTitle == Plugin_Changed)
 			{
 				BfWriteString(voteStart, g_newMenuTitle);
 			}
@@ -1270,7 +1271,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	}
 	
 	g_curDisplayClient = 0;
-
+	
 	if (CheckVoteController())
 	{
 		SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", team);
