@@ -63,7 +63,8 @@ public Action:Cmd_TestYesNo(client, args)
 	
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
-		ReplyToCommand(client, "Vote is not allowed yet");
+		new seconds = NativeVotes_CheckVoteDelay();
+		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
 	new Handle:vote = NativeVotes_Create(YesNoHandler, NativeVotesType_Custom_YesNo);
@@ -120,7 +121,8 @@ public Action:Cmd_TestMult(client, args)
 
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
-		ReplyToCommand(client, "Vote is not allowed yet");
+		new seconds = NativeVotes_CheckVoteDelay();
+		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
 	new Handle:vote = NativeVotes_Create(MultHandler, NativeVotesType_Custom_Mult);
@@ -181,7 +183,8 @@ public Action:Cmd_TestYesNoCustom(client, args)
 
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
-		ReplyToCommand(client, "Vote is not allowed yet");
+		new seconds = NativeVotes_CheckVoteDelay();
+		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
 	new Handle:vote = NativeVotes_Create(YesNoCustomHandler, NativeVotesType_Custom_YesNo, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display);
@@ -248,7 +251,8 @@ public Action:Cmd_TestMultCustom(client, args)
 
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
-		ReplyToCommand(client, "Vote is not allowed yet");
+		new seconds = NativeVotes_CheckVoteDelay();
+		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
 	new Handle:vote = NativeVotes_Create(MultCustomHandler, NativeVotesType_Custom_Mult, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display|MenuAction_DisplayItem);
