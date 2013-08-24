@@ -190,7 +190,7 @@ public OnPluginStart()
 	HookConVarChange(g_Cvar_VoteDelay, OnVoteDelayChange);
 
 	AddCommandListener(Command_Vote, "vote"); // TF2, CS:GO
-	AddCommandListener(Command_Vote, "Vote"); // L4D, L4D2
+	//AddCommandListener(Command_Vote, "Vote"); // L4D, L4D2
 	
 	g_Forward_OnCallVoteSetup = CreateForward(ET_Event, Param_Cell, Param_Array);
 	g_Forward_OnCallVote = CreateForward(ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -1115,7 +1115,7 @@ bool:Internal_RedrawToClient(client, bool:revotes)
 		g_ClientVotes[client] = VOTE_PENDING;
 		g_bRevoting[client] = true;
 		g_NumVotes--;
-		Game_UpdateVoteCounts(g_hCurVote, g_TotalClients);
+		Game_UpdateVoteCounts(g_hVotes, g_TotalClients);
 	}
 	
 	// Display the vote fail screen for a few seconds

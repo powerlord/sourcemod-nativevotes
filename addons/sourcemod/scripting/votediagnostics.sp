@@ -76,45 +76,7 @@ bool:CheckVoteController()
 
 bool:Game_IsGameSupported()
 {
-	if (GetFeatureStatus(FeatureType_Native, "GetEngineVersion") == FeatureStatus_Available)
-	{
-		// Which engine are we using?
-		g_EngineVersion = GetEngineVersion(); // This value won't change
-	}
-	else
-	{
-		// Guess which game we're using.
-		new gameVersion = GuessSDKVersion(); // This value won't change
-		
-		switch(gameVersion)
-		{
-			case SOURCE_SDK_EPISODE2VALVE:
-			{
-				decl String:gameFolder[8];
-				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
-				if (StrEqual(gameFolder, "tf", false) || StrEqual(gameFolder, "tf_beta", false))
-				{
-					g_EngineVersion = Engine_TF2;
-				}
-				// Fail for HL2:MP, DoD:S, and CS:S (on 1.4; CSS is its own engine on 1.5)
-			}
-			
-			case SOURCE_SDK_LEFT4DEAD:
-			{
-				g_EngineVersion = Engine_Left4Dead;
-			}
-			
-			case SOURCE_SDK_LEFT4DEAD2:
-			{
-				g_EngineVersion = Engine_Left4Dead2;
-			}
-			
-			case SOURCE_SDK_CSGO:
-			{
-				g_EngineVersion = Engine_CSGO;
-			}
-		}
-	}
+	g_EngineVersion = GetEngineVersionCompat();
 	
 	switch (g_EngineVersion)
 	{
@@ -170,7 +132,7 @@ public OnPluginStart()
 	}
 	
 	AddCommandListener(CommandVote, "vote");
-	AddCommandListener(CommandVote, "Vote");
+	//AddCommandListener(CommandVote, "Vote");
 	AddCommandListener(CommandCallVote, "callvote");
 	
 	new String:gameName[15];
@@ -350,7 +312,10 @@ public Action:L4D2_MessageVoteStart(UserMsg:msg_id, Handle:message, const player
 	BfReadString(message, initiatorName, MAX_NAME_LENGTH);
 
 	LogToFile(LOGFILE, "VoteStart Usermessage: team: %d, initiator: %d, issue: %s, param1: %s, player count: %d, initiatorName: %s", team, initiator, issue, param1, playersNum, initiatorName);
-	LogToFile(LOGFILE, "Active Index for issue %s: %d", issue, GetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex"));
+	if (CheckVoteController())
+	{
+		LogToFile(LOGFILE, "Active Index for issue %s: %d", issue, GetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex"));
+	}
 
 	return Plugin_Continue;
 }
@@ -531,7 +496,10 @@ public Action:TF2CSGO_MessageVoteStart(UserMsg:msg_id, Handle:message, const pla
 	}
 
 	LogToFile(LOGFILE, "VoteStart Usermessage: team: %d, initiator: %d, issue: %s, otherTeamIssue: %s, param1: %s, multipleChoice: %d, player count: %d, voteType: %d", team, initiator, issue, otherTeamIssue, param1, multipleChoice, playersNum, voteType);
-	LogToFile(LOGFILE, "Active Index for issue %s: %d", issue, GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex"));
+	if (CheckVoteController())
+	{
+		LogToFile(LOGFILE, "Active Index for issue %s: %d", issue, GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex"));
+	}
 
 	return Plugin_Continue;
 }
@@ -743,4 +711,110 @@ public Action:CommandCallVote(client, const String:command[], argc)
 	
 	LogToFile(LOGFILE, "callvote command: client: %N, command: %s", client, args);
 	return Plugin_Continue;
+}
+
+// Using this stock REQUIRES you to add the following to AskPluginLoad2:
+// MarkNativeAsOptional("GetEngineVersion");
+stock EngineVersion:GetEngineVersionCompat()
+{
+	new EngineVersion:version;
+	if (GetFeatureStatus(FeatureType_Native, "GetEngineVersion") != FeatureStatus_Available)
+	{
+		new sdkVersion = GuessSDKVersion();
+		switch (sdkVersion)
+		{
+			case SOURCE_SDK_ORIGINAL:
+			{
+				version = Engine_Original;
+			}
+			
+			case SOURCE_SDK_DARKMESSIAH:
+			{
+				version = Engine_DarkMessiah;
+			}
+			
+			case SOURCE_SDK_EPISODE1:
+			{
+				version = Engine_SourceSDK2006;
+			}
+			
+			case SOURCE_SDK_EPISODE2:
+			{
+				version = Engine_SourceSDK2007;
+			}
+			
+			case SOURCE_SDK_BLOODYGOODTIME:
+			{
+				version = Engine_BloodyGoodTime;
+			}
+			
+			case SOURCE_SDK_EYE:
+			{
+				version = Engine_EYE;
+			}
+			
+			case SOURCE_SDK_CSS:
+			{
+				version = Engine_CSS;
+			}
+			
+			case SOURCE_SDK_EPISODE2VALVE:
+			{
+				decl String:gameFolder[8];
+				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
+				if (StrEqual(gameFolder, "dod", false))
+				{
+					version = Engine_DODS;
+				}
+				else if (StrEqual(gameFolder, "hl2mp", false))
+				{
+					version = Engine_HL2DM;
+				}
+				else
+				{
+					version = Engine_TF2;
+				}
+			}
+			
+			case SOURCE_SDK_LEFT4DEAD:
+			{
+				version = Engine_Left4Dead;
+			}
+			
+			case SOURCE_SDK_LEFT4DEAD2:
+			{
+				decl String:gameFolder[8];
+				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
+				if (StrEqual(gameFolder, "nd", false))
+				{
+					version = Engine_NuclearDawn;
+				}
+				else
+				{
+					version = Engine_Left4Dead2;
+				}
+			}
+			
+			case SOURCE_SDK_ALIENSWARM:
+			{
+				version = Engine_AlienSwarm;
+			}
+			
+			case SOURCE_SDK_CSGO:
+			{
+				version = Engine_CSGO;
+			}
+			
+			default:
+			{
+				version = Engine_Unknown;
+			}
+		}
+	}
+	else
+	{
+		version = GetEngineVersion();
+	}
+	
+	return version;
 }

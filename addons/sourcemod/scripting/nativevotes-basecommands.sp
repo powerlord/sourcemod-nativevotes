@@ -39,6 +39,8 @@
 
 #define VERSION "1.0"
 
+#pragma semicolon 1
+
 new Handle:hTopMenu;
 
 public Plugin:myinfo = 
@@ -144,7 +146,7 @@ public Action:Command_ReVote(client, const String:command[], argc)
 	
 	if (NativeVotes_RedrawClientVote(client))
 	{
-		return Plugin_Handled
+		return Plugin_Handled;
 	}
 	else if (!IsVoteInProgress())
 	{

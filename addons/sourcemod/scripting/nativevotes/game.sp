@@ -448,12 +448,17 @@ Game_DisplayVotePassCustom(Handle:vote, const String:translation[], client)
 
 		case Engine_Left4Dead2:
 		{
-			L4D2_VotePass(vote, translation, "", client);
+			L4D2_VotePass(vote, L4D_VOTE_CUSTOM, translation, client);
 		}
 		
-		case Engine_CSGO, Engine_TF2:
+		case Engine_CSGO:
 		{
-			TF2CSGO_VotePass(vote, translation, "", client);
+			TF2CSGO_VotePass(vote, CSGO_VOTE_CUSTOM, translation, client);
+		}
+
+		case Engine_TF2:
+		{
+			TF2CSGO_VotePass(vote, TF2_VOTE_CUSTOM, translation, client);
 		}
 	}
 }
