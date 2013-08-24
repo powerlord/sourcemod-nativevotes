@@ -830,6 +830,7 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_GetInitiator");
 	MarkNativeAsOptional("NativeVotes_DisplayPass");
 	MarkNativeAsOptional("NativeVotes_DisplayPassEx");
+	MarkNativeAsOptional("NativeVotes_DisplayPassCustomToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayFail");
 	MarkNativeAsOptional("NativeVotes_GetTarget");
 	MarkNativeAsOptional("NativeVotes_GetTargetSteam");
