@@ -756,7 +756,7 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 	{
 		if (g_NativeVotes)
 		{
-			NativeVotes_AddItem(g_VoteMenu, VOTE_EXTEND, NATIVEVOTES_EXTEND);
+			NativeVotes_AddItem(g_VoteMenu, VOTE_EXTEND, "Extend Map");
 		}
 		else
 		{
@@ -1063,28 +1063,43 @@ public Handler_MapVoteMenu(Handle:menu, MenuAction:action, param1, param2)
 		
 		case MenuAction_Display:
 		{
-	 		decl String:buffer[255];
-			Format(buffer, sizeof(buffer), "%T", "Vote Nextmap", param1);
+			if (!g_NativeVotes)
+			{
+				decl String:buffer[255];
+				Format(buffer, sizeof(buffer), "%T", "Vote Nextmap", param1);
 
-			new Handle:panel = Handle:param2;
-			SetPanelTitle(panel, buffer);
+				new Handle:panel = Handle:param2;
+				SetPanelTitle(panel, buffer);
+			}
 		}		
 		
 		case MenuAction_DisplayItem:
 		{
 			if (GetMenuItemCount(menu) - 1 == param2)
 			{
-				decl String:map[PLATFORM_MAX_PATH], String:buffer[255];
+				decl String:map[PLATFORM_MAX_PATH];
+				new String:buffer[255];
 				GetMenuItem(menu, param2, map, sizeof(map));
 				if (strcmp(map, VOTE_EXTEND, false) == 0)
 				{
 					Format(buffer, sizeof(buffer), "%T", "Extend Map", param1);
-					return RedrawMenuItem(buffer);
 				}
 				else if (strcmp(map, VOTE_DONTCHANGE, false) == 0)
 				{
 					Format(buffer, sizeof(buffer), "%T", "Dont Change", param1);
-					return RedrawMenuItem(buffer);					
+				}
+				
+				if (buffer[0] != '\0')
+				{
+					if (g_NativeVotes)
+					{
+						NativeVotes_RedrawVoteItem(buffer);
+						return _:Plugin_Changed;
+					}
+					else
+					{
+						return RedrawMenuItem(buffer);
+					}
 				}
 			}
 		}		
@@ -1130,6 +1145,7 @@ public Handler_MapVoteMenu(Handle:menu, MenuAction:action, param1, param2)
 					}
 					
 					SetNextMap(map);
+					g_MapVoteCompleted = true;
 					if (g_NativeVotes)
 					{
 						NativeVotes_DisplayPass(menu, map);
@@ -1146,7 +1162,6 @@ public Handler_MapVoteMenu(Handle:menu, MenuAction:action, param1, param2)
 			}
 			
 			g_HasVoteStarted = false;
-			g_MapVoteCompleted = true;
 		}
 	}
 	
