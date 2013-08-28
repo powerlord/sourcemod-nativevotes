@@ -605,7 +605,7 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 	g_HasVoteStarted = true;
 	if (g_NativeVotes)
 	{
-		g_VoteMenu = NativeVotes_Create(Handler_MapVoteMenu, NativeVotesType_NextLevelMult, MenuAction:MENU_ACTIONS_ALL);
+		g_VoteMenu = NativeVotes_Create(Handler_MapVoteMenu, NativeVotesType_NextLevelMult, NATIVEVOTES_ACTIONS_DEFAULT | MenuAction_DisplayItem);
 		NativeVotes_SetResultCallback(g_VoteMenu, Handler_NV_MapVoteFinished);
 	}
 	else
@@ -934,7 +934,7 @@ public Handler_NV_MapVoteFinished(Handle:menu,
 			NativeVotes_DisplayFail(menu, NativeVotesFail_NotEnoughVotes);
 			
 			/* Insufficient Winning margin - Lets do a runoff */
-			g_VoteMenu = NativeVotes_Create(Handler_MapVoteMenu, NativeVotesType_NextLevelMult, MenuAction:MENU_ACTIONS_ALL);
+			g_VoteMenu = NativeVotes_Create(Handler_MapVoteMenu, NativeVotesType_NextLevelMult, NATIVEVOTES_ACTIONS_DEFAULT | MenuAction_DisplayItem);
 			NativeVotes_SetResultCallback(g_VoteMenu, Handler_NV_VoteFinishedGeneric);
 
 			decl String:map1[PLATFORM_MAX_PATH];
@@ -977,7 +977,7 @@ public Action:Timer_Runoff(Handle:timer, Handle:data)
 	decl String:map[PLATFORM_MAX_PATH];
 	decl String:info[PLATFORM_MAX_PATH];
 	
-	g_VoteMenu = NativeVotes_Create(Handler_MapVoteMenu, NativeVotesType_NextLevelMult, MenuAction:MENU_ACTIONS_ALL);
+	g_VoteMenu = NativeVotes_Create(Handler_MapVoteMenu, NativeVotesType_NextLevelMult, NATIVEVOTES_ACTIONS_DEFAULT | MenuAction_DisplayItem);
 	NativeVotes_SetResultCallback(g_VoteMenu, Handler_NV_VoteFinishedGeneric);
 	
 	ResetPack(data);
