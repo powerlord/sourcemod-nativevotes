@@ -1960,7 +1960,7 @@ stock EngineVersion:GetEngineVersionCompat()
 			
 			case SOURCE_SDK_EPISODE2VALVE:
 			{
-				decl String:gameFolder[8];
+				decl String:gameFolder[PLATFORM_MAX_PATH];
 				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
 				if (StrEqual(gameFolder, "dod", false))
 				{
@@ -1983,7 +1983,7 @@ stock EngineVersion:GetEngineVersionCompat()
 			
 			case SOURCE_SDK_LEFT4DEAD2:
 			{
-				decl String:gameFolder[8];
+				decl String:gameFolder[PLATFORM_MAX_PATH];
 				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
 				if (StrEqual(gameFolder, "nd", false))
 				{
