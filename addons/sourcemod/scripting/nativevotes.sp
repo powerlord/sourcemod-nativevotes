@@ -1840,7 +1840,15 @@ public Native_RedrawVoteTitle(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "You can only call this once from a MenuAction_Display callback");
 	}
 	
+	new NativeVotesType:voteType = Data_GetType(g_hCurVote);
+	
+	if (voteType != NativeVotesType_Custom_Mult && voteType != NativeVotesType_Custom_YesNo)
+	{
+		return _:Plugin_Continue;
+	}
+	
 	GetNativeString(1, g_newMenuTitle, TRANSLATION_LENGTH);
+	return _:Plugin_Changed;
 }
 
 public Native_RedrawVoteItem(Handle:plugin, numParams)
@@ -1850,7 +1858,13 @@ public Native_RedrawVoteItem(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "You can only call this once from a MenuAction_DisplayItem callback");
 	}
 	
+	if (Game_GetMaxItems() == L4DL4D2_COUNT)
+	{
+		return _:Plugin_Continue;
+	}
+	
 	GetNativeString(1, g_newMenuItem, TRANSLATION_LENGTH);
+	return _:Plugin_Changed;
 }
 
 //----------------------------------------------------------------------------

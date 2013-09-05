@@ -809,9 +809,9 @@ native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, t
  * 
  * @param text			Vote title to draw
  * @error 				If called from outside MenuAction_Display
- * @noreturn
+ * @return				Plugin_Changed if the change is allowed, Plugin_Continue if it isn't.
  */
-native NativeVotes_RedrawVoteTitle(const String:text[]);
+native Action:NativeVotes_RedrawVoteTitle(const String:text[]);
 
 /**
  * Redraws the vote text from inside a MenuAction_DisplayItem callback.
@@ -819,9 +819,9 @@ native NativeVotes_RedrawVoteTitle(const String:text[]);
  * 
  * @param text			Vote text to draw.
  * @error 				If called from outside MenuAction_DisplayItem
- * @noreturn
+ * @return				Plugin_Changed if the change is allowed, Plugin_Continue if it isn't.
  */
-native NativeVotes_RedrawVoteItem(const String:text[]);
+native Action:NativeVotes_RedrawVoteItem(const String:text[]);
 
 /**
  * Retrieves voting information from MenuAction_VoteEnd.
