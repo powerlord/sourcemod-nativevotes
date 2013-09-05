@@ -1247,7 +1247,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		SetEventInt(optionsEvent, "count", maxCount);
 		FireEvent(optionsEvent);
 		
-		if (!bYesNo && bCustom && actions & MenuAction_DisplayItem)
+		if (!bYesNo && actions & MenuAction_DisplayItem)
 		{
 			optionsEvent = CreateEvent("vote_options");
 			
