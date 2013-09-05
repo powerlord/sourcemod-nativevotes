@@ -120,6 +120,21 @@ Data_SetDetails(Handle:vote, const String:details[])
 	KvSetString(vote, "details", details);
 }
 
+Data_GetTitle(Handle:vote, String:title[], maxlength)
+{
+	// Shim for older code that sets custom vote titles in details
+	KvGetString(vote, "custom_title", title, maxlength);
+	if (strlen(title) == 0)
+	{
+		KvGetString(vote, "details", title, maxlength);
+	}
+}
+
+Data_SetTitle(Handle:vote, const String:title[])
+{
+	KvSetString(vote, "custom_title", title);
+}
+
 Data_GetTarget(Handle:vote)
 {
 	return KvGetNum(vote, "target");
@@ -177,6 +192,7 @@ Handle:Data_CreateVote(NativeVotesType:voteType, MenuAction:actions)
 	KvSetNum(vote, "result_callback", _:voteResults);
 	KvSetNum(vote, "initiator", NATIVEVOTES_SERVER_INDEX);
 	KvSetNum(vote, "team", NATIVEVOTES_ALL_TEAMS);
+	KvSetString(vote, "custom_title", "");
 	
 	KvSetNum(vote, INFO, _:CreateArray(ByteCountToCells(INFO_LENGTH)));
 	KvSetNum(vote, DISPLAY, _:CreateArray(ByteCountToCells(INFO_LENGTH)));

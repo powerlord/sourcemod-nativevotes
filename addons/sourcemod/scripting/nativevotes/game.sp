@@ -940,6 +940,7 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 	decl String:details[MAX_VOTE_DETAILS_LENGTH];
 	
 	new team = Data_GetTeam(vote);
+	new bool:bCustom = false;
 	
 	switch (voteType)
 	{
@@ -951,6 +952,12 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 		case NativeVotesType_AlltalkOff:
 		{
 			strcopy(details, MAX_VOTE_DETAILS_LENGTH, L4D2_VOTE_ALLTALK_DISABLE);
+		}
+		
+		case NativeVotesType_Custom_YesNo, NativeVotesType_Custom_Mult:
+		{
+			Data_GetTitle(vote, details, MAX_VOTE_DETAILS_LENGTH);
+			bCustom = true;
 		}
 		
 		default:
@@ -974,7 +981,7 @@ L4D2_DisplayVote(Handle:vote, clients[], num_clients)
 		new MenuAction:actions = Data_GetActions(vote);
 		
 		new Action:changeTitle = Plugin_Continue;
-		if (actions & MenuAction_Display)
+		if (bCustom && actions & MenuAction_Display)
 		{
 			g_curDisplayClient = clients[i];
 			changeTitle = Action:DoAction(vote, MenuAction_Display, clients[i], 0);
@@ -1160,11 +1167,19 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	new bool:bCustom = false;
 	
 	new String:details[MAX_VOTE_DETAILS_LENGTH];
-	Data_GetDetails(vote, details, MAX_VOTE_DETAILS_LENGTH);
-
-	if (voteType == NativeVotesType_Custom_YesNo || voteType == NativeVotesType_Custom_Mult)
+	
+	switch (voteType)
 	{
-		bCustom = true;
+		case NativeVotesType_Custom_YesNo, NativeVotesType_Custom_Mult:
+		{
+			Data_GetTitle(vote, details, MAX_VOTE_DETAILS_LENGTH);
+			bCustom = true;
+		}
+		
+		default:
+		{
+			Data_GetDetails(vote, details, MAX_VOTE_DETAILS_LENGTH);
+		}
 	}
 	
 	switch(g_EngineVersion)
@@ -1210,7 +1225,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		new MenuAction:actions = Data_GetActions(vote);
 		
 		new Action:changeTitle = Plugin_Continue;
-		if (actions & MenuAction_Display)
+		if (bCustom && actions & MenuAction_Display)
 		{
 			g_curDisplayClient = clients[i];
 			changeTitle = Action:DoAction(vote, MenuAction_Display, clients[i], 0);
@@ -1232,7 +1247,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		SetEventInt(optionsEvent, "count", maxCount);
 		FireEvent(optionsEvent);
 		
-		if (!bYesNo && actions & MenuAction_DisplayItem)
+		if (!bYesNo && bCustom && actions & MenuAction_DisplayItem)
 		{
 			optionsEvent = CreateEvent("vote_options");
 			

@@ -49,7 +49,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.8.0"
+#define VERSION 							"0.8.1"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -143,6 +143,8 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_GetItemCount", Native_GetItemCount);
 	CreateNative("NativeVotes_SetDetails", Native_SetDetails);
 	CreateNative("NativeVotes_GetDetails", Native_GetDetails);
+	CreateNative("NativeVotes_SetTitle", Native_SetTitle);
+	CreateNative("NativeVotes_GetTitle", Native_GetTitle);
 	CreateNative("NativeVotes_SetTarget", Native_SetTarget);
 	CreateNative("NativeVotes_GetTarget", Native_GetTarget);
 	CreateNative("NativeVotes_GetTargetSteam", Native_GetTargetSteam);
@@ -1430,6 +1432,42 @@ public Native_SetDetails(Handle:plugin, numParams)
 	GetNativeString(2, details, len+1);
 	
 	Data_SetDetails(vote, details);
+}
+
+public Native_GetTitle(Handle:plugin, numParams)
+{
+	new Handle:vote = GetNativeCell(1);
+	if (vote == INVALID_HANDLE)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
+		return;
+	}
+	
+	new len = GetNativeCell(3);
+
+	decl String:title[len];
+	
+	Data_GetTitle(vote, title, len);
+	
+	SetNativeString(2, title, len);
+}
+
+public Native_SetTitle(Handle:plugin, numParams)
+{
+	new Handle:vote = GetNativeCell(1);
+	if (vote == INVALID_HANDLE)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
+		return;
+	}
+	
+	new len;
+	GetNativeStringLength(2, len);
+	
+	decl String:details[len+1];
+	GetNativeString(2, details, len+1);
+	
+	Data_SetTitle(vote, details);
 }
 
 public Native_IsVoteInProgress(Handle:plugin, numParams)

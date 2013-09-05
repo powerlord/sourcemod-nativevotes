@@ -280,6 +280,31 @@ native NativeVotes_SetDetails(Handle:vote, const String:argument[]);
 native NativeVotes_GetDetails(Handle:vote, String:buffer[], maxlength);
 
 /**
+ * Sets the vote's title.
+ * Note: This is storage space only, intended to be used in MenuAction_Display callback
+ * Only useful for custom votes.
+ *
+ * @param vote				Vote Handle.
+ * @param title			 	Vote title string.
+ * @noreturn
+ * @error					Invalid Handle.
+ */
+native NativeVotes_SetTitle(Handle:vote, const String:argument[]);
+
+/**
+ * Return the vote's title.
+ * Note: This is storage space only, intended to be used in MenuAction_Display callback
+ * Only useful for custom votes.
+ *
+ * @param vote				Vote Handle.
+ * @param buffer			Buffer to store title.
+ * @param maxlength			Maximum length of the buffer.
+ * @noreturn
+ * @error					Invalid Handle.
+ */
+native NativeVotes_GetTitle(Handle:vote, String:buffer[], maxlength);
+
+/**
  * Sets the target userid for vote
  * This should be used instead of SetArgument for votes that target players
  * 
@@ -840,6 +865,8 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_GetItemCount");
 	MarkNativeAsOptional("NativeVotes_SetDetails");
 	MarkNativeAsOptional("NativeVotes_GetDetails");
+	MarkNativeAsOptional("NativeVotes_SetTitle");
+	MarkNativeAsOptional("NativeVotes_GetTitle");
 	MarkNativeAsOptional("NativeVotes_SetTarget");
 	MarkNativeAsOptional("NativeVotes_GetTarget");
 	MarkNativeAsOptional("NativeVotes_GetTargetSteam");
