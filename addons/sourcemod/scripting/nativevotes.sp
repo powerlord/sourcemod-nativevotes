@@ -40,7 +40,7 @@
 
 #define LOGTAG "NV"
 
-#define MAX_VOTE_DETAILS_LENGTH				64	// From Source 2013 SDK
+#define MAX_VOTE_DETAILS_LENGTH				256		// This is higher than Source SDK 2013 says, but...
 #define TRANSLATION_LENGTH					192
 
 #define VOTE_DELAY_TIME 					3.0
