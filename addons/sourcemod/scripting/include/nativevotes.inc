@@ -260,6 +260,7 @@ native NativeVotes_GetItemCount(Handle:vote);
 
 /**
  * Sets the vote's details for votes that support details
+ * If this is a custom vote, use NativeVotes_SetTitle to set the vote's title.
  *
  * @param vote				Vote Handle.
  * @param argument			Details string. See vote types for what details stands for.
@@ -280,9 +281,7 @@ native NativeVotes_SetDetails(Handle:vote, const String:argument[]);
 native NativeVotes_GetDetails(Handle:vote, String:buffer[], maxlength);
 
 /**
- * Sets the vote's title.
- * Note: This is storage space only, intended to be used in MenuAction_Display callback
- * Only useful for custom votes.
+ * Sets a custom vote's title
  *
  * @param vote				Vote Handle.
  * @param title			 	Vote title string.
@@ -292,9 +291,9 @@ native NativeVotes_GetDetails(Handle:vote, String:buffer[], maxlength);
 native NativeVotes_SetTitle(Handle:vote, const String:argument[]);
 
 /**
- * Return the vote's title.
- * Note: This is storage space only, intended to be used in MenuAction_Display callback
- * Only useful for custom votes.
+ * Return the vote's Title.
+ * If not set, returns Details instead.
+ *     This behavior is for compatibility with NativeVotes 0.8.0 and below.
  *
  * @param vote				Vote Handle.
  * @param buffer			Buffer to store title.
