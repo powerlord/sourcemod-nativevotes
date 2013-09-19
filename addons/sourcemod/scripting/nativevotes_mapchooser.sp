@@ -1075,11 +1075,29 @@ public Handler_MapVoteMenu(Handle:menu, MenuAction:action, param1, param2)
 		
 		case MenuAction_DisplayItem:
 		{
-			if (GetMenuItemCount(menu) - 1 == param2)
+			new count = 0;
+			if (g_NativeVotes)
+			{
+				count = NativeVotes_GetItemCount(menu);
+			}
+			else
+			{
+				count = GetMenuItemCount(menu);
+			}
+			
+			if (count - 1 == param2)
 			{
 				decl String:map[PLATFORM_MAX_PATH];
 				new String:buffer[255];
-				GetMenuItem(menu, param2, map, sizeof(map));
+				
+				if (g_NativeVotes)
+				{
+					NativeVotes_GetItem(menu, param2, map, sizeof(map));
+				}
+				else
+				{
+					GetMenuItem(menu, param2, map, sizeof(map));
+				}
 				if (strcmp(map, VOTE_EXTEND, false) == 0)
 				{
 					Format(buffer, sizeof(buffer), "%T", "Extend Map", param1);
