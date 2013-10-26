@@ -125,7 +125,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	MarkNativeAsOptional("GetUserMessageType");
 	MarkNativeAsOptional("GetEngineVersion");
 	
-	decl String:engineName[64];
+	new String:engineName[64];
 	if (!Game_IsGameSupported(engineName, sizeof(engineName)))
 	{
 		Format(error, err_max, "Unsupported game: %s", engineName);
