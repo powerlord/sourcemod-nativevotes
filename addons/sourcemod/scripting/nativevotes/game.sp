@@ -190,7 +190,7 @@ bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 {
 	g_EngineVersion = GetEngineVersionCompat();
 	g_bUserBuf = GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf;
-	
+	LogMessage("Detected Engine version: %d", g_EngineVersion);
 	if (maxlength > 0)
 	{
 		GetEngineVersionName(g_EngineVersion, engineName, maxlength);
