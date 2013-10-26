@@ -125,9 +125,11 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	MarkNativeAsOptional("GetUserMessageType");
 	MarkNativeAsOptional("GetEngineVersion");
 	
-	if (!Game_IsGameSupported())
+	decl String:engineName[64];
+	if (!Game_IsGameSupported(engineName, sizeof(engineName)))
 	{
-		strcopy(error, err_max, "Unsupported game");
+		Format(error, err_max, "Unsupported game: %s", engineName);
+		//strcopy(error, err_max, "Unsupported game");
 		return APLRes_Failure;
 	}
 	
@@ -1972,6 +1974,7 @@ stock EngineVersion:GetEngineVersionCompat()
 	new EngineVersion:version;
 	if (GetFeatureStatus(FeatureType_Native, "GetEngineVersion") != FeatureStatus_Available)
 	{
+		LogMessage("New Engine Detection is not available, old engine detection will be used");
 		new sdkVersion = GuessSDKVersion();
 		switch (sdkVersion)
 		{
@@ -2069,4 +2072,100 @@ stock EngineVersion:GetEngineVersionCompat()
 	}
 	
 	return version;
+}
+
+stock GetEngineVersionName(EngineVersion:version, String:printName[], maxlength)
+{
+	switch (version)
+	{
+		case Engine_Unknown:
+		{
+			strcopy(printName, maxlength, "Unknown");
+		}
+		
+		case Engine_Original:				
+		{
+			strcopy(printName, maxlength, "Original");
+		}
+		
+		case Engine_SourceSDK2006:
+		{
+			strcopy(printName, maxlength, "Source SDK 2006");
+		}
+		
+		case Engine_SourceSDK2007:
+		{
+			strcopy(printName, maxlength, "Source SDK 2007");
+		}
+		
+		case Engine_Left4Dead:
+		{
+			strcopy(printName, maxlength, "Left 4 Dead ");
+		}
+		
+		case Engine_DarkMessiah:
+		{
+			strcopy(printName, maxlength, "Dark Messiah");
+		}
+		
+		case Engine_Left4Dead2:
+		{
+			strcopy(printName, maxlength, "Left 4 Dead 2");
+		}
+		
+		case Engine_AlienSwarm:
+		{
+			strcopy(printName, maxlength, "Alien Swarm");
+		}
+		
+		case Engine_BloodyGoodTime:
+		{
+			strcopy(printName, maxlength, "Bloody Good Time");
+		}
+		
+		case Engine_EYE:
+		{
+			strcopy(printName, maxlength, "E.Y.E. Divine Cybermancy");
+		}
+		
+		case Engine_Portal2:
+		{
+			strcopy(printName, maxlength, "Portal 2");
+		}
+		
+		case Engine_CSGO:
+		{
+			strcopy(printName, maxlength, "Counter-Strike: Global Offensive");
+		}
+		
+		case Engine_CSS:
+		{
+			strcopy(printName, maxlength, "Counter-Strike: Source");
+		}
+		
+		case Engine_DOTA:
+		{
+			strcopy(printName, maxlength, "DOTA 2");
+		}
+		
+		case Engine_HL2DM:
+		{
+			strcopy(printName, maxlength, "Half-Life 2: Deathmatch");
+		}
+		
+		case Engine_DODS:
+		{
+			strcopy(printName, maxlength, "Day of Defeat: Source");
+		}
+		
+		case Engine_TF2:
+		{
+			strcopy(printName, maxlength, "Team Fortress 2");
+		}
+		
+		case Engine_NuclearDawn:
+		{
+			strcopy(printName, maxlength, "Nuclear Dawn");
+		}
+	}
 }

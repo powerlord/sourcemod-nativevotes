@@ -186,10 +186,16 @@ new g_bUserBuf = false;
 
 new EngineVersion:g_EngineVersion = Engine_Unknown;
 
-bool:Game_IsGameSupported()
+bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 {
 	g_EngineVersion = GetEngineVersionCompat();
 	g_bUserBuf = GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf;
+	
+	if (maxlength > 0)
+	{
+		GetEngineVersionName(g_EngineVersion, engineName, maxlength);
+	}
+	
 	switch (g_EngineVersion)
 	{
 		case Engine_Left4Dead, Engine_Left4Dead2, Engine_CSGO, Engine_TF2:
