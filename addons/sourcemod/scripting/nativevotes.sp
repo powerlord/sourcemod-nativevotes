@@ -49,7 +49,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.8.1"
+#define VERSION 							"0.8.2"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -99,7 +99,6 @@ new String:g_newMenuItem[TRANSLATION_LENGTH];
 
 new bool:g_bStarted;
 new bool:g_bCancelled;
-new bool:g_bWasCancelled;
 new g_NumVotes;
 new g_VoteTime;
 new g_VoteFlags;
@@ -366,8 +365,9 @@ public OnMapEnd()
 {
 	if (g_hCurVote != INVALID_HANDLE)
 	{
-		// Cancel the ongoing vote, but don't close the handle, as the other plugin may still re-use it
-		OnVoteCancel(g_hCurVote, VoteCancel_Generic);
+		// Cancel the ongoing vote, but don't close the handle, as the other plugins may still re-use it
+		CancelVoting();
+		//OnVoteCancel(g_hCurVote, VoteCancel_Generic);
 		g_hCurVote = INVALID_HANDLE;
 	}
 	
@@ -918,7 +918,6 @@ bool:InitializeVoting(Handle:vote, time, flags)
 		SetArrayCell(g_hVotes, i, 0);
 	}
 	
-	g_bWasCancelled = false;
 	g_hCurVote = vote;
 	g_VoteTime = time;
 	g_VoteFlags = flags;
@@ -1052,11 +1051,6 @@ Internal_IsCancelling()
 	return g_bCancelled;
 }
 
-Internal_WasCancelled()
-{
-	return g_bWasCancelled;
-}
-
 stock Internal_GetCurrentVote()
 {
 	return g_hCurVote;
@@ -1070,7 +1064,6 @@ Internal_Reset()
 	g_hCurVote = INVALID_HANDLE;
 	g_NumVotes = 0;
 	g_bCancelled = false;
-	g_bWasCancelled = false;
 	g_LeaderList[0] = '\0';
 	g_TotalClients = 0;
 	
@@ -1102,7 +1095,7 @@ bool:Internal_IsClientInVotePool(client)
 
 bool:Internal_RedrawToClient(client, bool:revotes)
 {
-	if (!Internal_IsClientInVotePool(client))
+	if (!Internal_IsVoteInProgress() || !Internal_IsClientInVotePool(client))
 	{
 		return false;
 	}
@@ -1147,7 +1140,7 @@ public Action:RedrawTimer(Handle:timer, Handle:data)
 	new client = ReadPackCell(data);
 	new Handle:vote = Handle:ReadPackCell(data);
 	
-	if (Internal_IsVoteInProgress() && !Internal_IsCancelling() && !Internal_WasCancelled())
+	if (Internal_IsVoteInProgress() && !Internal_IsCancelling())
 	{
 		Game_DisplayVoteToOne(vote, client);
 	}
@@ -2166,6 +2159,11 @@ stock GetEngineVersionName(EngineVersion:version, String:printName[], maxlength)
 		case Engine_NuclearDawn:
 		{
 			strcopy(printName, maxlength, "Nuclear Dawn");
+		}
+		
+		default:
+		{
+			strcopy(printName, maxlength, "Not listed");
 		}
 	}
 }
