@@ -32,7 +32,7 @@
 #include <menus>
 #include <sourcemod>
 
-// NativeVotes 0.8 series
+// NativeVotes 1.0 series
 
 #if defined _nativevotes_included
  #endinput
@@ -77,7 +77,7 @@ MenuAction_DisplayItem	Item text is being drawn to the display (param1=client, p
  */
 enum NativeVotesType
 {
-	NativeVotesType_None = 0,		/** Special placeholder for callvote with no arguments for NativeVotes_OnCallVote */
+	NativeVotesType_None = 0,		/**< Special placeholder for callvote with no arguments for NativeVotes_OnCallVote */
 	NativeVotesType_Custom_YesNo,	/**< Yes/No, details are vote text. */
 	NativeVotesType_Custom_Mult,	/**< TF2/CS:GO: Multiple-choice, details are vote text. */
 	NativeVotesType_ChgCampaign,	/**< L4D/L4D2: Yes/No, details are campaign name */
@@ -156,9 +156,18 @@ enum NativeVotesCallFailType
 	NativeVotesCallFail_Spectators = 14,		/**< TF2/CS:GO: Spectators aren't allowed to call votes. */
 	NativeVotesCallFail_LevelSet = 15,			/**< TF2/CS:GO: Next level already set. */
 	NativeVotesCallFail_MapNotValid = 16,		/**< ???: Map is invalid. */
-	NativeVotesCallFail_KickTime = 17,			/**< ???: Cannot kick for time. */
+	NativeVotesCallFail_KickTime = 17,			/**< ???: Cannot kick at this time: Argument is seconds until you can call another kick vote. */
 	NativeVotesCallFail_KickDuringRound = 18,	/**< ???: Cannot kick during a round. */
 };
+
+enum NativeVotesKickType
+{
+	NativeVotesKickType_None = 0,			/**< Not a kick vote */
+	NativeVotesKickType_Generic,			/**< Generic kick vote type.  The only type available on L4D/L4D2 */
+	NativeVotesKickType_Idle,				/**< TF2/CS:GO: Client chose Idle from the list */
+	NativeVotesKickType_Scamming,			/**< TF2/CS:GO: Client chose Scamming from the list */
+	NativeVotesKickType_Cheating,			/**< TF2/CS:GO: Client chose Cheating from the list */	
+}
 
 /*
  * Is a specific vote type supported by this game?
@@ -751,45 +760,47 @@ stock bool:NativeVotes_IsNewVoteAllowed()
 }
 
 /**
- * Used when callvote is called with no arguments.
- * 
- * This is used to configure the VoteSetup usermessage on TF2 and CS:GO
- * 
- * @param client		Client, in case the votes are restricted by client
- * @param voteTypes		Populate this array with the vote types this server supports
- * 						Custom and multiple choice votes are not supported from
- * 						the GUI and are thus ignored.
- * @return				Plugin_Continue to allow the server itself (or another plugin) to process the callvote
- * 						Plugin_Changed if you're changing the voteTypes,
- * 						Plugin_Handled to return a blank VoteSetup usermessage
- * 						Plugin_Stop to prevent VoteSetup usermessage (not recommended)
- */
-functag public Action:NativeVotes_CallVoteSetupHandler(client, NativeVotesType:voteTypes[]);
-
-/**
  * Forward for "callvote" handling
  * 
  * You should respond to this by starting a vote or by calling NativeVotes_DisplayCallVoteFail
  * 
- * @param client		Client
- * @param voteType		Type of vote being called.  This will NEVER be a multiple-choice or custom vote.
+ * @param client		Client running callvote.
+ * @param voteCommand	The vote command used.
  * @param voteArgument	Vote argument or blank if the vote type has no argument.
- * @param target		target userid for kick votes or 0 for all other votes
+ * @param kickType		For kick votes, the kick type. For all other types, NativeVotesType_None.
+ * @param target		For kick votes, the target userid.
  * @return				Plugin_Continue to allow the server itself (or another plugin) to process the callvote
  * 						Plugin_Handled if you processed this vote type
  * 						Plugin_Stop to block the vote type (not recommended)
  */
-functag public Action:NativeVotes_CallVoteHandler(client, NativeVotesType:voteType, const String:voteArgument[], target);
+functag public Action:NativeVotes_CallVoteHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target);
 
 /**
- * Register a plugin as a vote manager.
- * This is used to abstract away the details of the callvote command.
+ * Register a vote command for the callvote command 
  * 
- * @param callHandler	Handler for callvote commands.
- * @param setupHandler	Handler to override the which vote types your server supports.  Only useful on TF2 and CS:GO.
+ * @param voteCommand	vote command to register
+ * @param callHandler	Handler to register
  * @noreturn
  */
-native NativeVotes_RegisterVoteManager(NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteSetupHandler:setupHandler=INVALID_FUNCTION);
+native NativeVotes_RegisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler);
+
+/**
+ * Unregister a vote command for the callvote command 
+ * 
+ * @param voteCommand	vote command to register
+ * @param callHandler	Handler to register
+ * @noreturn
+ */
+native NativeVotes_UnregisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler);
+
+/**
+ * Check if a vote command is registered
+ * 
+ * @param voteCommand	vote command to register
+ * @return				true if the command was registered
+ * 						false if a command isn't registered
+ */
+native bool:NativeVotes_IsVoteCommandRegistered(const String:voteCommand[]);
 
 /**
  *  Send a call vote fail screen to a user

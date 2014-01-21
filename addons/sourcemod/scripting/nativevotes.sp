@@ -49,7 +49,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.8.2"
+#define VERSION 							"1.0.0 alpha 1"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -74,13 +74,6 @@ new Handle:g_Cvar_VoteChat;
 new Handle:g_Cvar_VoteConsole;
 new Handle:g_Cvar_VoteClientConsole;
 new Handle:g_Cvar_VoteDelay;
-
-//new Handle:g_Forward_VoteResults;
-
-// Public Forwards
-
-new Handle:g_Forward_OnCallVoteSetup;
-new Handle:g_Forward_OnCallVote;
 
 //----------------------------------------------------------------------------
 // Used to track current vote data
@@ -107,6 +100,9 @@ new g_TimeLeft;
 new g_ClientVotes[MAXPLAYERS+1];
 new bool:g_bRevoting[MAXPLAYERS+1];
 new String:g_LeaderList[1024];
+
+new Handle:g_hCallVoteCommands;
+new Handle:g_hCallVoteCommandIndex;
 
 #include "nativevotes/game.sp"
 
@@ -167,7 +163,8 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_DisplayPassCustomToOne", Native_DisplayPassCustomToOne);
 	CreateNative("NativeVotes_DisplayPassEx", Native_DisplayPassEx);
 	CreateNative("NativeVotes_DisplayFail", Native_DisplayFail);
-	CreateNative("NativeVotes_RegisterVoteManager", Native_RegisterVoteManager);
+	//CreateNative("NativeVotes_RegisterVoteManager", Native_RegisterVoteManager);
+	CreateNative("NativeVotes_RegisterVoteCommand", Native_RegisterVoteCommand);
 	CreateNative("NativeVotes_DisplayCallVoteFail", Native_DisplayCallVoteFail);
 	CreateNative("NativeVotes_RedrawVoteTitle", Native_RedrawVoteTitle);
 	CreateNative("NativeVotes_RedrawVoteItem", Native_RedrawVoteItem);
@@ -195,12 +192,12 @@ public OnPluginStart()
 	AddCommandListener(Command_Vote, "vote"); // TF2, CS:GO
 	//AddCommandListener(Command_Vote, "Vote"); // L4D, L4D2
 	
-	g_Forward_OnCallVoteSetup = CreateForward(ET_Event, Param_Cell, Param_Array);
-	g_Forward_OnCallVote = CreateForward(ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	
 	AddCommandListener(Command_CallVote, "callvote"); // All games
 	
 	g_hVotes = CreateArray(_, Game_GetMaxItems());
+	
+	g_hCallVoteCommands = CreateTrie();
+	g_hCallVoteCommandIndex = CreateArray(ByteCountToCells(128));
 	
 	AutoExecConfig(true, "nativevotes");
 }
@@ -249,46 +246,41 @@ public Action:Command_CallVote(client, const String:command[], argc)
 	{
 		case 0:
 		{
-			new NativeVotesType:voteTypes[MAX_VOTE_ISSUES];
-			
-			Call_StartForward(g_Forward_OnCallVoteSetup);
-			Call_PushCell(client);
-			Call_PushArrayEx(voteTypes, MAX_VOTE_ISSUES, SM_PARAM_COPYBACK);
-			Call_Finish(result);
-			
-			switch (result)
+			if (GetArraySize(g_hCallVoteCommandIndex) > 0)
 			{
-				case Plugin_Continue:
-				{
-					return Plugin_Continue;
-				}
-				
-				case Plugin_Handled:
-				{
-					// Make sure the vote list is empty
-					voteTypes[0] = NativeVotesType_None;
-				}
-				
-				case Plugin_Stop:
-				{
-					return Plugin_Stop;
-				}
+				Game_DisplayVoteSetup(client, g_hCallVoteCommandIndex);
+				return Plugin_Handled;
 			}
-			
-			// Plugin_Changed goes here without any special handling
-			Game_DisplayVoteSetup(client, voteTypes);
+			else
+			{
+				return Plugin_Continue;
+			}
 		}
 		
 		default:
 		{
-			decl String:voteString[VOTE_STRING_SIZE];
-			GetCmdArg(1, voteString, VOTE_STRING_SIZE);
+			decl String:voteCommand[VOTE_STRING_SIZE];
+			GetCmdArg(1, voteCommand, VOTE_STRING_SIZE);
+			
+			new Handle:myForward = INVALID_HANDLE;
+			
+			if (!GetTrieValue(g_hCallVoteCommands, voteCommand, myForward))
+			{
+				return Plugin_Continue;
+			}
+			
+			if (!ValidateForward(voteCommand, myForward))
+			{
+				return Plugin_Continue;
+			}
 			
 			new String:argument[64];
 			
-			new NativeVotesType:voteType = TF2CSGO_VoteStringToVoteType(voteString);
+			new NativeVotesType:voteType = Game_VoteStringToVoteType(voteCommand);
 			
 			new target = 0;
+			
+			new NativeVotesKickType:kickType = NativeVotesKickType_None;
 			
 			if (voteType == NativeVotesType_Kick)
 			{
@@ -299,41 +291,45 @@ public Action:Command_CallVote(client, const String:command[], argc)
 				ExplodeString(param1, " ", params, sizeof(params), sizeof(params[]));
 				
 				target = StringToInt(params[0]);
+				new targetClient = GetClientOfUserId(target);
 				
-				if (!IsValidEntity(target))
+				if (targetClient < 1 || targetClient > MaxClients || !IsClientInGame(targetClient))
 				{
 					return Plugin_Continue;
 				}
 				
 				if (StrEqual(params[1], "cheating", false))
 				{
-					voteType = NativeVotesType_KickCheating;
+					kickType = NativeVotesKickType_Cheating;
 				}
 				else if (StrEqual(params[1], "idle", false))
 				{
-					voteType = NativeVotesType_KickIdle;
+					kickType = NativeVotesKickType_Idle;
 				}
 				else if (StrEqual(params[1], "scamming", false))
 				{
-					voteType = NativeVotesType_KickScamming;
+					kickType = NativeVotesKickType_Scamming;
+				}
+				else
+				{
+					kickType = NativeVotesKickType_Generic;					
 				}
 				
-				GetClientName(GetClientOfUserId(target), argument, sizeof(argument));
+				GetClientName(targetClient, argument, sizeof(argument));
 			}
 			else
 			{
 				GetCmdArg(2, argument, sizeof(argument));
 			}
 			
-			Call_StartForward(g_Forward_OnCallVote);
+			Call_StartForward(myForward);
 			Call_PushCell(client);
-			Call_PushCell(voteType);
+			Call_PushString(voteCommand);
 			Call_PushString(argument);
+			Call_PushCell(kickType);
 			Call_PushCell(target);
 			Call_Finish(result);
-			// Don't process result here as the return line below will handle it
 		}
-		
 	}
 	
 	// Default to continue if we're not processing things
@@ -1817,6 +1813,58 @@ public Native_RegisterVoteManager(Handle:plugin, numParams)
 	ThrowNativeError(SP_ERROR_NATIVE, "Vote Manager not yet implemented");
 }
 
+public Native_RegisterVoteCommand(Handle:plugin, numParams)
+{
+	new size;
+	GetNativeStringLength(1, size);
+	new String:voteCommand[size+1];
+	new Function:handler = Function:GetNativeCell(2);
+	
+	new Handle:myForward;
+	if (!GetTrieValue(g_hCallVoteCommands, voteCommand, myForward))
+	{
+		myForward = CreateForward(ET_Event, Param_Cell, Param_String, Param_String, Param_Cell, Param_Cell);
+		SetTrieValue(g_hCallVoteCommands, voteCommand, myForward);
+		PushArrayString(g_hCallVoteCommandIndex, voteCommand);
+	}
+	
+	AddToForward(myForward, plugin, handler);
+}
+
+public Native_UnregisterVoteCommand(Handle:plugin, numParams)
+{
+	new size;
+	GetNativeStringLength(1, size);
+	new String:voteCommand[size+1];
+	new Function:handler = Function:GetNativeCell(2);
+	
+	new Handle:myForward;
+	if (GetTrieValue(g_hCallVoteCommands, voteCommand, myForward))
+	{
+		RemoveFromForward(myForward, plugin, handler);
+		ValidateForward(voteCommand, myForward);
+	}
+}
+
+public Native_IsVoteCommandRegistered(Handle:plugin, numParams)
+{
+	new size;
+	GetNativeStringLength(1, size);
+	new String:voteCommand[size+1];
+	
+	new Handle:myForward;
+	
+	if (GetTrieValue(g_hCallVoteCommands, voteCommand, myForward))
+	{
+		if (GetForwardFunctionCount(myForward) == 0)
+		{
+			
+		}
+	}
+	
+	return false;
+}
+
 public Native_DisplayCallVoteFail(Handle:plugin, numParams)
 {
 	new client = GetNativeCell(1);
@@ -1958,6 +2006,31 @@ NativeVotesPassType:VoteTypeToVotePass(NativeVotesType:voteType)
 	}
 	
 	return passType;
+}
+
+// This validates that a forward has at least 1 entry
+// It also cleans up the list when a forward is empty
+bool:ValidateForward(const String:voteCommand[], Handle:myForward)
+{
+	if (myForward == INVALID_HANDLE)
+	{
+		return false;
+	}
+	
+	if (GetForwardFunctionCount(myForward) == 0)
+	{
+		RemoveFromTrie(myForward, voteCommand);
+		CloseHandle(myForward);
+		
+		new pos = FindStringInArray(g_hCallVoteCommandIndex, voteCommand);
+		if (pos > -1)
+		{
+			RemoveFromArray(g_hCallVoteCommandIndex, pos);
+		}
+		return false;
+	}
+	
+	return true;
 }
 
 // Using this stock REQUIRES you to add the following to AskPluginLoad2:

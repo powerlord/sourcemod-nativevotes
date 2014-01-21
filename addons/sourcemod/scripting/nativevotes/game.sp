@@ -186,6 +186,16 @@ new g_bUserBuf = false;
 
 new EngineVersion:g_EngineVersion = Engine_Unknown;
 
+new Handle:g_Cvar_Votes_Enabled;
+new Handle:g_Cvar_VoteKick_Enabled;
+new Handle:g_Cvar_MvM_VoteKick_Enabled;
+new Handle:g_Cvar_VoteNextLevel_Enabled;
+new Handle:g_Cvar_VoteChangeLevel_Enabled;
+new Handle:g_Cvar_MvM_VoteChangeLevel_Enabled;
+new Handle:g_Cvar_VoteRestart_Enabled;
+new Handle:g_Cvar_VoteScramble_Enabled;
+new Handle:g_Cvar_MvM_VoteChallenge_Enabled;
+
 bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 {
 	g_EngineVersion = GetEngineVersionCompat();
@@ -199,8 +209,23 @@ bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 	
 	switch (g_EngineVersion)
 	{
-		case Engine_Left4Dead, Engine_Left4Dead2, Engine_CSGO, Engine_TF2:
+		case Engine_Left4Dead, Engine_Left4Dead2, Engine_CSGO:
 		{
+			g_Cvar_Votes_Enabled = FindConVar("sv_allow_votes");
+			return true;
+		}
+		
+		case Engine_TF2:
+		{
+			g_Cvar_Votes_Enabled = FindConVar("sv_allow_votes");
+			g_Cvar_VoteKick_Enabled = FindConVar("sv_vote_issue_kick_allowed");
+			g_Cvar_MvM_VoteKick_Enabled = FindConVar("sv_vote_issue_kick_allowed_mvm");
+			g_Cvar_VoteNextLevel_Enabled = FindConVar("sv_vote_issue_nextlevel_allowed");
+			g_Cvar_VoteChangeLevel_Enabled = FindConVar("sv_vote_issue_changelevel_allowed");
+			g_Cvar_MvM_VoteChangeLevel_Enabled = FindConVar("sv_vote_issue_changelevel_allowed_mvm");
+			g_Cvar_VoteRestart_Enabled = FindConVar("sv_vote_issue_restart_game_allowed");
+			g_Cvar_VoteScramble_Enabled = FindConVar("sv_vote_issue_scramble_teams_allowed");
+			g_Cvar_MvM_VoteChallenge_Enabled = FindConVar("sv_vote_issue_mvm_challenge_allowed");
 			return true;
 		}
 	}
@@ -529,7 +554,7 @@ Game_UpdateVoteCounts(Handle:hVoteCounts, totalClients)
 	}
 }
 
-Game_DisplayVoteSetup(client, const NativeVotesType:voteTypes[])
+Game_DisplayVoteSetup(client, Handle:hVoteTypes)
 {
 	switch (g_EngineVersion)
 	{
@@ -543,10 +568,20 @@ Game_DisplayVoteSetup(client, const NativeVotesType:voteTypes[])
 			//L4D2_DisplayVoteSetup(client, voteTypes);
 		}
 		
-		case Engine_CSGO, Engine_TF2:
+		case Engine_TF2:
 		{
-			TF2CSGO_DisplayVoteSetup(client, voteTypes);
+			TF2_ParseVoteSetup(hVoteTypes);
+			
+			TF2CSGO_DisplayVoteSetup(client, hVoteTypes);
 		}
+		
+		case Engine_CSGO:
+		{
+			CSGO_ParseVoteSetup(hVoteTypes);
+			
+			TF2CSGO_DisplayVoteSetup(client, hVoteTypes);
+		}
+		
 	}
 }
 
@@ -612,6 +647,24 @@ Game_VoteNo(client)
 			FakeClientCommand(client, "vote option2");
 		}
 	}
+}
+
+NativeVotesType:Game_VoteStringToVoteType(String:voteString[])
+{
+	switch (g_EngineVersion)
+	{
+		case Engine_Left4Dead, Engine_Left4Dead2:
+		{
+			// We need to know if this works or not
+			//return L4DL4D2_VoteStringToVoteType(voteString);
+		}
+
+		case Engine_CSGO, Engine_TF2:
+		{
+			return TF2CSGO_VoteStringToVoteType(voteString);
+		}
+	}
+	return NativeVotesType_None;
 }
 
 //----------------------------------------------------------------------------
@@ -1435,7 +1488,8 @@ TF2CSGO_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
 	EndMessage();
 }
 
-TF2CSGO_VoteTypeToVoteString(NativeVotesType:voteType, String:voteString[], maxlength)
+// This is a stock now because it's not used right now
+stock TF2CSGO_VoteTypeToVoteString(NativeVotesType:voteType, String:voteString[], maxlength)
 {
 	new bool:valid = false;
 	switch(voteType)
@@ -1502,41 +1556,28 @@ NativeVotesType:TF2CSGO_VoteStringToVoteType(String:voteString[])
 	return voteType;
 }
 
-TF2CSGO_DisplayVoteSetup(client, const NativeVotesType:voteTypes[])
+TF2CSGO_DisplayVoteSetup(client, Handle:hVoteTypes)
 {
-	new count = 0;
-	new String:validVoteTypes[MAX_VOTE_ISSUES][VOTE_STRING_SIZE];
-	
-	for (new i = 0; i < MAX_VOTE_ISSUES; ++i)
-	{
-		if (voteTypes[i] == NativeVotesType_None)
-		{
-			break;
-		}
-		
-		new bool:valid = Game_CheckVoteType(voteTypes[i]);
-		
-		if (valid && TF2CSGO_VoteTypeToVoteString(voteTypes[i], validVoteTypes[count], VOTE_STRING_SIZE))
-		{
-			++count;
-		}
-	}
+	new count = GetArraySize(hVoteTypes);
 	
 	new Handle:voteSetup = StartMessageOne("VoteSetup", client, USERMSG_RELIABLE);
 	
 	if(g_bUserBuf)
 	{
-		for (new i = 0; i < count; ++i)
-		{
-			PbAddString(voteSetup, "potential_issues", validVoteTypes[i]);
-		}
-	}
-	else
-	{
 		BfWriteByte(voteSetup, count);
-		for (new i = 0; i < count; ++i)
+	}
+	
+	for (new i = 0; i < count; ++i)
+	{
+		new String:voteIssue[128];
+		GetArrayString(hVoteTypes, i, voteIssue, sizeof(voteIssue));
+		if(g_bUserBuf)
 		{
-			BfWriteString(voteSetup, validVoteTypes[i]);
+			PbAddString(voteSetup, "potential_issues", voteIssue);
+		}
+		else
+		{
+			BfWriteString(voteSetup, voteIssue);
 		}
 	}
 	
@@ -1717,6 +1758,76 @@ TF2_VotePassToTranslation(NativeVotesPassType:passType, String:translation[], ma
 		{
 			strcopy(translation, maxlength, TF2_VOTE_CUSTOM);
 		}
+	}
+}
+
+TF2_ParseVoteSetup(Handle:hVoteTypes)
+{
+	if (!GetConVarBool(g_Cvar_Votes_Enabled))
+	{
+		return;
+	}
+	
+	new bool:isMvM = bool:GameRules_GetProp("m_bPlayingMannVsMachine");
+	if (isMvM)
+	{
+		if (GetConVarBool(g_Cvar_MvM_VoteChallenge_Enabled) && FindStringInArray(hVoteTypes, TF2_VOTE_STRING_CHANGEMISSION) == -1)
+		{
+			ShiftArrayUp(hVoteTypes, 0);
+			SetArrayString(hVoteTypes, 0, TF2_VOTE_STRING_CHANGEMISSION);
+		}
+			
+		if (GetConVarBool(g_Cvar_MvM_VoteChangeLevel_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_CHANGELEVEL) == -1)
+		{
+			ShiftArrayUp(hVoteTypes, 0);
+			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_CHANGELEVEL);
+		}
+
+		if (GetConVarBool(g_Cvar_VoteRestart_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_RESTART) == -1)
+		{
+			ShiftArrayUp(hVoteTypes, 0);
+			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_RESTART);
+		}
+
+		if (GetConVarBool(g_Cvar_MvM_VoteKick_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_KICK) == -1)
+		{
+			ShiftArrayUp(hVoteTypes, 0);
+			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_KICK);
+		}
+		
+	}
+	else
+	{
+		if (GetConVarBool(g_Cvar_VoteScramble_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_SCRAMBLE) == -1)
+		{
+			ShiftArrayUp(hVoteTypes, 0);
+			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_SCRAMBLE);
+		}
+		
+		if (GetConVarBool(g_Cvar_VoteNextLevel_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_NEXTLEVEL) == -1)
+		{
+			ShiftArrayUp(hVoteTypes, 0);
+			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_NEXTLEVEL);
+		}
+		
+		if (GetConVarBool(g_Cvar_VoteChangeLevel_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_CHANGELEVEL) == -1)
+		{
+			ShiftArrayUp(hVoteTypes, 0);
+			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_CHANGELEVEL);
+		}
+			
+		if (GetConVarBool(g_Cvar_VoteRestart_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_RESTART) == -1)
+		{
+			ShiftArrayUp(hVoteTypes, 0);
+			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_RESTART);
+		}
+			
+		if (GetConVarBool(g_Cvar_VoteKick_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_KICK) == -1)
+		{
+			ShiftArrayUp(hVoteTypes, 0);
+			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_KICK);
+		}
+		
 	}
 }
 
@@ -1935,5 +2046,15 @@ CSGO_VoteTypeToVoteOtherTeamString(NativeVotesType:voteType, String:otherTeamStr
 		}
 	}
 
+}
+
+CSGO_ParseVoteSetup(Handle:hVoteTypes)
+{
+	if (!GetConVarBool(g_Cvar_Votes_Enabled))
+	{
+		return;
+	}
+	
+	// TODO: Need to find out default vote list so that we can add them
 }
 
