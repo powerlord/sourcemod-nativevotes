@@ -152,7 +152,7 @@ enum NativeVotesCallFailType
 	NativeVotesCallFail_PlayerNotFound = 11,	/**< TF2/CS:GO: Player to kick can't be found. Buggy in TF2. */
 	NativeVotesCallFail_Unknown = 11,
 	NativeVotesCallFail_CantKickAdmin = 12,		/**< TF2/CS:GO: Can't kick server admin. */
-	NativeVotesCallFail_ScramblePending = 13,	/**< TF2/CS:GO: Team Scramble is pending.. */
+	NativeVotesCallFail_ScramblePending = 13,	/**< TF2/CS:GO: Team Scramble is pending. */
 	NativeVotesCallFail_Spectators = 14,		/**< TF2/CS:GO: Spectators aren't allowed to call votes. */
 	NativeVotesCallFail_LevelSet = 15,			/**< TF2/CS:GO: Next level already set. */
 	NativeVotesCallFail_MapNotValid = 16,		/**< ???: Map is invalid. */
@@ -803,16 +803,16 @@ native NativeVotes_UnregisterVoteCommand(const String:voteCommand[], NativeVotes
 native bool:NativeVotes_IsVoteCommandRegistered(const String:voteCommand[]);
 
 /**
- *  Send a call vote fail screen to a user
+ * Send a call vote fail screen to a user
  * Used to respond to a callvote with invalid arguments or for other reasons
  * (such as trying to target an admin for a kick/ban vote)
  * 
  * @param client		The client to display the fail screen to
  * @param reason		A vote call fail reason
  * @param time			For NativeVotesCallFail_Recent, the number of seconds until the vote
- * 						can be called again
+ * 						can be called again. For NativeVotesCallFail_PlayerNotFound, may be the player userid
  */
-native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time);
+native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time=0);
 
 /**
  * Redraws the vote title from inside a MenuAction_Display callback
