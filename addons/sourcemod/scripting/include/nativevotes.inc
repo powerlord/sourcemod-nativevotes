@@ -332,10 +332,10 @@ native NativeVotes_GetTitle(Handle:vote, String:buffer[], maxlength);
 native NativeVotes_SetTarget(Handle:vote, client, bool:setDetails=true);
 
 /**
- * Returns the userid of a vote's target
+ * Returns the vote's target client index, 0 for client disconnected, or -1 for no target.
  *
  * @param vote				Vote Handle.
- * @return					Client index of target player or 0 for no target or target disconnected since vote started
+ * @return					Client index of target player, 0 for client disconnected, or -1 for no target.
  * @error					Invalid Handle.
  */
 native NativeVotes_GetTarget(Handle:vote);

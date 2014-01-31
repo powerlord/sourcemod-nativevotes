@@ -1735,11 +1735,12 @@ public Native_DisplayRawPass(Handle:plugin, numParams)
 	}
 
 	new len;
-	GetNativeStringLength(3, len);
+	GetNativeStringLength(2, len);
 	new String:winner[len+1];
-	GetNativeString(3, winner, len+1);
+	GetNativeString(2, winner, len+1);
+	new team = GetNativeCell(3);
 
-	Game_DisplayRawVotePass(passType, winner);
+	Game_DisplayRawVotePass(passType, winner, team);
 }
 
 public Native_DisplayFail(Handle:plugin, numParams)
@@ -1765,7 +1766,14 @@ public Native_GetTarget(Handle:plugin,  numParams)
 		return 0;
 	}
 	
-	return Data_GetTarget(vote);
+	new target = Data_GetTarget(vote);
+	
+	if (target == 0)
+	{
+		return -1;
+	}
+		
+	return GetClientOfUserId(target);
 }
 
 public Native_GetTargetSteam(Handle:plugin, numParams)
@@ -1795,7 +1803,7 @@ public Native_SetTarget(Handle:plugin,  numParams)
 	
 	new client = GetNativeCell(2);
 	
-	if (client <= 0 || client > MaxClients || !IsClientConnected(client))
+	if (client <= 0 || client > MaxClients)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid", client);
 		return;
