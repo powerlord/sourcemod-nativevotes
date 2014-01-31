@@ -1803,7 +1803,7 @@ public Native_SetTarget(Handle:plugin,  numParams)
 	
 	new client = GetNativeCell(2);
 	
-	if (client <= 0 || client > MaxClients)
+	if (client < -1 || client > MaxClients)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid", client);
 		return;
@@ -1814,14 +1814,22 @@ public Native_SetTarget(Handle:plugin,  numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not connected", client);
 		return;
 	}
+
+	new userid;
+	decl String:steamId[20];
 	
-	new userid = GetClientUserId(client);
+	if (client <= 0)
+	{
+		userid = 0;
+		strcopy(steamId, sizeof(steamId), "");
+	}
+	else
+	{
+		userid = GetClientUserId(client);
+		GetClientAuthString(client, steamId, sizeof(steamId));
+	}
 
 	Data_SetTarget(vote, userid);
-	
-	decl String:steamId[19];
-	GetClientAuthString(client, steamId, sizeof(steamId));
-	
 	Data_SetTargetSteam(vote, steamId);
 
 	new bool:changeDetails = GetNativeCell(3);
@@ -1832,6 +1840,10 @@ public Native_SetTarget(Handle:plugin,  numParams)
 		{
 			GetClientName(client, name, MAX_NAME_LENGTH);
 			Data_SetDetails(vote, name);
+		}
+		else
+		{
+			Data_SetDetails(vote, "");
 		}
 	}
 }

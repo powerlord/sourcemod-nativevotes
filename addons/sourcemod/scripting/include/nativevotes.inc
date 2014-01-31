@@ -324,7 +324,7 @@ native NativeVotes_GetTitle(Handle:vote, String:buffer[], maxlength);
  * Also sets target SteamID
  * 
  * @param vote				Vote Handle.
- * @param userid			Client index of target player
+ * @param userid			Client index of target player or 0 to clear target
  * @param setDetails		If true, also sets vote details to client's name
  * @noreturn
  * @error					Invalid Handle.
