@@ -44,6 +44,11 @@
 #define NATIVEVOTES_EXTEND 			"Extend current Map" /** Defined in TF2, but doesn't appear to be localized */
 
 #define NATIVEVOTES_ALL_TEAMS		-1 // Defined by TF2, may be the same in L4D/L4D2
+#define NATIVEVOTES_TEAM_UNASSIGNED 0 // For completeness, do not otherwise use
+#define NATIVEVOTES_TEAM_SPECTATOR	1 // Spectators
+#define NATIVEVOTES_TEAM_1			2 // RED/Survivors/Terrorists
+#define NATIVEVOTES_TEAM_2			3 // BLU/Infected/Counter-Terrorists
+
 #define NATIVEVOTES_SERVER_INDEX 	99 // Defined by TF2, may be the same in L4D/L4D2
 
 // These may seem backwards, but this is the order that the votes appear in the vote screen
@@ -704,7 +709,7 @@ stock NativeVotes_DisplayPassCustom(Handle:vote, const String:format[], any:...)
 	
 	for (new i = 1; i <= MaxClients; ++i)
 	{
-		if (IsClientInGame(i))
+		if (IsClientInGame(i) && !IsFakeClient(i))
 		{
 			SetGlobalTransTarget(i);
 			VFormat(buffer, sizeof(buffer), format, 3);
@@ -730,16 +735,91 @@ stock NativeVotes_DisplayPassCustom(Handle:vote, const String:format[], any:...)
 native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, const String:details[]="");
 
 /**
- * Display failure screen.
+ * Display vote passed screen when a vote isn't running
+ *
+ * Check NativeVotes_IsVoteInProgress() first as this function won't work while a vote is running.
+ *
+ * Don't confuse this function with NativeVotes_DisplayPassEx, as that function properly adjusts the state on the vote
+ *   Handle, while this function doesn't.
+ * 
+ * @param passType			The pass screen to display
+ * @param details			Normally the item that won the vote. Also used for custom vote winners
+ * @param team				Which team to show this to? Likely you want one of 
+ * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
+ * @noreturn
+ */
+native NativeVotes_DisplayRawPass(NativeVotesPassType:passType, const String:details[]="", team=NATIVEVOTES_ALL_TEAMS);
+
+/**
+ * Display vote passed screen with custom text to a single user
+ *
+ * Don't confuse this function with NativeVotes_DisplayPassCustomToOne, as that function properly adjusts the state on the vote
+ *   Handle, while this function doesn't.
+ * 
+ * @param client			client to display to
+ * @param team				Which team to show this to? Likely you want one of 
+ * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
+ * @param format			A format string.
+ * @param any				Variable number of format parameters
+ * @noreturn
+ */
+native NativeVotes_DisplayRawPassCustomToOne(client, team, const String:format[], any:...);
+
+/**
+ * Display vote passed screen with custom text
+ *
+ * You MUST call one of the NativeVotesDisplayPass* or NativeVotes_DisplayFail functions
+ * to hide the vote screen for users who didn't vote, and to clear out their selection
+ * for the next vote.
+ * 
+ * @param team				Which team to show this to? Likely you want one of 
+ * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
+ * @param format			A format string.
+ * @param any				Variable number of format parameters
+ * @noreturn
+ */
+stock NativeVotes_DisplayRawPassCustom(team, const String:format[], any:...)
+{
+	decl String:buffer[192];
+	
+	for (new i = 1; i <= MaxClients; ++i)
+	{
+		if (IsClientInGame(i) && !IsFakeClient(i))
+		{
+			SetGlobalTransTarget(i);
+			VFormat(buffer, sizeof(buffer), format, 3);
+			NativeVotes_DisplayRawPassCustomToOne(i, "%s", buffer);
+		}
+	}
+}
+
+/**
+ * Display vote failure screen.
  *
  * You MUST call one of NativeVotes_DisplayPass, NativeVotes_DisplayPassEx,
  * or NativeVotes_DisplayFail to hide the vote screen for users who didn't vote,
  * and to clear out their selection for the next vote.
  * 
+ * #param vote				Vote handle
  * @param reason			Vote failure reason from NativeVotesFailType enum
  * @noreturn
  */
 native NativeVotes_DisplayFail(Handle:vote, NativeVotesFailType:reason=NativeVotesFail_Generic);
+
+/**
+ * Display vote failure screen.
+ *
+ * This version is used to display the vote failure screen when a vote isn't actually running.
+ *
+ * Don't confuse this function with NativeVotes_DisplayFail, as that function properly adjusts the state on the vote
+ *   Handle, while this function doesn't.
+ * 
+ * @param reason			Vote failure reason from NativeVotesFailType enum
+ * @param team				Which team to show this to? Likely you want one of 
+ * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
+ * @noreturn
+ */
+native NativeVotes_DisplayRawFail(NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS);
 
 /**
  * Quick stock to determine whether voting is allowed.  This doesn't let you 

@@ -162,7 +162,10 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_DisplayPass", Native_DisplayPass);
 	CreateNative("NativeVotes_DisplayPassCustomToOne", Native_DisplayPassCustomToOne);
 	CreateNative("NativeVotes_DisplayPassEx", Native_DisplayPassEx);
+	CreateNative("NativeVotes_DisplayRawPass", Native_DisplayPass);
+	CreateNative("NativeVotes_DisplayRawPassCustomToOne", Native_DisplayPassCustomToOne);
 	CreateNative("NativeVotes_DisplayFail", Native_DisplayFail);
+	CreateNative("NativeVotes_DisplayRawFail", Native_DisplayFail);
 	//CreateNative("NativeVotes_RegisterVoteManager", Native_RegisterVoteManager);
 	CreateNative("NativeVotes_RegisterVoteCommand", Native_RegisterVoteCommand);
 	CreateNative("NativeVotes_DisplayCallVoteFail", Native_DisplayCallVoteFail);
@@ -1720,6 +1723,23 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 	GetNativeString(3, winner, len+1);
 
 	Game_DisplayVotePassEx(vote, passType, winner);
+}
+
+public Native_DisplayRawPass(Handle:plugin, numParams)
+{
+	new NativeVotesPassType:passType = NativeVotesPassType:GetNativeCell(1);
+	
+	if (!Game_CheckVotePassType(passType))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Invalid vote pass type: %d", passType);
+	}
+
+	new len;
+	GetNativeStringLength(3, len);
+	new String:winner[len+1];
+	GetNativeString(3, winner, len+1);
+
+	Game_DisplayRawVotePass(passType, winner);
 }
 
 public Native_DisplayFail(Handle:plugin, numParams)
