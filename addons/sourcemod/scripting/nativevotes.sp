@@ -52,7 +52,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"1.0.0 alpha 1"
+#define VERSION 							"1.0.0 alpha 2"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -171,6 +171,8 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_DisplayRawFail", Native_DisplayRawFail);
 	//CreateNative("NativeVotes_RegisterVoteManager", Native_RegisterVoteManager);
 	CreateNative("NativeVotes_RegisterVoteCommand", Native_RegisterVoteCommand);
+	CreateNative("NativeVotes_UnregisterVoteCommand", Native_UnregisterVoteCommand);
+	CreateNative("NativeVotes_IsVoteCommandRegistered", Native_IsVoteCommandRegistered);
 	CreateNative("NativeVotes_DisplayCallVoteFail", Native_DisplayCallVoteFail);
 	CreateNative("NativeVotes_RedrawVoteTitle", Native_RedrawVoteTitle);
 	CreateNative("NativeVotes_RedrawVoteItem", Native_RedrawVoteItem);
@@ -1886,6 +1888,7 @@ public Native_RegisterVoteCommand(Handle:plugin, numParams)
 	new size;
 	GetNativeStringLength(1, size);
 	new String:voteCommand[size+1];
+	GetNativeString(1, voteCommand, size+1);
 	new Function:handler = Function:GetNativeCell(2);
 	
 	new Handle:myForward;
@@ -1904,6 +1907,7 @@ public Native_UnregisterVoteCommand(Handle:plugin, numParams)
 	new size;
 	GetNativeStringLength(1, size);
 	new String:voteCommand[size+1];
+	GetNativeString(1, voteCommand, size+1);
 	new Function:handler = Function:GetNativeCell(2);
 	
 	new Handle:myForward;

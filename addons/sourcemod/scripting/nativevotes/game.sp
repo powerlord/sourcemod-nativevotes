@@ -1529,7 +1529,7 @@ TF2CSGO_DisplayVoteSetup(client, Handle:hVoteTypes)
 	
 	new Handle:voteSetup = StartMessageOne("VoteSetup", client, USERMSG_RELIABLE);
 	
-	if(g_bUserBuf)
+	if(!g_bUserBuf)
 	{
 		BfWriteByte(voteSetup, count);
 	}

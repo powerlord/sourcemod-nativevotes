@@ -4,8 +4,8 @@
  * NativeVotes VoteManager Test
  * Test the VoteManger functionality of NativeVotes
  *
- * NativeVotes VoteManager Test (C)2014 Powerlord (Ross Bemrose).
- * All rights reserved.
+ * NativeVotes VoteManager Test (C)2014 Powerlord (Ross Bemrose). All rights
+ * reserved.
  * =============================================================================
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -54,6 +54,15 @@ public OnPluginStart()
 	CreateConVar("nativevotes_votemanagertest_version", VERSION, "NativeVotes VoteManager Test version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
 	g_Cvar_Enabled = CreateConVar("nativevotes_votemanagertest_enable", "1", "Enable NativeVotes VoteManager Test?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 	HookConVarChange(g_Cvar_Enabled, EnabledChanged);
+}
+
+public OnAllPluginsLoaded()
+{
+	if (GetConVarBool(g_Cvar_Enabled))
+	{
+		NativeVotes_RegisterVoteCommand("VoteTest", CallVoteTestHandler);
+		NativeVotes_RegisterVoteCommand("Kick", CallKickVoteHandler);
+	}
 }
 
 public EnabledChanged(Handle:convar, const String:oldValue[], const String:newValue[])
@@ -108,6 +117,7 @@ public Action:CallKickVoteHandler(client, const String:voteCommand[], const Stri
 	new Handle:vote = NativeVotes_Create(KickVoteHandler, voteType);
 	NativeVotes_SetInitiator(vote, client);
 	NativeVotes_SetTarget(vote, targetClient);
+	NativeVotes_DisplayToAll(vote, 20);
 	return Plugin_Handled;
 }
 
@@ -131,7 +141,9 @@ public KickVoteHandler(Handle:menu, MenuAction:action, param1, param2)
 					NativeVotes_DisplayFail(menu, NativeVotesFail_Generic);
 					PrintToChatAll("User disconnected before kick.");
 				}
-				NativeVotes_DisplayPass(menu);
+				decl String:name[MAX_NAME_LENGTH+1];
+				GetClientName(target, name, sizeof(name));
+				NativeVotes_DisplayPass(menu, name);
 				PrintToChatAll("Kick vote on %N passed.", target);
 			}
 			else

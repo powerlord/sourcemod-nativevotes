@@ -671,7 +671,6 @@ stock bool:NativeVotes_DisplayToAllNonSpectators(Handle:vote, time)
  * 
  * @param vote				Vote handle
  * @param details			Normally the item that won the vote or format string. Also used for custom vote winners
- * @param ...				Variable number of format parameters.
  * @noreturn
  */
 native NativeVotes_DisplayPass(Handle:vote, const String:details[]="");
@@ -686,7 +685,7 @@ native NativeVotes_DisplayPass(Handle:vote, const String:details[]="");
  * @param vote				Vote handle
  * @param client			client to display to
  * @param format			A format string.
- * @param any				Variable number of format parameters
+ * @param ...				Variable number of format parameters
  * @noreturn
  */
 native NativeVotes_DisplayPassCustomToOne(Handle:vote, client, const String:format[], any:...);
@@ -700,7 +699,7 @@ native NativeVotes_DisplayPassCustomToOne(Handle:vote, client, const String:form
  * 
  * @param vote				Vote handle
  * @param format			A format string.
- * @param any				Variable number of format parameters
+ * @param ...				Variable number of format parameters
  * @noreturn
  */
 stock NativeVotes_DisplayPassCustom(Handle:vote, const String:format[], any:...)
@@ -751,7 +750,7 @@ native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, cons
 native NativeVotes_DisplayRawPass(NativeVotesPassType:passType, const String:details[]="", team=NATIVEVOTES_ALL_TEAMS);
 
 /**
- * Display vote passed screen with custom text to a single user
+ * Display vote passed screen with custom text to a single user when a vote isn't running
  *
  * Don't confuse this function with NativeVotes_DisplayPassCustomToOne, as that function properly adjusts the state on the vote
  *   Handle, while this function doesn't.
@@ -760,22 +759,21 @@ native NativeVotes_DisplayRawPass(NativeVotesPassType:passType, const String:det
  * @param team				Which team to show this to? Likely you want one of 
  * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
  * @param format			A format string.
- * @param any				Variable number of format parameters
+ * @param ...				Variable number of format parameters
  * @noreturn
  */
 native NativeVotes_DisplayRawPassCustomToOne(client, team, const String:format[], any:...);
 
 /**
- * Display vote passed screen with custom text
+ * Display vote passed screen with custom text when a vote isn't running
  *
- * You MUST call one of the NativeVotesDisplayPass* or NativeVotes_DisplayFail functions
- * to hide the vote screen for users who didn't vote, and to clear out their selection
- * for the next vote.
+ * Don't confuse this function with NativeVotes_DisplayPassCustom, as that function properly adjusts the state on the vote
+ *   Handle, while this function doesn't.
  * 
  * @param team				Which team to show this to? Likely you want one of 
  * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
  * @param format			A format string.
- * @param any				Variable number of format parameters
+ * @param ...				Variable number of format parameters
  * @noreturn
  */
 stock NativeVotes_DisplayRawPassCustom(team, const String:format[], any:...)
@@ -804,7 +802,7 @@ stock NativeVotes_DisplayRawPassCustom(team, const String:format[], any:...)
  * @param reason			Vote failure reason from NativeVotesFailType enum
  * @noreturn
  */
-native NativeVotes_DisplayFail(Handle:vote, NativeVotesFailType:reason=NativeVotesFail_Generic, client=0);
+native NativeVotes_DisplayFail(Handle:vote, NativeVotesFailType:reason=NativeVotesFail_Generic);
 
 /**
  * Display vote failure screen.
@@ -819,7 +817,7 @@ native NativeVotes_DisplayFail(Handle:vote, NativeVotesFailType:reason=NativeVot
  * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
  * @noreturn
  */
-native NativeVotes_DisplayRawFail(NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS, client=0);
+native NativeVotes_DisplayRawFail(NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS);
 
 /**
  * Quick stock to determine whether voting is allowed.  This doesn't let you 
