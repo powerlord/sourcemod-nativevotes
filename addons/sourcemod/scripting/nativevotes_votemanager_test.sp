@@ -4,8 +4,8 @@
  * NativeVotes VoteManager Test
  * Test the VoteManger functionality of NativeVotes
  *
- * Name (C)2014 Powerlord (Ross Bemrose)
- * SourceMod (C)2004-2007 AlliedModders LLC.  All rights reserved.
+ * NativeVotes VoteManager Test (C)2014 Powerlord (Ross Bemrose).
+ * All rights reserved.
  * =============================================================================
  *
  * This program is free software; you can redistribute it and/or modify it under
