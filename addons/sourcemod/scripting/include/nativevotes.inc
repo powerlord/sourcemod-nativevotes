@@ -804,7 +804,7 @@ stock NativeVotes_DisplayRawPassCustom(team, const String:format[], any:...)
  * @param reason			Vote failure reason from NativeVotesFailType enum
  * @noreturn
  */
-native NativeVotes_DisplayFail(Handle:vote, NativeVotesFailType:reason=NativeVotesFail_Generic);
+native NativeVotes_DisplayFail(Handle:vote, NativeVotesFailType:reason=NativeVotesFail_Generic, client=0);
 
 /**
  * Display vote failure screen.
@@ -819,7 +819,7 @@ native NativeVotes_DisplayFail(Handle:vote, NativeVotesFailType:reason=NativeVot
  * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
  * @noreturn
  */
-native NativeVotes_DisplayRawFail(NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS);
+native NativeVotes_DisplayRawFail(NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS, client=0);
 
 /**
  * Quick stock to determine whether voting is allowed.  This doesn't let you 
@@ -969,7 +969,6 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_CheckVoteDelay");
 	MarkNativeAsOptional("NativeVotes_IsClientInVotePool");
 	MarkNativeAsOptional("NativeVotes_RedrawClientVote");
-	MarkNativeAsOptional("NativeVotes_RedrawClientVote");
 	MarkNativeAsOptional("NativeVotes_GetType");
 	MarkNativeAsOptional("NativeVotes_SetTeam");
 	MarkNativeAsOptional("NativeVotes_GetTeam");
@@ -979,8 +978,13 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_DisplayPass");
 	MarkNativeAsOptional("NativeVotes_DisplayPassCustomToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayPassEx");
+	MarkNativeAsOptional("NativeVotes_DisplayRawPass");
+	MarkNativeAsOptional("NativeVotes_DisplayRawPassCustomToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayFail");
-	MarkNativeAsOptional("NativeVotes_RegisterVoteManager");
+	MarkNativeAsOptional("NativeVotes_DisplayRawFail");
+	MarkNativeAsOptional("NativeVotes_RegisterVoteCommand");
+	MarkNativeAsOptional("NativeVotes_UnregisterVoteCommand");
+	MarkNativeAsOptional("NativeVotes_IsVoteCommandRegistered");
 	MarkNativeAsOptional("NativeVotes_DisplayCallVoteFail");
 	MarkNativeAsOptional("NativeVotes_RedrawVoteTitle");
 	MarkNativeAsOptional("NativeVotes_RedrawVoteItem");

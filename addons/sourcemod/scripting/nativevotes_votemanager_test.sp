@@ -124,11 +124,15 @@ public KickVoteHandler(Handle:menu, MenuAction:action, param1, param2)
 		{
 			new target = NativeVotes_GetTarget(menu);
 			
-			
 			if (param1 == NATIVEVOTES_VOTE_YES)
 			{
+				if (target == 0)
+				{
+					NativeVotes_DisplayFail(menu, NativeVotesFail_Generic);
+					PrintToChatAll("User disconnected before kick.");
+				}
 				NativeVotes_DisplayPass(menu);
-				PrintToChatAll("Kick vote on %N passed.");
+				PrintToChatAll("Kick vote on %N passed.", target);
 			}
 			else
 			{
