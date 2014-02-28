@@ -60,18 +60,19 @@
 The following MenuActions are supported.  Arguments are also listed, as they differ slightly from the default
 MenuAction_Start		A menu has been started (nothing passed). Only exists for compat reasons.
 MenuAction_Display		A menu is about to be displayed (param1=client). If you choose to change the vote text,
- 						To change the text, use RedrawVoteTitle()
+ 						To change the text, use NativeVotes_RedrawVoteTitle()
 						If you do so, return 1 or _:Plugin_Changed  Otherwise, return _:Plugin_Continue or 0.
-MenuAction_Select		An item was selected (param1=client, param2=item). For subplugin support.
+MenuAction_Select		An item was selected (param1=client, param2=item). For subplugin support; normal plugins
+						should use NativeVotes_SetResultCallback or catch the MenuAction_VoteEnd action.
 MenuAction_End			A vote has fully ended and the vote object is ready to be cleaned up
 						param1 is MenuEnd reason, either MenuEnd_VotingCancelled or MenuEnd_VotingDone
-MenuAction_VoteEnd		A vote sequence has succeeded (param1=chosen item) 
+MenuAction_VoteEnd		A vote sequence has succeeded (param1=chosen item)
 						This is not called if NativeVotes_SetResultCallback has been used on the vote.
 						You should call NativeVotes_DisplayPass or NativeVotes_DisplayPassEx after this
 MenuAction_VoteStart	A vote sequence has started (nothing passed).  Use this instead of MenuAction_Start
 MenuAction_VoteCancel	A vote sequence has been cancelled (param1=reason)
 MenuAction_DisplayItem	Item text is being drawn to the display (param1=client, param2=item)
-						To change the text, use RedrawVoteItem().
+						To change the text, use NativeVotes_RedrawVoteItem().
 						If you do so, return 1 or _:Plugin_Changed.  Otherwise, return _:Plugin_Continue or 0.
 */
 
@@ -840,7 +841,13 @@ stock bool:NativeVotes_IsNewVoteAllowed()
 /**
  * Forward for "callvote" handling
  * 
- * You should respond to this by starting a vote or by calling NativeVotes_DisplayCallVoteFail
+ * If a vote is already running, callvote will silently fail and this function will never be called.
+ * This is standard in-game behavior to prevent callvote from interfering with running votes.
+ * 
+ * You should respond to this by starting a vote, calling NativeVotes_DisplayCallVoteFail, or printing a message in chat
+ * (for votes that require more than one person to use it).
+ * 
+ * Unlike vote panels, the callvote panel vanishes when a user chooses an option
  * 
  * @param client		Client running callvote.
  * @param voteCommand	The vote command used.
@@ -854,13 +861,44 @@ stock bool:NativeVotes_IsNewVoteAllowed()
 functag public Action:NativeVotes_CallVoteHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target);
 
 /**
- * Register a vote command for the callvote command 
+ * Forward for "callvote" visibility check.
+ * This forward is called once for each registered vote command
+ * 
+ * Note: If other plugins have the same vote name registered, they may block it.
+ * 
+ * @param client		Client running callvote.
+ * @param voteCommand	The vote command used.
+ * @return				Plugin_Continue will show the vote.
+ *						Plugin_Handled or Plugin_Stop will hide the vote from this user
+ *
+ * The highest return value will be the one that takes effect.
+ */
+functag public Action:NativeVotes_CallVoteVisCheck(client, const String:voteCommand[]);
+
+/**
+ * Register a vote command for the callvote command.
  * 
  * @param voteCommand	vote command to register
  * @param callHandler	Handler to register
  * @noreturn
+ * 
+ * SPECIAL NOTES ON THIS FUNCTION:
+ * YOU SHOULD CHOOSE A UNIQUE VOTE NAME.  The reason for this is that other plugins can register votes with the same name as yours and
+ * they will be called in a random order
+ *
+ * Valve's games treat specific callvote types differently in the HUD.
+ * 
+ * All Games:
+ *   - "Kick" will automatically bring up a list of players on the current team when selected.  On TF2 and CS:GO, this also includes
+ *     the kick reason dropdown.
+ * 
+ * TF2/CS:GO:
+ *   - "NextLevel" and "ChangeLevel" will bring up a list of maps on your machine.
+ * 
+ * TF2:
+ *   - "ChangeMission" in MvM displays a list of population files for the current map.
  */
-native NativeVotes_RegisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler);
+native NativeVotes_RegisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
 
 /**
  * Unregister a vote command for the callvote command 

@@ -65,6 +65,7 @@
 #define L4DL4D2_COUNT						2
 #define TF2CSGO_COUNT						5
 
+#define MAX_CALLVOTE_SIZE					128
 
 //----------------------------------------------------------------------------
 // Global Variables
@@ -105,6 +106,7 @@ new bool:g_bRevoting[MAXPLAYERS+1];
 new String:g_LeaderList[1024];
 
 new Handle:g_hCallVoteCommands;
+new Handle:g_hCallVoteVisChecks;
 new Handle:g_hCallVoteCommandIndex;
 
 #include "nativevotes/game.sp"
@@ -205,7 +207,8 @@ public OnPluginStart()
 	g_hVotes = CreateArray(_, Game_GetMaxItems());
 	
 	g_hCallVoteCommands = CreateTrie();
-	g_hCallVoteCommandIndex = CreateArray(ByteCountToCells(128));
+	g_hCallVoteVisChecks = CreateTrie();
+	g_hCallVoteCommandIndex = CreateArray(ByteCountToCells(MAX_CALLVOTE_SIZE));
 	
 	AutoExecConfig(true, "nativevotes");
 }
@@ -252,11 +255,12 @@ public Action:Command_CallVote(client, const String:command[], argc)
 	
 	switch (argc)
 	{
+		// No args means that we need to return a CallVoteSetup usermessage
 		case 0:
 		{
 			if (GetArraySize(g_hCallVoteCommandIndex) > 0)
 			{
-				Game_DisplayVoteSetup(client, g_hCallVoteCommandIndex);
+				Game_DisplayVoteSetup(client, g_hCallVoteCommandIndex, g_hCallVoteVisChecks);
 				return Plugin_Handled;
 			}
 			else
@@ -270,18 +274,21 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			decl String:voteCommand[VOTE_STRING_SIZE];
 			GetCmdArg(1, voteCommand, VOTE_STRING_SIZE);
 			
-			new Handle:myForward = INVALID_HANDLE;
+			new Handle:callVoteForward = INVALID_HANDLE;
 			
-			if (!GetTrieValue(g_hCallVoteCommands, voteCommand, myForward))
+			if (!GetTrieValue(g_hCallVoteCommands, voteCommand, callVoteForward))
 			{
 				return Plugin_Continue;
 			}
 			
-			if (!ValidateForward(voteCommand, myForward))
+			new Handle:visForward = INVALID_HANDLE;
+			GetTrieValue(g_hCallVoteVisChecks, voteCommand, visForward);
+			
+			if (!ValidateForward(voteCommand, callVoteForward, visForward))
 			{
 				return Plugin_Continue;
 			}
-			
+						
 			new String:argument[64];
 			
 			new NativeVotesType:voteType = Game_VoteStringToVoteType(voteCommand);
@@ -330,7 +337,7 @@ public Action:Command_CallVote(client, const String:command[], argc)
 				GetCmdArg(2, argument, sizeof(argument));
 			}
 			
-			Call_StartForward(myForward);
+			Call_StartForward(callVoteForward);
 			Call_PushCell(client);
 			Call_PushString(voteCommand);
 			Call_PushString(argument);
@@ -1889,17 +1896,32 @@ public Native_RegisterVoteCommand(Handle:plugin, numParams)
 	GetNativeStringLength(1, size);
 	new String:voteCommand[size+1];
 	GetNativeString(1, voteCommand, size+1);
-	new Function:handler = Function:GetNativeCell(2);
+	new Function:callVoteHandler = Function:GetNativeCell(2);
+	new Function:visHandler = Function:GetNativeCell(3);
 	
-	new Handle:myForward;
-	if (!GetTrieValue(g_hCallVoteCommands, voteCommand, myForward))
+	new Handle:callVoteForward;
+	new Handle:visForward;
+	
+	if (!GetTrieValue(g_hCallVoteCommands, voteCommand, callVoteForward))
 	{
-		myForward = CreateForward(ET_Event, Param_Cell, Param_String, Param_String, Param_Cell, Param_Cell);
-		SetTrieValue(g_hCallVoteCommands, voteCommand, myForward);
+		callVoteForward = CreateForward(ET_Hook, Param_Cell, Param_String, Param_String, Param_Cell, Param_Cell);
+		
+		SetTrieValue(g_hCallVoteCommands, voteCommand, callVoteForward);
 		PushArrayString(g_hCallVoteCommandIndex, voteCommand);
 	}
 	
-	AddToForward(myForward, plugin, handler);
+	// This check is a safety check, as g_hCallVoteCommands and g_hCallVoteVisChecks should have identical keys and forwards
+	if (!GetTrieValue(g_hCallVoteVisChecks, voteCommand, visForward))
+	{
+		visForward = CreateForward(ET_Hook, Param_Cell, Param_String);
+		SetTrieValue(g_hCallVoteVisChecks, voteCommand, visForward);
+	}
+	
+	AddToForward(callVoteForward, plugin, callVoteHandler);
+	if (visHandler != INVALID_FUNCTION)
+	{
+		AddToForward(visForward, plugin, visHandler);
+	}
 }
 
 public Native_UnregisterVoteCommand(Handle:plugin, numParams)
@@ -1908,13 +1930,21 @@ public Native_UnregisterVoteCommand(Handle:plugin, numParams)
 	GetNativeStringLength(1, size);
 	new String:voteCommand[size+1];
 	GetNativeString(1, voteCommand, size+1);
-	new Function:handler = Function:GetNativeCell(2);
+	new Function:callVoteHandler = Function:GetNativeCell(2);
+	new Function:visHandler = Function:GetNativeCell(3);
 	
-	new Handle:myForward;
-	if (GetTrieValue(g_hCallVoteCommands, voteCommand, myForward))
+	new Handle:callVoteForward;
+	new Handle:visForward;
+	if (GetTrieValue(g_hCallVoteCommands, voteCommand, callVoteForward))
 	{
-		RemoveFromForward(myForward, plugin, handler);
-		ValidateForward(voteCommand, myForward);
+		RemoveFromForward(callVoteForward, plugin, callVoteHandler);
+		
+		if (visHandler != INVALID_FUNCTION && GetTrieValue(g_hCallVoteVisChecks, voteCommand, visForward))
+		{
+			RemoveFromForward(visForward, plugin, visHandler);
+		}
+		
+		ValidateForward(voteCommand, callVoteForward, visForward);
 	}
 }
 
@@ -1924,13 +1954,13 @@ public Native_IsVoteCommandRegistered(Handle:plugin, numParams)
 	GetNativeStringLength(1, size);
 	new String:voteCommand[size+1];
 	
-	new Handle:myForward;
+	new Handle:callVoteForward;
 	
-	if (GetTrieValue(g_hCallVoteCommands, voteCommand, myForward))
+	if (GetTrieValue(g_hCallVoteCommands, voteCommand, callVoteForward))
 	{
-		if (GetForwardFunctionCount(myForward) == 0)
+		if (GetForwardFunctionCount(callVoteForward) > 0)
 		{
-			
+			return true;
 		}
 	}
 	
@@ -2082,17 +2112,23 @@ NativeVotesPassType:VoteTypeToVotePass(NativeVotesType:voteType)
 
 // This validates that a forward has at least 1 entry
 // It also cleans up the list when a forward is empty
-bool:ValidateForward(const String:voteCommand[], Handle:myForward)
+bool:ValidateForward(const String:voteCommand[], Handle:callVoteForward, Handle:visForward)
 {
-	if (myForward == INVALID_HANDLE)
+	if (callVoteForward == INVALID_HANDLE)
 	{
 		return false;
 	}
 	
-	if (GetForwardFunctionCount(myForward) == 0)
+	if (GetForwardFunctionCount(callVoteForward) == 0)
 	{
-		RemoveFromTrie(myForward, voteCommand);
-		CloseHandle(myForward);
+		RemoveFromTrie(g_hCallVoteCommands, voteCommand);
+		CloseHandle(callVoteForward);
+		
+		if (visForward != INVALID_HANDLE)
+		{
+			RemoveFromTrie(g_hCallVoteVisChecks, voteCommand);
+			CloseHandle(visForward);
+		}
 		
 		new pos = FindStringInArray(g_hCallVoteCommandIndex, voteCommand);
 		if (pos > -1)

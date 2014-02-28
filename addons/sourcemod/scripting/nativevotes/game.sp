@@ -589,7 +589,7 @@ Game_UpdateVoteCounts(Handle:hVoteCounts, totalClients)
 	}
 }
 
-Game_DisplayVoteSetup(client, Handle:hVoteTypes)
+Game_DisplayVoteSetup(client, Handle:hVoteTypes, Handle:hVisChecks)
 {
 	switch (g_EngineVersion)
 	{
@@ -603,20 +603,47 @@ Game_DisplayVoteSetup(client, Handle:hVoteTypes)
 			//L4D2_DisplayVoteSetup(client, voteTypes);
 		}
 		
-		case Engine_TF2:
+		case Engine_TF2, Engine_CSGO:
 		{
-			TF2_ParseVoteSetup(hVoteTypes);
+			if (g_EngineVersion == Engine_TF2)
+			{
+				TF2_ParseVoteSetup(hVoteTypes);
+			}
+			else
+			{
+				CSGO_ParseVoteSetup(hVoteTypes);
+			}
 			
+			PerformVisChecks(client, hVoteTypes, hVisChecks);
+
 			TF2CSGO_DisplayVoteSetup(client, hVoteTypes);
 		}
 		
-		case Engine_CSGO:
-		{
-			CSGO_ParseVoteSetup(hVoteTypes);
-			
-			TF2CSGO_DisplayVoteSetup(client, hVoteTypes);
-		}
+	}
+}
+
+static PerformVisChecks(client, Handle:hVoteTypes, Handle:hVisChecks)
+{
+	// Iterate backwards so we can safely remove items
+	for (new i = GetArraySize(hVoteTypes) - 1; i >= 0; i--)
+	{
+		decl String:voteCommand[MAX_CALLVOTE_SIZE];
+		GetArrayString(hVoteTypes, i, voteCommand, sizeof(voteCommand));
 		
+		new Handle:visForward;
+		if (GetTrieValue(hVisChecks, voteCommand, visForward))
+		{
+			new Action:hide;
+			
+			Call_StartForward(visForward);
+			Call_PushCell(client);
+			Call_PushString(voteCommand);
+			Call_Finish(hide);
+			if (hide > Plugin_Continue)
+			{
+				RemoveFromArray(hVoteTypes, i);
+			}
+		}
 	}
 }
 
