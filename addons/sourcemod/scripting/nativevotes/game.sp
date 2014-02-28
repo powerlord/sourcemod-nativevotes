@@ -595,27 +595,29 @@ Game_DisplayVoteSetup(client, Handle:hVoteTypes, Handle:hVisChecks)
 	{
 		case Engine_Left4Dead:
 		{
+			//L4D_ParseVoteSetup(hVoteTypes);
+			//PerformVisChecks(client, hVoteTypes, hVisChecks);
 			//L4D_DisplayVoteSetup(client, voteTypes);
 		}
 		
 		case Engine_Left4Dead2:
 		{
+			//L4D2_ParseVoteSetup(hVoteTypes);
+			//PerformVisChecks(client, hVoteTypes, hVisChecks);
 			//L4D2_DisplayVoteSetup(client, voteTypes);
 		}
 		
-		case Engine_TF2, Engine_CSGO:
+		case Engine_TF2:
 		{
-			if (g_EngineVersion == Engine_TF2)
-			{
-				TF2_ParseVoteSetup(hVoteTypes);
-			}
-			else
-			{
-				CSGO_ParseVoteSetup(hVoteTypes);
-			}
-			
+			TF2_ParseVoteSetup(hVoteTypes);
 			PerformVisChecks(client, hVoteTypes, hVisChecks);
-
+			TF2CSGO_DisplayVoteSetup(client, hVoteTypes);
+		}
+		
+		case Engine_CSGO:
+		{
+			CSGO_ParseVoteSetup(hVoteTypes);
+			PerformVisChecks(client, hVoteTypes, hVisChecks);
 			TF2CSGO_DisplayVoteSetup(client, hVoteTypes);
 		}
 		
