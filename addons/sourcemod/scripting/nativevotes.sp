@@ -289,6 +289,15 @@ public Action:Command_CallVote(client, const String:command[], argc)
 				return Plugin_Continue;
 			}
 			
+			Call_StartForward(visForward);
+			Call_PushCell(client);
+			Call_PushString(voteCommand);
+			Call_Finish(result);
+			if (result >= Plugin_Handled)
+			{
+				return result;
+			}
+			
 			new String:argument[64];
 			
 			new NativeVotesType:voteType = Game_VoteStringToVoteType(voteCommand);
