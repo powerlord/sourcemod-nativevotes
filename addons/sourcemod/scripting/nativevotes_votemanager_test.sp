@@ -36,7 +36,7 @@
 
 #pragma semicolon 1
 
-#define VERSION "1.0.0"
+#define VERSION "1.1.0"
 
 new Handle:g_Cvar_Enabled;
 
@@ -71,18 +71,36 @@ public EnabledChanged(Handle:convar, const String:oldValue[], const String:newVa
 	{
 		NativeVotes_RegisterVoteCommand("VoteTest", CallVoteTestHandler);
 		NativeVotes_RegisterVoteCommand("Kick", CallKickVoteHandler);
+		NativeVotes_RegisterVoteCommand("AdminVoteTest", CallVoteAdminTestHandler, CallVoteAdminVisHandler);
 	}
 	else
 	{
 		NativeVotes_UnregisterVoteCommand("VoteTest", CallVoteTestHandler);
 		NativeVotes_UnregisterVoteCommand("Kick", CallKickVoteHandler);
+		NativeVotes_UnregisterVoteCommand("AdminVoteTest", CallVoteAdminTestHandler, CallVoteAdminVisHandler);
 	}
 }
 
 public Action:CallVoteTestHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target)
 {
 	ReplyToCommand(client, "Attempted to call VoteTest");
-	return Plugin_Continue;
+	return Plugin_Handled;
+}
+
+public Action:CallVoteAdminVisHandler(client, const String:voteCommand[])
+{
+	if (CheckCommandAccess(client, "adminvotetest", ADMFLAG_VOTE, true))
+	{
+		return Plugin_Continue;
+	}
+	
+	return Plugin_Handled;
+}
+
+public Action:CallVoteAdminTestHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target)
+{
+	ReplyToCommand(client, "Attempted to call AdminVoteTest");
+	return Plugin_Handled;
 }
 
 public Action:CallKickVoteHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target)

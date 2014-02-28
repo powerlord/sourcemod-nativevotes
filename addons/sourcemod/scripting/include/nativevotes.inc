@@ -880,6 +880,7 @@ functag public Action:NativeVotes_CallVoteVisCheck(client, const String:voteComm
  * 
  * @param voteCommand	vote command to register
  * @param callHandler	Handler to register
+ * @param visHandler	Optional Handler to determine if this vote is visible to a player
  * @noreturn
  * 
  * SPECIAL NOTES ON THIS FUNCTION:
@@ -905,9 +906,10 @@ native NativeVotes_RegisterVoteCommand(const String:voteCommand[], NativeVotes_C
  * 
  * @param voteCommand	vote command to register
  * @param callHandler	Handler to register
+ * @param visHandler	Optional Handler to determine if this vote is visible to a player
  * @noreturn
  */
-native NativeVotes_UnregisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler);
+native NativeVotes_UnregisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
 
 /**
  * Check if a vote command is registered

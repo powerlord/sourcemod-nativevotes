@@ -288,7 +288,7 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			{
 				return Plugin_Continue;
 			}
-						
+			
 			new String:argument[64];
 			
 			new NativeVotesType:voteType = Game_VoteStringToVoteType(voteCommand);

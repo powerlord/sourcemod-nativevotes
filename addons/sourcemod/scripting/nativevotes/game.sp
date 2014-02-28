@@ -641,7 +641,7 @@ static PerformVisChecks(client, Handle:hVoteTypes, Handle:hVisChecks)
 			Call_PushCell(client);
 			Call_PushString(voteCommand);
 			Call_Finish(hide);
-			if (hide > Plugin_Continue)
+			if (hide >= Plugin_Handled)
 			{
 				RemoveFromArray(hVoteTypes, i);
 			}
