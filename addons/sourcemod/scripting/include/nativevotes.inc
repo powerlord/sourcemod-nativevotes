@@ -106,6 +106,8 @@ enum NativeVotesType
 	NativeVotesType_Surrender,		/**< CS:GO: Yes/No, details are ignored */
 	NativeVotesType_Rematch,		/**< CS:GO: Yes/No, details are ignored */
 	NativeVotesType_Continue,		/**< CS:GO: Yes/No, details are ignored */
+	NativeVotesType_StartRound,		/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_Eternaween,		/**< TF2: Yes/No, details are ignored */
 };
 
 enum NativeVotesPassType
@@ -128,6 +130,8 @@ enum NativeVotesPassType
 	NativeVotesPass_Surrender,			/**< CS:GO: Details are ignored */
 	NativeVotesPass_Rematch,			/**< CS:GO: Details are ignored */
 	NativeVotesPass_Continue,			/**< CS:GO: Details are ignored */
+	NativeVotesPass_StartRound,			/**< TF2: Details are ignored */
+	NativeVotesPass_Eternaween,			/**< TF2: Details are ignored */
 };
 
 /**
@@ -152,7 +156,7 @@ enum NativeVotesCallFailType
 	NativeVotesCallFail_Disabled = 5,			/**< TF2/CS:GO: Server has disabled that issue. */
 	NativeVotesCallFail_MapNotFound = 6,		/**< TF2/CS:GO: Server does not have that map. */
 	NativeVotesCallFail_SpecifyMap = 7,			/**< TF2/CS:GO: You must specify a map. */
-	NativeVotesCallFail_Failed = 8,				/**< TF2/CS:GO: This vote failed recently. */
+	NativeVotesCallFail_Failed = 8,				/**< TF2/CS:GO: This vote failed recently: Argument is seconds until this vote can be called again. */
 	NativeVotesCallFail_WrongTeam = 9,			/**< TF2/CS:GO: Team can't call this vote. */
 	NativeVotesCallFail_Waiting = 10,			/**< TF2/CS:GO: Vote can't be called during Waiting For Players. */
 	NativeVotesCallFail_PlayerNotFound = 11,	/**< TF2/CS:GO: Player to kick can't be found. Buggy in TF2. */

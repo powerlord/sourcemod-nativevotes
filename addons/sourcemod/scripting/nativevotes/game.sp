@@ -126,6 +126,14 @@
 #define TF2_VOTE_CHANGEMISSION_START		"#TF_vote_changechallenge"
 #define TF2_VOTE_CHANGEMISSION_PASSED		"#TF_vote_passed_changechallenge"
 
+// User vote for eternaween
+#define TF2_VOTE_ETERNAWEEN_START			"#TF_vote_eternaween"
+#define TF2_VOTE_ETERNAWEEN_PASSED			"#TF_vote_passed_eternaween"
+
+// User vote to start round
+#define TF2_VOTE_ROUND_START				"#TF_vote_td_start_round"
+#define TF2_VOTE_ROUND_PASSED				"#TF_vote_passed_td_start_round"
+
 // While not a vote string, it works just as well.
 #define TF2_VOTE_CUSTOM						"#TF_playerid_noteam"
 
@@ -1605,7 +1613,7 @@ bool:TF2_CheckVoteType(NativeVotesType:voteType)
 		case NativeVotesType_Custom_YesNo, NativeVotesType_Restart,
 		NativeVotesType_Kick, NativeVotesType_KickIdle, NativeVotesType_KickScamming, NativeVotesType_KickCheating,
 		NativeVotesType_ChgLevel, NativeVotesType_NextLevel, NativeVotesType_ScrambleNow, NativeVotesType_ScrambleEnd,
-		NativeVotesType_ChgMission:
+		NativeVotesType_ChgMission, NativeVotesType_StartRound, NativeVotesType_Eternaween:
 		{
 			return true;
 		}
@@ -1625,7 +1633,7 @@ bool:TF2_CheckVotePassType(NativeVotesPassType:passType)
 	{
 		case NativeVotesPass_Custom, NativeVotesPass_Restart, NativeVotesPass_ChgLevel,
 		NativeVotesPass_Kick, NativeVotesPass_NextLevel, NativeVotesPass_Extend,
-		NativeVotesPass_Scramble, NativeVotesPass_ChgMission:
+		NativeVotesPass_Scramble, NativeVotesPass_ChgMission, NativeVotesPass_StartRound, NativeVotesPass_Eternaween:
 		{
 			return true;
 		}
@@ -1702,6 +1710,16 @@ bool:TF2_VoteTypeToTranslation(NativeVotesType:voteType, String:translation[], m
 			strcopy(translation, maxlength, TF2_VOTE_CHANGEMISSION_START);
 		}
 		
+		case NativeVotesType_StartRound:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_ROUND_START);
+		}
+		
+		case NativeVotesType_Eternaween:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_ETERNAWEEN_START);
+		}
+		
 		default:
 		{
 			strcopy(translation, maxlength, TF2_VOTE_CUSTOM);
@@ -1748,6 +1766,16 @@ TF2_VotePassToTranslation(NativeVotesPassType:passType, String:translation[], ma
 		case NativeVotesPass_ChgMission:
 		{
 			strcopy(translation, maxlength, TF2_VOTE_CHANGEMISSION_PASSED);
+		}
+		
+		case NativeVotesPass_StartRound:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_ROUND_PASSED);
+		}
+		
+		case NativeVotesPass_Eternaween:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_ETERNAWEEN_PASSED);
 		}
 		
 		default:
