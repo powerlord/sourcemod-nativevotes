@@ -62,7 +62,15 @@ public OnAllPluginsLoaded()
 	{
 		NativeVotes_RegisterVoteCommand("VoteTest", CallVoteTestHandler);
 		NativeVotes_RegisterVoteCommand("Kick", CallKickVoteHandler);
+		NativeVotes_RegisterVoteCommand("AdminVoteTest", CallVoteAdminTestHandler, CallVoteAdminVisHandler);
 	}
+}
+
+public OnPluginEnd()
+{
+	NativeVotes_UnregisterVoteCommand("VoteTest", CallVoteTestHandler);
+	NativeVotes_UnregisterVoteCommand("Kick", CallKickVoteHandler);
+	NativeVotes_UnregisterVoteCommand("AdminVoteTest", CallVoteAdminTestHandler, CallVoteAdminVisHandler);
 }
 
 public EnabledChanged(Handle:convar, const String:oldValue[], const String:newValue[])
@@ -83,12 +91,13 @@ public EnabledChanged(Handle:convar, const String:oldValue[], const String:newVa
 
 public Action:CallVoteTestHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target)
 {
-	ReplyToCommand(client, "Attempted to call VoteTest");
+	PrintToChat(client, "Attempted to call VoteTest");
 	return Plugin_Handled;
 }
 
 public Action:CallVoteAdminVisHandler(client, const String:voteCommand[])
 {
+	PrintToChat(client, "Doing vis check for %s", voteCommand);
 	if (CheckCommandAccess(client, "adminvotetest", ADMFLAG_VOTE, true))
 	{
 		return Plugin_Continue;
@@ -99,7 +108,7 @@ public Action:CallVoteAdminVisHandler(client, const String:voteCommand[])
 
 public Action:CallVoteAdminTestHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target)
 {
-	ReplyToCommand(client, "Attempted to call AdminVoteTest");
+	PrintToChat(client, "Attempted to call AdminVoteTest");
 	return Plugin_Handled;
 }
 
@@ -112,25 +121,25 @@ public Action:CallKickVoteHandler(client, const String:voteCommand[], const Stri
 	
 	if (voteType == NativeVotesType_None)
 	{
-		ReplyToCommand(client, "No kick type found");
+		PrintToChat(client, "No kick type found");
 		return Plugin_Handled;
 	}
 	
 	if (targetClient == 0)
 	{
 		NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFail_PlayerNotFound, target);
-		ReplyToCommand(client, "Attempted to call Kick (%s) vote on unknown userid %d", sKickType, target);
+		PrintToChat(client, "Attempted to call Kick (%s) vote on unknown userid %d", sKickType, target);
 		return Plugin_Handled;
 	}
 	
 	if (!CanUserTarget(client, targetClient))
 	{
 		NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFail_CantKickAdmin, target);
-		ReplyToCommand(client, "Attempted to call Kick (%s) vote on %N, but they have a higher immunity level than you.", sKickType, targetClient);
+		PrintToChat(client, "Attempted to call Kick (%s) vote on %N, but they have a higher immunity level than you.", sKickType, targetClient);
 		return Plugin_Handled;
 	}
 	
-	ReplyToCommand(client, "Calling Kick (%s) vote on %N", sKickType, targetClient);
+	PrintToChat(client, "Calling Kick (%s) vote on %N", sKickType, targetClient);
 	
 	new Handle:vote = NativeVotes_Create(KickVoteHandler, voteType);
 	NativeVotes_SetInitiator(vote, client);
