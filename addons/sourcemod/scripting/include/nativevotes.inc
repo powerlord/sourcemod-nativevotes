@@ -755,6 +755,23 @@ native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, cons
 native NativeVotes_DisplayRawPass(NativeVotesPassType:passType, const String:details[]="", team=NATIVEVOTES_ALL_TEAMS);
 
 /**
+ * Display vote passed screen when a vote isn't running
+ *
+ * Check NativeVotes_IsVoteInProgress() first as this function won't work while a vote is running.
+ *
+ * Don't confuse this function with NativeVotes_DisplayPassEx, as that function properly adjusts the state on the vote
+ *   Handle, while this function doesn't.
+ * 
+ * @param client			client to display to
+ * @param passType			The pass screen to display
+ * @param details			Normally the item that won the vote. Also used for custom vote winners
+ * @param team				Which team to show this to? Likely you want one of 
+ * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
+ * @noreturn
+ */
+native NativeVotes_DisplayRawPassToOne(client, NativeVotesPassType:passType, const String:details[]="", team=NATIVEVOTES_ALL_TEAMS);
+
+/**
  * Display vote passed screen with custom text to a single user when a vote isn't running
  *
  * Don't confuse this function with NativeVotes_DisplayPassCustomToOne, as that function properly adjusts the state on the vote
@@ -823,6 +840,22 @@ native NativeVotes_DisplayFail(Handle:vote, NativeVotesFailType:reason=NativeVot
  * @noreturn
  */
 native NativeVotes_DisplayRawFail(NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS);
+
+/**
+ * Display vote failure screen.
+ *
+ * This version is used to display the vote failure screen when a vote isn't actually running.
+ *
+ * Don't confuse this function with NativeVotes_DisplayFail, as that function properly adjusts the state on the vote
+ *   Handle, while this function doesn't.
+ * 
+ * @param client			client to display to
+ * @param reason			Vote failure reason from NativeVotesFailType enum
+ * @param team				Which team to show this to? Likely you want one of 
+ * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
+ * @noreturn
+ */
+native NativeVotes_DisplayRawFailToOne(client, NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS);
 
 /**
  * Quick stock to determine whether voting is allowed.  This doesn't let you 
@@ -1021,9 +1054,11 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_DisplayPassCustomToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayPassEx");
 	MarkNativeAsOptional("NativeVotes_DisplayRawPass");
+	MarkNativeAsOptional("NativeVotes_DisplayRawPassToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayRawPassCustomToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayFail");
 	MarkNativeAsOptional("NativeVotes_DisplayRawFail");
+	MarkNativeAsOptional("NativeVotes_DisplayRawFailToOne");
 	MarkNativeAsOptional("NativeVotes_RegisterVoteCommand");
 	MarkNativeAsOptional("NativeVotes_UnregisterVoteCommand");
 	MarkNativeAsOptional("NativeVotes_IsVoteCommandRegistered");

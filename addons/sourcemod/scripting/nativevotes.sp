@@ -168,9 +168,11 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_DisplayPassCustomToOne", Native_DisplayPassCustomToOne);
 	CreateNative("NativeVotes_DisplayPassEx", Native_DisplayPassEx);
 	CreateNative("NativeVotes_DisplayRawPass", Native_DisplayRawPass);
+	CreateNative("NativeVotes_DisplayRawPassToOne", Native_DisplayRawPassToOne);
 	CreateNative("NativeVotes_DisplayRawPassCustomToOne", Native_DisplayRawPassCustomToOne);
 	CreateNative("NativeVotes_DisplayFail", Native_DisplayFail);
 	CreateNative("NativeVotes_DisplayRawFail", Native_DisplayRawFail);
+	CreateNative("NativeVotes_DisplayRawFailToOne", Native_DisplayRawFailToOne);
 	//CreateNative("NativeVotes_RegisterVoteManager", Native_RegisterVoteManager);
 	CreateNative("NativeVotes_RegisterVoteCommand", Native_RegisterVoteCommand);
 	CreateNative("NativeVotes_UnregisterVoteCommand", Native_UnregisterVoteCommand);
@@ -1764,6 +1766,25 @@ public Native_DisplayRawPass(Handle:plugin, numParams)
 	Game_DisplayRawVotePass(passType, winner, team);
 }
 
+public Native_DisplayRawPassToOne(Handle:plugin, numParams)
+{
+	new client = GetNativeCell(1);
+	new NativeVotesPassType:passType = NativeVotesPassType:GetNativeCell(2);
+	
+	if (!Game_CheckVotePassType(passType))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Invalid vote pass type: %d", passType);
+	}
+
+	new len;
+	GetNativeStringLength(3, len);
+	new String:winner[len+1];
+	GetNativeString(3, winner, len+1);
+	new team = GetNativeCell(4);
+
+	Game_DisplayRawVotePass(passType, winner, team, client);
+}
+
 public Native_DisplayRawPassCustomToOne(Handle:plugin, numParams)
 {
 	new client = GetNativeCell(1);
@@ -1798,7 +1819,16 @@ public Native_DisplayRawFail(Handle:plugin, numParams)
 	
 	new team = GetNativeCell(2);
 
-	new client = GetNativeCell(3);
+	Game_DisplayRawVoteFail(reason, team);
+}
+
+public Native_DisplayRawFailToOne(Handle:plugin, numParams)
+{
+	new client = GetNativeCell(1);
+	
+	new NativeVotesFailType:reason = NativeVotesFailType:GetNativeCell(2);
+	
+	new team = GetNativeCell(3);
 	
 	Game_DisplayRawVoteFail(reason, team, client);
 }
