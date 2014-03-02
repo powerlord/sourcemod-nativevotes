@@ -176,6 +176,16 @@ Handle:Data_GetResultCallback(Handle:vote)
 	return Handle:KvGetNum(vote, "result_callback");
 }
 
+Data_GetFlags(Handle:vote)
+{
+	return KvGetNum(vote, "flags");
+}
+
+Data_SetFlags(Handle:vote, flags)
+{
+	KvSetNum(vote, "flags", flags);
+}
+
 Handle:Data_CreateVote(NativeVotesType:voteType, MenuAction:actions)
 {
 	new Handle:handler = CreateForward(ET_Single, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
@@ -192,6 +202,7 @@ Handle:Data_CreateVote(NativeVotesType:voteType, MenuAction:actions)
 	KvSetNum(vote, "result_callback", _:voteResults);
 	KvSetNum(vote, "initiator", NATIVEVOTES_SERVER_INDEX);
 	KvSetNum(vote, "team", NATIVEVOTES_ALL_TEAMS);
+	KvSetNum(vote, "flags", 0);
 	KvSetString(vote, "custom_title", "");
 	
 	KvSetNum(vote, INFO, _:CreateArray(ByteCountToCells(INFO_LENGTH)));

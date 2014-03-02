@@ -52,7 +52,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"1.0.0 beta 1"
+#define VERSION 							"1.0.0 beta 2"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -1186,6 +1186,7 @@ CancelVoting()
 //----------------------------------------------------------------------------
 // Natives
 
+// native bool:NativeVotes_IsVoteTypeSupported(NativeVotesType:voteType);
 public Native_IsVoteTypeSupported(Handle:plugin, numParams)
 {
 	new NativeVotesType:type = GetNativeCell(1);
@@ -1193,6 +1194,8 @@ public Native_IsVoteTypeSupported(Handle:plugin, numParams)
 	return Game_CheckVoteType(type);
 }
 
+// native Handle:NativeVotes_Create(MenuHandler:handler, NativeVotesType:voteType,
+//	MenuAction:actions=NATIVEVOTES_ACTIONS_DEFAULT);
 public Native_Create(Handle:plugin, numParams)
 {
 	new MenuHandler:handler = GetNativeCell(1);
@@ -1227,6 +1230,7 @@ public Native_Create(Handle:plugin, numParams)
 	return _:vote;
 }
 
+// native Handle:NativeVotes_Close(Handle:vote);
 public Native_Close(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1250,7 +1254,7 @@ public Native_Close(Handle:plugin, numParams)
 	Data_CloseVote(vote);
 }
 
-// native bool:NativeVotes_Display(Handle:vote, clients[], numClients, time);
+// native bool:NativeVotes_Display(Handle:vote, clients[], numClients, time, flags=0);
 public Native_Display(Handle:plugin, numParams)
 {
 	if (Internal_IsVoteInProgress())
@@ -1269,6 +1273,7 @@ public Native_Display(Handle:plugin, numParams)
 	new clients[count];
 	GetNativeArray(2, clients, count);
 	
+	// Note: Only one flag exists: VOTEFLAG_NO_REVOTES
 	new flags = 0;
 	
 	if (numParams >= 5)
@@ -1285,6 +1290,7 @@ public Native_Display(Handle:plugin, numParams)
 	
 }
 
+// native bool:NativeVotes_AddItem(Handle:vote, const String:info[], const String:display[]);
 public Native_AddItem(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1309,6 +1315,7 @@ public Native_AddItem(Handle:plugin, numParams)
 	return Data_AddItem(vote, info, display);
 }
 
+// native bool:NativeVotes_InsertItem(Handle:vote, position, const String:info[], const String:display[]);
 public Native_InsertItem(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1342,6 +1349,7 @@ public Native_InsertItem(Handle:plugin, numParams)
 	
 }
 
+// native bool:NativeVotes_RemoveItem(Handle:vote, position);
 public Native_RemoveItem(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1363,6 +1371,7 @@ public Native_RemoveItem(Handle:plugin, numParams)
 	return Data_RemoveItem(vote, position);
 }
 
+// native NativeVotes_RemoveAllItems(Handle:vote);
 public Native_RemoveAllItems(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1375,6 +1384,12 @@ public Native_RemoveAllItems(Handle:plugin, numParams)
 	Data_RemoveAllItems(vote);
 }
 
+// native bool:NativeVotes_GetItem(Handle:vote, 
+//						position, 
+//						String:infoBuf[], 
+//						infoBufLen,
+//						String:dispBuf[]="",
+//						dispBufLen=0);
 public Native_GetItem(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1403,6 +1418,7 @@ public Native_GetItem(Handle:plugin, numParams)
 	}
 }
 
+// native NativeVotes_GetItemCount(Handle:vote);
 public Native_GetItemCount(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1415,6 +1431,7 @@ public Native_GetItemCount(Handle:plugin, numParams)
 	return Data_GetItemCount(vote);
 }
 
+// native NativeVotes_GetDetails(Handle:vote, String:buffer[], maxlength);
 public Native_GetDetails(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1433,6 +1450,7 @@ public Native_GetDetails(Handle:plugin, numParams)
 	SetNativeString(2, details, len);
 }
 
+// native NativeVotes_SetDetails(Handle:vote, const String:argument[]);
 public Native_SetDetails(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1451,6 +1469,7 @@ public Native_SetDetails(Handle:plugin, numParams)
 	Data_SetDetails(vote, details);
 }
 
+// native NativeVotes_GetDetails(Handle:vote, String:buffer[], maxlength);
 public Native_GetTitle(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1469,6 +1488,7 @@ public Native_GetTitle(Handle:plugin, numParams)
 	SetNativeString(2, title, len);
 }
 
+// native NativeVotes_SetTitle(Handle:vote, const String:argument[]);
 public Native_SetTitle(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1487,27 +1507,32 @@ public Native_SetTitle(Handle:plugin, numParams)
 	Data_SetTitle(vote, details);
 }
 
+// native bool:NativeVotes_IsVoteInProgress();
 public Native_IsVoteInProgress(Handle:plugin, numParams)
 {
 	return Internal_IsVoteInProgress();
 }
 
+// native NativeVotes_GetMaxItems();
 public Native_GetMaxItems(Handle:plugin, numParams)
 {
 	return Game_GetMaxItems();
 }
 
+// native NativeVotes_GetOptionFlags(Handle:vote);
 public Native_GetOptionFlags(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
 	if (vote == INVALID_HANDLE)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
-		return;
+		return 0;
 	}
-	//TODO
+	
+	return Data_GetFlags(vote);
 }
 
+// native NativeVotes_SetOptionFlags(Handle:vote, flags);
 public Native_SetOptionFlags(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1516,9 +1541,13 @@ public Native_SetOptionFlags(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
-	//TODO
+	
+	new flags = GetNativeCell(2);
+	
+	Data_SetFlags(vote, flags);
 }
 
+// native NativeVotes_Cancel();
 public Native_Cancel(Handle:plugin, numParams)
 {
 	if (!Internal_IsVoteInProgress())
@@ -1530,6 +1559,7 @@ public Native_Cancel(Handle:plugin, numParams)
 	CancelVoting();
 }
 
+// native NativeVotes_SetResultCallback(Handle:vote, NativeVotes_VoteHandler:callback);
 public Native_SetResultCallback(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1556,6 +1586,7 @@ public Native_SetResultCallback(Handle:plugin, numParams)
 	}
 }
 
+// native NativeVotes_CheckVoteDelay();
 public Native_CheckVoteDelay(Handle:plugin, numParams)
 {
 	new curTime = GetTime();
@@ -1567,6 +1598,7 @@ public Native_CheckVoteDelay(Handle:plugin, numParams)
 	return (g_NextVote - curTime);
 }
 
+// native bool:NativeVotes_IsClientInVotePool(client);
 public Native_IsClientInVotePool(Handle:plugin, numParams)
 {
 	new client = GetNativeCell(1);
@@ -1586,6 +1618,7 @@ public Native_IsClientInVotePool(Handle:plugin, numParams)
 	return Internal_IsClientInVotePool(client);
 }
 
+// native bool:NativeVotes_RedrawClientVote(client, bool:revotes=true);
 public Native_RedrawClientVote(Handle:plugin, numParams)
 {
 	new client = GetNativeCell(1);
@@ -1617,6 +1650,7 @@ public Native_RedrawClientVote(Handle:plugin, numParams)
 	return Internal_RedrawToClient(client, revote);
 }
 
+// native NativeVotesType:NativeVotes_GetType(Handle:vote);
 public Native_GetType(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1629,6 +1663,7 @@ public Native_GetType(Handle:plugin, numParams)
 	return _:Data_GetType(vote);
 }
 
+// native NativeVotes_GetTeam(Handle:vote);
 public Native_GetTeam(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1642,6 +1677,7 @@ public Native_GetTeam(Handle:plugin, numParams)
 	
 }
 
+// native NativeVotes_SetTeam(Handle:vote, team);
 public Native_SetTeam(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1664,6 +1700,7 @@ public Native_SetTeam(Handle:plugin, numParams)
 	Data_SetTeam(vote, team);
 }
 
+// native NativeVotes_GetInitiator(Handle:vote);
 public Native_GetInitiator(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1676,6 +1713,7 @@ public Native_GetInitiator(Handle:plugin, numParams)
 	return Data_GetInitiator(vote);
 }
 
+// native NativeVotes_SetInitiator(Handle:vote, client);
 public Native_SetInitiator(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1689,6 +1727,7 @@ public Native_SetInitiator(Handle:plugin, numParams)
 	Data_SetInitiator(vote, initiator);
 }
 
+// native NativeVotes_DisplayPass(Handle:vote, const String:details[]="");
 public Native_DisplayPass(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1706,6 +1745,7 @@ public Native_DisplayPass(Handle:plugin, numParams)
 	Game_DisplayVotePass(vote, winner);
 }
 
+// native NativeVotes_DisplayPassCustomToOne(Handle:vote, client, const String:format[], any:...);
 public Native_DisplayPassCustomToOne(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1724,6 +1764,7 @@ public Native_DisplayPassCustomToOne(Handle:plugin, numParams)
 	Game_DisplayVotePassCustom(vote, translation, client);
 }
 
+// native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, const String:details[]="");
 public Native_DisplayPassEx(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1748,6 +1789,7 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 	Game_DisplayVotePassEx(vote, passType, winner);
 }
 
+// native NativeVotes_DisplayRawPass(NativeVotesPassType:passType, const String:details[]="", team=NATIVEVOTES_ALL_TEAMS);
 public Native_DisplayRawPass(Handle:plugin, numParams)
 {
 	new NativeVotesPassType:passType = NativeVotesPassType:GetNativeCell(1);
@@ -1766,6 +1808,7 @@ public Native_DisplayRawPass(Handle:plugin, numParams)
 	Game_DisplayRawVotePass(passType, winner, team);
 }
 
+// native NativeVotes_DisplayRawPassToOne(client, NativeVotesPassType:passType, const String:details[]="", team=NATIVEVOTES_ALL_TEAMS);
 public Native_DisplayRawPassToOne(Handle:plugin, numParams)
 {
 	new client = GetNativeCell(1);
@@ -1785,6 +1828,7 @@ public Native_DisplayRawPassToOne(Handle:plugin, numParams)
 	Game_DisplayRawVotePass(passType, winner, team, client);
 }
 
+// native NativeVotes_DisplayRawPassCustomToOne(client, team, const String:format[], any:...);
 public Native_DisplayRawPassCustomToOne(Handle:plugin, numParams)
 {
 	new client = GetNativeCell(1);
@@ -1797,6 +1841,7 @@ public Native_DisplayRawPassCustomToOne(Handle:plugin, numParams)
 	Game_DisplayRawVotePassCustom(translation, team, client);
 }
 
+// native NativeVotes_DisplayFail(Handle:vote, NativeVotesFailType:reason=NativeVotesFail_Generic);
 public Native_DisplayFail(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1811,6 +1856,7 @@ public Native_DisplayFail(Handle:plugin, numParams)
 	Game_DisplayVoteFail(vote, reason);
 }
 
+// native NativeVotes_DisplayRawFail(NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS);
 public Native_DisplayRawFail(Handle:plugin, numParams)
 {
 	new NativeVotesFailType:reason = NativeVotesFailType:GetNativeCell(1);
@@ -1820,6 +1866,7 @@ public Native_DisplayRawFail(Handle:plugin, numParams)
 	Game_DisplayRawVoteFail(reason, team);
 }
 
+// native NativeVotes_DisplayRawFailToOne(client, NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS);
 public Native_DisplayRawFailToOne(Handle:plugin, numParams)
 {
 	new client = GetNativeCell(1);
@@ -1831,6 +1878,7 @@ public Native_DisplayRawFailToOne(Handle:plugin, numParams)
 	Game_DisplayRawVoteFail(reason, team, client);
 }
 
+// native NativeVotes_GetTarget(Handle:vote);
 public Native_GetTarget(Handle:plugin,  numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1844,12 +1892,14 @@ public Native_GetTarget(Handle:plugin,  numParams)
 	
 	if (target == 0)
 	{
+		// No target was set, return -1
 		return -1;
 	}
 		
 	return GetClientOfUserId(target);
 }
 
+// native NativeVotes_GetTargetSteam(Handle:vote, String:buffer[], maxlength);
 public Native_GetTargetSteam(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1866,6 +1916,7 @@ public Native_GetTargetSteam(Handle:plugin, numParams)
 	Data_GetTargetSteam(vote, steamId, size);
 }
 
+// native NativeVotes_SetTarget(Handle:vote, client, bool:setDetails=true);
 public Native_SetTarget(Handle:plugin,  numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1922,11 +1973,7 @@ public Native_SetTarget(Handle:plugin,  numParams)
 	}
 }
 
-public Native_RegisterVoteManager(Handle:plugin, numParams)
-{
-	ThrowNativeError(SP_ERROR_NATIVE, "Vote Manager not yet implemented");
-}
-
+// native NativeVotes_RegisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
 public Native_RegisterVoteCommand(Handle:plugin, numParams)
 {
 	new size;
@@ -1961,6 +2008,7 @@ public Native_RegisterVoteCommand(Handle:plugin, numParams)
 	}
 }
 
+// native NativeVotes_UnregisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
 public Native_UnregisterVoteCommand(Handle:plugin, numParams)
 {
 	new size;
@@ -1985,6 +2033,7 @@ public Native_UnregisterVoteCommand(Handle:plugin, numParams)
 	}
 }
 
+// native bool:NativeVotes_IsVoteCommandRegistered(const String:voteCommand[]);
 public Native_IsVoteCommandRegistered(Handle:plugin, numParams)
 {
 	new size;
@@ -2004,6 +2053,7 @@ public Native_IsVoteCommandRegistered(Handle:plugin, numParams)
 	return false;
 }
 
+// native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time=0);
 public Native_DisplayCallVoteFail(Handle:plugin, numParams)
 {
 	new client = GetNativeCell(1);
@@ -2015,6 +2065,7 @@ public Native_DisplayCallVoteFail(Handle:plugin, numParams)
 	Game_DisplayCallVoteFail(client, reason, time);
 }
 
+// native Action:NativeVotes_RedrawVoteTitle(const String:text[]);
 public Native_RedrawVoteTitle(Handle:plugin, numParams)
 {
 	if (!g_curDisplayClient)
@@ -2033,6 +2084,7 @@ public Native_RedrawVoteTitle(Handle:plugin, numParams)
 	return _:Plugin_Changed;
 }
 
+// native Action:NativeVotes_RedrawVoteItem(const String:text[]);
 public Native_RedrawVoteItem(Handle:plugin, numParams)
 {
 	if (!g_curItemClient)

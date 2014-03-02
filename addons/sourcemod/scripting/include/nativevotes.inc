@@ -379,20 +379,20 @@ native NativeVotes_GetMaxItems();
  * 
  * NOTE: This is currently unused, but reserved for future use.
  *
- * @param menu				Builtin Vote Handle.
- * @param flags				A new bitstring of VOTEFLAG bits.
+ * @param vote				Vote Handle.
+ * @param flags				A new bitstring of MENUFLAG bits.
  * @noreturn
  * @error					Invalid Handle.
  */
 native NativeVotes_SetOptionFlags(Handle:vote, flags);
 
 /**
- * Retrieves a menu's option flags.
+ * Retrieves a vote's option flags.
  *
  * NOTE: This is currently unused, but reserved for future use.
  *
- * @param vote				Builtin Vote Handle.
- * @return					A bitstring of VOTEFLAG bits.
+ * @param vote				Vote Handle.
+ * @return					A bitstring of MENUFLAG bits.
  * @error					Invalid Handle.
  */
 native NativeVotes_GetOptionFlags(Handle:vote);
@@ -581,10 +581,11 @@ native NativeVotes_GetInitiator(Handle:vote);
  * @param clients			Array of clients to broadcast to.
  * @param numClients		Number of clients in the array.
  * @param time				Maximum time to leave menu on the screen.
+ * @param flags				Optional voting flags (i.e. VOTEFLAG_NO_REVOTES)
  * @return					True on success, false if a vote is already in progress.
  * @error					Invalid Handle, or a vote is already in progress.
  */
-native bool:NativeVotes_Display(Handle:vote, clients[], numClients, time);
+native bool:NativeVotes_Display(Handle:vote, clients[], numClients, time, flags=0);
 
 /**
  * Sends a vote menu to all clients.  See NativeVotes_Display() for more information.
