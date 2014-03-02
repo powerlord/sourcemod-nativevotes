@@ -1808,9 +1808,7 @@ public Native_DisplayFail(Handle:plugin, numParams)
 	
 	new NativeVotesFailType:reason = NativeVotesFailType:GetNativeCell(2);
 
-	new client = GetNativeCell(3);
-	
-	Game_DisplayVoteFail(vote, reason, client);
+	Game_DisplayVoteFail(vote, reason);
 }
 
 public Native_DisplayRawFail(Handle:plugin, numParams)
