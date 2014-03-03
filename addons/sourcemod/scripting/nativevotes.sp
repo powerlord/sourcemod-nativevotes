@@ -52,7 +52,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"1.0.0 beta 2"
+#define VERSION 							"1.0.0 beta 3"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -1759,6 +1759,7 @@ public Native_DisplayPassCustomToOne(Handle:plugin, numParams)
 	
 	new String:translation[TRANSLATION_LENGTH];
 	
+	SetGlobalTransTarget(client);
 	FormatNativeString(0, 3, 4, TRANSLATION_LENGTH, _, translation);
 
 	Game_DisplayVotePassCustom(vote, translation, client);
@@ -1836,6 +1837,7 @@ public Native_DisplayRawPassCustomToOne(Handle:plugin, numParams)
 	
 	new String:translation[TRANSLATION_LENGTH];
 	
+	SetGlobalTransTarget(client);
 	FormatNativeString(0, 3, 4, TRANSLATION_LENGTH, _, translation);
 
 	Game_DisplayRawVotePassCustom(translation, team, client);
