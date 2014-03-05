@@ -1,10 +1,11 @@
 /**
  * vim: set ts=4 :
  * =============================================================================
- * Name
- * Description
+ * Vote Failed
+ * Send Vote Failed commands for TF2 and CS:GO
+ * Used to test the VoteFailed and CallVoteFailed usermessages
  *
- * Name (C)2014 Powerlord (Ross Bemrose).  All rights reserved.
+ * Vote Failed (C)2014 Powerlord (Ross Bemrose).  All rights reserved.
  * =============================================================================
  *
  * This program is free software; you can redistribute it and/or modify it under

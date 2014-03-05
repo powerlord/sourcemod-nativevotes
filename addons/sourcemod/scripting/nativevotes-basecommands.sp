@@ -2,8 +2,9 @@
  * vim: set ts=4 :
  * =============================================================================
  * NativeVotes Basecommands Plugin
- * Provides cancelvote functionality.
+ * Provides cancelvote and revote functionality for NativeVotes
  *
+ * NativeVotes (C) 2011-2014 Ross Bemrose (Powerlord). All rights reserved.
  * SourceMod (C)2004-2008 AlliedModders LLC.  All rights reserved.
  * =============================================================================
  *

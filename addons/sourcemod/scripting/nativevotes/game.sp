@@ -2,7 +2,11 @@
  * vim: set ts=4 :
  * =============================================================================
  * NativeVotes
- * Copyright (C) 2011-2013 Ross Bemrose (Powerlord).  All rights reserved.
+ * NativeVotes is a voting API plugin for L4D, L4D2, TF2, and CS:GO.
+ * Based on the SourceMod voting API
+ * 
+ * NativeVotes (C) 2011-2014 Ross Bemrose (Powerlord). All rights reserved.
+ * SourceMod (C)2004-2008 AlliedModders LLC.  All rights reserved.
  * =============================================================================
  *
  * This program is free software; you can redistribute it and/or modify it under
