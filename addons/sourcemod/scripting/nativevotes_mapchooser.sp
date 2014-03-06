@@ -51,7 +51,7 @@
 #undef REQUIRE_PLUGIN
 #include <nativevotes>
 
-#define VERSION "1.5.3a"
+#define VERSION "1.5.4"
 
 public Plugin:myinfo =
 {
