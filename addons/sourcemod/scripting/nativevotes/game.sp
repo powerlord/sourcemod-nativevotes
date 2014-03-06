@@ -210,7 +210,7 @@ new Handle:g_Cvar_MvM_VoteChallenge_Enabled;
 
 bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 {
-	g_EngineVersion = GetEngineVersionCompat();
+	g_EngineVersion = GetEngineVersion();
 	g_bUserBuf = GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf;
 	
 	//LogMessage("Detected Engine version: %d", g_EngineVersion);
