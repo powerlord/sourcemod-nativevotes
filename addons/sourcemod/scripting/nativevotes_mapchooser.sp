@@ -59,7 +59,7 @@ public Plugin:myinfo =
 	author = "AlliedModders LLC and Powerlord",
 	description = "Automated Map Voting",
 	version = VERSION,
-	url = ""
+	url = "https://forums.alliedmods.net/showthread.php?t=208010"
 };
 
 /* Valve ConVars */
@@ -218,12 +218,17 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 
 public OnAllPluginsLoaded()
 {
-	g_NativeVotes = LibraryExists(LIBRARY);
+	if (FindPluginByFile("mapchooser.smx") != INVALID_HANDLE)
+	{
+		SetFailState("This plugin replaces mapchooser.  You cannot run both at once.");
+	}
+	
+	g_NativeVotes = LibraryExists(LIBRARY) && NativeVotes_IsVoteTypeSupported(NativeVotesType_NextLevelMult);
 }
 
 public OnLibraryAdded(const String:name[])
 {
-	if (StrEqual(name, LIBRARY, false))
+	if (StrEqual(name, LIBRARY, false) && NativeVotes_IsVoteTypeSupported(NativeVotesType_NextLevelMult))
 	{
 		g_NativeVotes = true;
 	}
