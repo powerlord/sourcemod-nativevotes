@@ -159,6 +159,20 @@ public OnPluginStart()
 			HookUserMessage(GetUserMessageId("VoteFailed"), TF2CSGO_MessageVoteFail);
 			HookUserMessage(GetUserMessageId("CallVoteFailed"), TF2CSGO_MessageCallVoteFailed);
 		}
+		
+		case Engine_CSGO:
+		{
+			HookEventEx("vote_cast", TF2CSGO_EventVoteCast);
+			HookEventEx("vote_options", TF2CSGO_EventVoteOptions);
+			//HookEventEx("", CSGO_EventMapVote);			
+			
+			HookUserMessage(GetUserMessageId("VoteSetup"), TF2CSGO_MessageVoteSetup);
+			HookUserMessage(GetUserMessageId("VoteStart"), TF2CSGO_MessageVoteStart);
+			HookUserMessage(GetUserMessageId("VotePass"), TF2CSGO_MessageVotePass);
+			HookUserMessage(GetUserMessageId("VoteFailed"), TF2CSGO_MessageVoteFail);
+			HookUserMessage(GetUserMessageId("CallVoteFailed"), TF2CSGO_MessageCallVoteFailed);
+			
+		}
 	}
 	
 	AddCommandListener(CommandVote, "vote");

@@ -193,6 +193,16 @@
 // Generic functions
 // 
 
+enum
+{
+	ValveVote_Kick = 0,
+	ValveVote_Restart = 1,
+	ValveVote_ChangeLevel = 2,
+	ValveVote_NextLevel = 3,
+	ValveVote_Scramble = 4,
+	ValveVote_SwapTeams = 5,
+}
+
 new g_VoteController = -1;
 new g_bUserBuf = false;
 
@@ -243,6 +253,46 @@ bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 	}
 	
 	return false;
+}
+
+NativeVotesKickType:Game_GetKickType(const String:param1[], &target)
+{
+	new NativeVotesKickType:kickType;
+	
+	switch(g_EngineVersion)
+	{
+		case Engine_Left4Dead, Engine_Left4Dead2, Engine_CSGO:
+		{
+			target = StringToInt(param1);
+			kickType = NativeVotesKickType_Generic;
+		}
+		
+		case Engine_TF2:
+		{
+			decl String:params[2][20];
+			ExplodeString(param1, " ", params, sizeof(params), sizeof(params[]));
+			
+			target = StringToInt(params[0]);
+			
+			if (StrEqual(params[1], "cheating", false))
+			{
+				kickType = NativeVotesKickType_Cheating;
+			}
+			else if (StrEqual(params[1], "idle", false))
+			{
+				kickType = NativeVotesKickType_Idle;
+			}
+			else if (StrEqual(params[1], "scamming", false))
+			{
+				kickType = NativeVotesKickType_Scamming;
+			}
+			else
+			{
+				kickType = NativeVotesKickType_Generic;					
+			}
+		}
+	}
+	return kickType;
 }
 
 bool:CheckVoteController()
@@ -1261,6 +1311,8 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	
 	new String:details[MAX_VOTE_DETAILS_LENGTH];
 	
+	new voteIndex = TF2CSGO_GetVoteType(voteType);
+	
 	switch (voteType)
 	{
 		case NativeVotesType_Custom_YesNo, NativeVotesType_Custom_Mult:
@@ -1388,8 +1440,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 			}
 			PbSetBool(voteStart, "is_yes_no_vote", bYesNo);
 			PbSetString(voteStart, "other_team_str", otherTeamString);
-			// TODO: Need to look these values up. These values may correspond to the order votes show up in for VoteSetup
-			PbSetInt(voteStart, "vote_type", 0); // For now, set to 0 to block in-game votes
+			PbSetInt(voteStart, "vote_type", voteIndex);
 		}
 		else
 		{
@@ -1420,8 +1471,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		}
 		SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", num_clients);
 		SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", bYesNo);
-		// TODO: Need to look these values up. These values may correspond to the order votes show up in for VoteSetup
-		SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", 0); // For now, set to 0 to block in-game votes
+		SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", voteIndex);
 	}
 }
 
@@ -2086,3 +2136,42 @@ CSGO_ParseVoteSetup(Handle:hVoteTypes)
 	// TODO: Need to find out default vote list so that we can add them
 }
 
+TF2CSGO_GetVoteType(NativeVotesType:voteType)
+{
+	new valveVoteType = ValveVote_Restart;
+	
+	switch (voteType)
+	{
+		case NativeVotesType_Custom_YesNo, NativeVotesType_Restart:
+		{
+			valveVoteType = ValveVote_Restart;
+		}
+		
+		case NativeVotesType_Custom_Mult, NativeVotesType_NextLevel, NativeVotesType_NextLevelMult:
+		{
+			valveVoteType = ValveVote_NextLevel;
+		}
+		
+		case NativeVotesType_Kick, NativeVotesType_KickIdle, NativeVotesType_KickScamming, NativeVotesType_KickCheating:
+		{
+			valveVoteType = ValveVote_Kick;
+		}
+		
+		case NativeVotesType_ChgLevel:
+		{
+			valveVoteType = ValveVote_ChangeLevel;
+		}
+		
+		case NativeVotesType_ScrambleNow, NativeVotesType_ScrambleEnd:
+		{
+			valveVoteType = ValveVote_Scramble;
+		}
+		
+		case NativeVotesType_SwapTeams:
+		{
+			valveVoteType = ValveVote_SwapTeams;
+		}
+	}
+	
+	return valveVoteType;
+}

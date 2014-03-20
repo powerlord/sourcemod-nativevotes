@@ -53,7 +53,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"1.0.0 beta 3"
+#define VERSION 							"1.0.0 beta 4"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -311,35 +311,17 @@ public Action:Command_CallVote(client, const String:command[], argc)
 				decl String:param1[20];
 				GetCmdArg(2, param1, sizeof(param1));
 				
-				decl String:params[2][20];
-				ExplodeString(param1, " ", params, sizeof(params), sizeof(params[]));
+				kickType = Game_GetKickType(param1, target);
 				
-				target = StringToInt(params[0]);
 				new targetClient = GetClientOfUserId(target);
 				
 				if (targetClient < 1 || targetClient > MaxClients || !IsClientInGame(targetClient))
 				{
 					return Plugin_Continue;
 				}
-				
-				if (StrEqual(params[1], "cheating", false))
-				{
-					kickType = NativeVotesKickType_Cheating;
-				}
-				else if (StrEqual(params[1], "idle", false))
-				{
-					kickType = NativeVotesKickType_Idle;
-				}
-				else if (StrEqual(params[1], "scamming", false))
-				{
-					kickType = NativeVotesKickType_Scamming;
-				}
-				else
-				{
-					kickType = NativeVotesKickType_Generic;					
-				}
-				
+
 				GetClientName(targetClient, argument, sizeof(argument));
+				
 			}
 			else
 			{
