@@ -164,7 +164,8 @@ enum NativeVotesCallFailType
 	NativeVotesCallFail_CantKickAdmin = 12,		/**< TF2/CS:GO: Can't kick server admin. */
 	NativeVotesCallFail_ScramblePending = 13,	/**< TF2/CS:GO: Team Scramble is pending. */
 	NativeVotesCallFail_Spectators = 14,		/**< TF2/CS:GO: Spectators aren't allowed to call votes. */
-	NativeVotesCallFail_LevelSet = 15,			/**< TF2/CS:GO: Next level already set. */
+	NativeVotesCallFail_LevelSet = 15,			/**< TF2: Next level already set. */
+	NativeVotesCallFail_Warmup = 15,			/**< CSGO: Vote can't be called during Warmup */
 	NativeVotesCallFail_MapNotValid = 16,		/**< TF2: Map is not in MapCycle. */
 	NativeVotesCallFail_KickTime = 17,			/**< TF2: Cannot kick at this time: Argument is seconds until you can call another kick vote. */
 	NativeVotesCallFail_KickDuringRound = 18,	/**< TF2: Cannot kick during a round. */

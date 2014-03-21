@@ -73,59 +73,68 @@ public Action:Cmd_VoteMulti(client, args)
 	new Handle:optionsEvent = CreateEvent("vote_options");
 	SetEventString(optionsEvent, "option1", "de_dust");
 	SetEventString(optionsEvent, "option2", "de_dust2");
-	SetEventString(optionsEvent, "option1", "cs_italy");
-	SetEventString(optionsEvent, "option1", "de_sugarcane");
-	SetEventString(optionsEvent, "option1", "ar_shoots");
+	SetEventString(optionsEvent, "option3", "cs_italy");
+	SetEventString(optionsEvent, "option4", "de_sugarcane");
+	SetEventString(optionsEvent, "option5", "ar_shoots");
 	SetEventInt(optionsEvent, "count", 5);
 	FireEvent(optionsEvent);
 	
 	new entity = FindEntityByClassname(-1, "vote_controller");
 	if (entity > -1)
 	{
+		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 3);
+		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", 0);
 		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
 		for (new i = 0; i < 5; i++)
 		{
 			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
 		}
 		SetEntProp(entity, Prop_Send, "m_nPotentialVotes", GetClientCount(true));
-		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", 0);
-		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 3);
 	}
 
-	new Handle:voteStart = StartMessageAll("StartVote", USERMSG_RELIABLE);
+	new Handle:voteStart = StartMessageAll("VoteStart", USERMSG_RELIABLE);
 	PbSetInt(voteStart, "team", -1);
 	PbSetInt(voteStart, "ent_idx", 99);
 	PbSetString(voteStart, "disp_str", "#SFUI_vote_nextlevel_choices");
 	PbSetString(voteStart, "details_str", "");
 	PbSetBool(voteStart, "is_yes_no_vote", false);
 	PbSetString(voteStart, "other_team_str", "#SFUI_otherteam_vote_unimplemented");
-	PbSetInt(voteStart, "vote_type", 3);
+	PbSetInt(voteStart, "vote_type", 1);
 	EndMessage();	
 }
 
 public Action:Cmd_VoteYesNo(client, args)
 {
+	new Handle:optionsEvent = CreateEvent("vote_options");
+	SetEventString(optionsEvent, "option1", "Yes");
+	SetEventString(optionsEvent, "option2", "No");
+	SetEventString(optionsEvent, "option3", "");
+	SetEventString(optionsEvent, "option4", "");
+	SetEventString(optionsEvent, "option5", "");
+	SetEventInt(optionsEvent, "count", 2);
+	FireEvent(optionsEvent);
+	
 	new entity = FindEntityByClassname(-1, "vote_controller");
 	if (entity > -1)
 	{
+		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", 1);
+		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 2);
 		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
 		for (new i = 0; i < 5; i++)
 		{
 			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
 		}
 		SetEntProp(entity, Prop_Send, "m_nPotentialVotes", GetClientCount(true));
-		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", 1);
-		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 3);
 	}
 
-	new Handle:voteStart = StartMessageAll("StartVote", USERMSG_RELIABLE);
+	new Handle:voteStart = StartMessageAll("VoteStart", USERMSG_RELIABLE);
 	PbSetInt(voteStart, "team", -1);
 	PbSetInt(voteStart, "ent_idx", client);
-	PbSetString(voteStart, "disp_str", "#SFUI_vote_nextlevel");
+	PbSetString(voteStart, "disp_str", "#SFUI_vote_changelevel");
 	PbSetString(voteStart, "details_str", "de_dust2");
 	PbSetBool(voteStart, "is_yes_no_vote", true);
 	PbSetString(voteStart, "other_team_str", "#SFUI_otherteam_vote_unimplemented");
-	PbSetInt(voteStart, "vote_type", 3);
+	PbSetInt(voteStart, "vote_type", 1);
 	EndMessage();	
 
 	return Plugin_Handled;
@@ -148,7 +157,7 @@ public Action:Cmd_VoteFail(client, args)
 			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
 		}
 		SetEntProp(entity, Prop_Send, "m_nPotentialVotes", 0);
-		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", 0);
+		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", 1);
 		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", -1);
 	}
 	

@@ -43,6 +43,8 @@ new g_VoteController = -1;
 
 #define MAX_ARG_SIZE 65
 
+#define DELAY 6.0
+
 public Plugin:myinfo = 
 {
 	name = "L4D,L4D2,TF2,CS:GO Vote Sniffer",
@@ -148,7 +150,7 @@ public OnPluginStart()
 			HookUserMessage(GetUserMessageId("CallVoteFailed"), L4DL4D2_MessageCallVoteFailed);
 		}
 		
-		case Engine_CSGO, Engine_TF2:
+		case Engine_TF2:
 		{
 			HookEventEx("vote_cast", TF2CSGO_EventVoteCast);
 			HookEventEx("vote_options", TF2CSGO_EventVoteOptions);
@@ -272,7 +274,7 @@ public L4D_EventVoteEnded(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	LogToFile(LOGFILE, "Vote Ended Event");
 	
-	CreateTimer(1.0, L4DL4D2_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(DELAY, L4DL4D2_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 /*
@@ -382,7 +384,7 @@ public Action:L4D2_MessageVotePass(UserMsg:msg_id, Handle:message, const players
 	
 	LogToFile(LOGFILE, "VotePass Usermessage: team: %d, issue: %s, param1: %s", team, issue, param1);
 
-	CreateTimer(1.0, L4DL4D2_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(DELAY, L4DL4D2_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
 	return Plugin_Continue;
 }
 
@@ -397,7 +399,7 @@ public Action:L4D2_MessageVoteFail(UserMsg:msg_id, Handle:message, const players
 	
 	LogToFile(LOGFILE, "VoteFail Usermessage: team: %d", team);
 
-	CreateTimer(1.0, L4DL4D2_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(DELAY, L4DL4D2_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
 
 	return Plugin_Continue;
 }
@@ -585,7 +587,7 @@ public Action:TF2CSGO_MessageVotePass(UserMsg:msg_id, Handle:message, const play
 	
 	LogToFile(LOGFILE, "VotePass Usermessage: team: %d, issue: %s, param1: %s, voteType: %d", team, issue, param1, voteType);
 	
-	CreateTimer(1.0, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(DELAY, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
 
 	return Plugin_Continue;
 }
@@ -619,7 +621,7 @@ public Action:TF2CSGO_MessageVoteFail(UserMsg:msg_id, Handle:message, const play
 	
 	LogToFile(LOGFILE, "VoteFail Usermessage: team: %d, reason: %d", team, reason);
 	
-	CreateTimer(1.0, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(DELAY, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
 
 	return Plugin_Continue;
 }
