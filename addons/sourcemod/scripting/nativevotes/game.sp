@@ -793,6 +793,24 @@ NativeVotesType:Game_VoteStringToVoteType(String:voteString[])
 	return NativeVotesType_None;
 }
 
+bool:Game_IsVoteInProgress()
+{
+	switch (g_EngineVersion)
+	{
+		case Engine_Left4Dead, Engine_Left4Dead2:
+		{
+			return L4DL4D2_IsVoteInProgress();
+		}
+		
+		case Engine_CSGO, Engine_TF2:
+		{
+			return TF2CSGO_IsVoteInProgress();
+		}
+	}
+	
+	return false;
+}
+
 //----------------------------------------------------------------------------
 // L4D/L4D2 shared functions
 
@@ -972,6 +990,14 @@ L4DL4D2_ResetVote()
 	}
 }
 
+bool:L4DL4D2_IsVoteInProgress()
+{
+	if (CheckVoteController())
+	{	
+		return (GetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex") > -1);
+	}
+	return false;
+}
 
 //----------------------------------------------------------------------------
 // L4D functions
@@ -1656,6 +1682,16 @@ TF2CSGO_ResetVote()
 		SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", -1);
 	}
 }
+
+bool:TF2CSGO_IsVoteInProgress()
+{
+	if (CheckVoteController())
+	{	
+		return (GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex") > -1);
+	}
+	return false;
+}
+
 
 //----------------------------------------------------------------------------
 // TF2 functions

@@ -1080,7 +1080,9 @@ Internal_Reset()
 
 bool:Internal_IsVoteInProgress()
 {
-	return (g_hCurVote != INVALID_HANDLE);
+	new bool:isActive = (g_hCurVote != INVALID_HANDLE);
+	
+	return (isActive || Game_IsVoteInProgress());
 }
 
 bool:Internal_IsClientInVotePool(client)
