@@ -53,7 +53,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"1.0.0 beta 4"
+#define VERSION 							"1.0.0 beta 5"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
