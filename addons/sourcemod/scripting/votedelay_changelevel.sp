@@ -100,7 +100,7 @@ public OnPluginStart()
 	
 	g_bUserBuf = (GetUserMessageType() == UM_Protobuf);
 	
-	AddCommandListener(Cmd_Vote, "vote");
+	AddCommandListener(Cmd_CallVote, "callvote");
 	HookEvent("round_end", Event_RoundEnd);
 	HookEventEx("teamplay_round_win", Event_RoundWin);
 
@@ -130,7 +130,7 @@ public Event_RoundWin(Handle:event, const String:name[], bool:dontBroadcast)
 	roundCount++;
 }
 
-public Action:Cmd_Vote(client, const String:command[], argc)
+public Action:Cmd_CallVote(client, const String:command[], argc)
 {
 	if (client == 0)
 	{
