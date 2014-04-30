@@ -169,6 +169,7 @@ enum NativeVotesCallFailType
 	NativeVotesCallFail_MapNotValid = 16,		/**< TF2: Map is not in MapCycle. */
 	NativeVotesCallFail_KickTime = 17,			/**< TF2: Cannot kick at this time: Argument is seconds until you can call another kick vote. */
 	NativeVotesCallFail_KickDuringRound = 18,	/**< TF2: Cannot kick during a round. */
+	NativeVotesCallFail_AlreadyActive = 19		/**< TF2: Cannot call vote because modification (Eternaween) is already active (may not work) */
 };
 
 enum NativeVotesKickType

@@ -44,7 +44,7 @@
 
 #define LOGTAG "NV"
 
-#define MAX_VOTE_DETAILS_LENGTH				256		// This is higher than Source SDK 2013 says, but...
+#define MAX_VOTE_DETAILS_LENGTH				64	// From SourceSDK2013's shareddefs.h
 #define TRANSLATION_LENGTH					192
 
 #define VOTE_DELAY_TIME 					3.0
@@ -53,7 +53,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"1.0.0 beta 5"
+#define VERSION 							"1.0.0 beta 6"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
@@ -1075,7 +1075,7 @@ Internal_Reset()
 		g_hDisplayTimer = INVALID_HANDLE;
 	}
 	
-	Game_ResetVote();
+	CreateTimer(5.0, Game_ResetVote);
 }
 
 bool:Internal_IsVoteInProgress()

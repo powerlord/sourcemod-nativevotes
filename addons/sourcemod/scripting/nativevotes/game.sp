@@ -43,6 +43,8 @@
 #define L4DL4D2_COUNT						2
 #define TF2CSGO_COUNT						5
 
+#define INVALID_ISSUE						-1
+
 //----------------------------------------------------------------------------
 // Translation strings
 
@@ -727,7 +729,7 @@ Game_UpdateClientCount(num_clients)
 	}
 }
 
-Game_ResetVote()
+public Action:Game_ResetVote(Handle:timer)
 {
 	switch(g_EngineVersion)
 	{
@@ -982,11 +984,11 @@ L4DL4D2_ResetVote()
 {
 	if (CheckVoteController())
 	{
-		SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", NATIVEVOTES_ALL_TEAMS);
+		SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", INVALID_ISSUE);
 		SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
 		SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
 		SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", 0);
-		SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", -1);
+		SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", NATIVEVOTES_ALL_TEAMS);
 	}
 }
 
@@ -994,7 +996,7 @@ bool:L4DL4D2_IsVoteInProgress()
 {
 	if (CheckVoteController())
 	{	
-		return (GetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex") > -1);
+		return (GetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex") > INVALID_ISSUE);
 	}
 	return false;
 }
@@ -1051,6 +1053,16 @@ L4D_DisplayVote(Handle:vote, num_clients)
 	
 	new team = Data_GetTeam(vote);
 	
+	if (CheckVoteController())
+	{
+		// TODO: Need to look these values up
+		SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", 0); // For now, set to 0 to block in-game votes
+		SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", team);
+		SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
+		SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
+		SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
+	}
+
 	new Handle:voteStart = CreateEvent("vote_started");
 	SetEventInt(voteStart, "team", team);
 	SetEventInt(voteStart, "initiator", Data_GetInitiator(vote));
@@ -1058,15 +1070,6 @@ L4D_DisplayVote(Handle:vote, num_clients)
 	SetEventString(voteStart, "param1", details);
 	FireEvent(voteStart);
 	
-	if (CheckVoteController())
-	{
-		SetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote", team);
-		SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
-		SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
-		SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
-		// TODO: Need to look these values up
-		SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", 0); // For now, set to 0 to block in-game votes
-	}
 }
 
 L4D_VoteEnded()
@@ -1679,14 +1682,14 @@ TF2CSGO_ResetVote()
 {
 	if (CheckVoteController())
 	{	
-		SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", NATIVEVOTES_ALL_TEAMS);
+		SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", INVALID_ISSUE);
 		for (new i = 0; i < 5; i++)
 		{
 			SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, _, i);
 		}
 		SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", 0);
+		SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", NATIVEVOTES_ALL_TEAMS);
 		SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", true);
-		SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", -1);
 	}
 }
 
@@ -1694,7 +1697,7 @@ bool:TF2CSGO_IsVoteInProgress()
 {
 	if (CheckVoteController())
 	{	
-		return (GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex") > -1);
+		return (GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex") != INVALID_ISSUE);
 	}
 	return false;
 }
