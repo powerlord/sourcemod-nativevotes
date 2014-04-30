@@ -1367,6 +1367,20 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		}
 	}
 	
+	new team = Data_GetTeam(vote);
+	
+	// Moved to mimic SourceSDK2013's server/vote_controller.cpp
+	if (CheckVoteController())
+	{
+		SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", bYesNo);
+		SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", voteIndex);
+		SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", team);
+		for (new i = 0; i < 5; i++)
+		{
+			SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, _, i);
+		}
+	}
+	
 	// According to Source SDK 2013, vote_options is only sent for a multiple choice vote.
 	if (!bYesNo)
 	{
@@ -1387,7 +1401,12 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		FireEvent(optionsEvent);
 	}
 	
-	new team = Data_GetTeam(vote);
+	// Moved to mimic SourceSDK2013's server/vote_controller.cpp
+	// For whatever reason, while the other props are set first, this one's set after the vote_options event
+	if (CheckVoteController())
+	{
+		SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", num_clients);
+	}
 	
 	for (new i = 0; i < num_clients; ++i)
 	{
@@ -1487,18 +1506,6 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	}
 	
 	g_curDisplayClient = 0;
-	
-	if (CheckVoteController())
-	{
-		SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", team);
-		for (new i = 0; i < 5; i++)
-		{
-			SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, _, i);
-		}
-		SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", num_clients);
-		SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", bYesNo);
-		SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", voteIndex);
-	}
 }
 
 TF2CSGO_VotePass(const String:translation[], const String:details[], team, client=0)
