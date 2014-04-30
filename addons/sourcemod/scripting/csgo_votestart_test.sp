@@ -37,7 +37,7 @@
 
 #pragma semicolon 1
 
-#define VERSION "1.0"
+#define VERSION "1.1"
 
 public Plugin:myinfo = 
 {
@@ -66,11 +66,26 @@ public OnPluginStart()
 	RegAdminCmd("voteyesno", Cmd_VoteYesNo, ADMFLAG_VOTE, "YesNo Choice Vote");
 	RegAdminCmd("voteclear", Cmd_VoteFail, ADMFLAG_VOTE, "Multiple Choice Vote");
 	
+	AddCommandListener(Listener_Vote, "vote");
+	
 }
 
 public Action:Cmd_VoteMulti(client, args)
 {
+	new entity = FindEntityByClassname(-1, "vote_controller");
+	if (entity > -1)
+	{
+		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", false);
+		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 3);
+		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
+		for (new i = 0; i < 5; i++)
+		{
+			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
+		}
+	}
+	
 	new Handle:optionsEvent = CreateEvent("vote_options");
+	
 	SetEventString(optionsEvent, "option1", "de_dust");
 	SetEventString(optionsEvent, "option2", "de_dust2");
 	SetEventString(optionsEvent, "option3", "cs_italy");
@@ -79,16 +94,8 @@ public Action:Cmd_VoteMulti(client, args)
 	SetEventInt(optionsEvent, "count", 5);
 	FireEvent(optionsEvent);
 	
-	new entity = FindEntityByClassname(-1, "vote_controller");
 	if (entity > -1)
 	{
-		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 3);
-		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", 0);
-		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
-		for (new i = 0; i < 5; i++)
-		{
-			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
-		}
 		SetEntProp(entity, Prop_Send, "m_nPotentialVotes", GetClientCount(true));
 	}
 
@@ -105,6 +112,18 @@ public Action:Cmd_VoteMulti(client, args)
 
 public Action:Cmd_VoteYesNo(client, args)
 {
+	new entity = FindEntityByClassname(-1, "vote_controller");
+	if (entity > -1)
+	{
+		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", true);
+		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 2);
+		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
+		for (new i = 0; i < 5; i++)
+		{
+			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
+		}
+	}
+	
 	new Handle:optionsEvent = CreateEvent("vote_options");
 	SetEventString(optionsEvent, "option1", "Yes");
 	SetEventString(optionsEvent, "option2", "No");
@@ -114,18 +133,12 @@ public Action:Cmd_VoteYesNo(client, args)
 	SetEventInt(optionsEvent, "count", 2);
 	FireEvent(optionsEvent);
 	
-	new entity = FindEntityByClassname(-1, "vote_controller");
 	if (entity > -1)
 	{
-		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", 1);
-		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 2);
-		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
-		for (new i = 0; i < 5; i++)
-		{
-			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
-		}
 		SetEntProp(entity, Prop_Send, "m_nPotentialVotes", GetClientCount(true));
 	}
+
+	PrintToChatAll("Finished setting vote_controller properties.");
 
 	new Handle:voteStart = StartMessageAll("VoteStart", USERMSG_RELIABLE);
 	PbSetInt(voteStart, "team", -1);
@@ -142,24 +155,39 @@ public Action:Cmd_VoteYesNo(client, args)
 
 public Action:Cmd_VoteFail(client, args)
 {
+	VoteFail();
+	return Plugin_Handled;
+}
+
+public Action:Listener_Vote(client, const String:command[], argc)
+{
+	VoteFail();
+	return Plugin_Handled;
+}
+
+VoteFail()
+{
 	new Handle:voteFailed = StartMessageAll("VoteFailed", USERMSG_RELIABLE);
 	
 	PbSetInt(voteFailed, "team", -1);
 	PbSetInt(voteFailed, "reason", 0);
 	EndMessage();
 	
+	CreateTimer(5.0, Timer_ResetData);
+}
+
+public Action:Timer_ResetData(Handle:timer)
+{
 	new entity = FindEntityByClassname(-1, "vote_controller");
 	if (entity > -1)
 	{
-		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
+		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", -1);
 		for (new i = 0; i < 5; i++)
 		{
 			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
 		}
 		SetEntProp(entity, Prop_Send, "m_nPotentialVotes", 0);
-		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", 1);
-		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", -1);
-	}
-	
-	return Plugin_Handled;
+		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
+		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", true);
+	}	
 }
