@@ -56,10 +56,6 @@ public Plugin:myinfo =
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 {
-	// Necessary for SourceMod 1.4 support
-	MarkNativeAsOptional("GetUserMessageType");
-	MarkNativeAsOptional("GetEngineVersion");
-
 	if (!Game_IsGameSupported())
 	{
 		strcopy(error, err_max, "Unsupported game");

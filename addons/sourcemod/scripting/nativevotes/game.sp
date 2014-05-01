@@ -680,9 +680,9 @@ Game_DisplayVoteSetup(client, Handle:hVoteTypes, Handle:hVisChecks)
 		
 		case Engine_CSGO:
 		{
-			CSGO_ParseVoteSetup(hVoteTypes);
-			PerformVisChecks(client, hVoteTypes, hVisChecks);
-			TF2CSGO_DisplayVoteSetup(client, hVoteTypes);
+			//CSGO_ParseVoteSetup(hVoteTypes);
+			//PerformVisChecks(client, hVoteTypes, hVisChecks);
+			//TF2CSGO_DisplayVoteSetup(client, hVoteTypes);
 		}
 		
 	}
@@ -1376,7 +1376,10 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	if (CheckVoteController())
 	{
 		SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", bYesNo);
-		SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", voteIndex);
+		
+		if (g_EngineVersion == Engine_TF2)
+			SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", voteIndex);
+			
 		SetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote", team);
 		for (new i = 0; i < 5; i++)
 		{
@@ -1682,7 +1685,9 @@ TF2CSGO_ResetVote()
 {
 	if (CheckVoteController())
 	{	
-		SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", INVALID_ISSUE);
+		if (g_EngineVersion == Engine_TF2)
+			SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", INVALID_ISSUE);
+		
 		for (new i = 0; i < 5; i++)
 		{
 			SetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", 0, _, i);
@@ -2172,6 +2177,8 @@ CSGO_VoteTypeToVoteOtherTeamString(NativeVotesType:voteType, String:otherTeamStr
 
 }
 
+/*
+// Turns out this is a TF2-only feature
 CSGO_ParseVoteSetup(Handle:hVoteTypes)
 {
 	if (!GetConVarBool(g_Cvar_Votes_Enabled))
@@ -2179,8 +2186,8 @@ CSGO_ParseVoteSetup(Handle:hVoteTypes)
 		return;
 	}
 	
-	// TODO: Need to find out default vote list so that we can add them
 }
+*/
 
 TF2CSGO_GetVoteType(NativeVotesType:voteType)
 {

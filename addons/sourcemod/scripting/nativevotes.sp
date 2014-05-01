@@ -42,6 +42,8 @@
 
 #include "nativevotes/data-keyvalues.sp"
 
+#define VERSION 							"1.0.0 beta 7"
+
 #define LOGTAG "NV"
 
 #define MAX_VOTE_DETAILS_LENGTH				64	// From SourceSDK2013's shareddefs.h
@@ -52,8 +54,6 @@
 // SourceMod uses these internally, so... we do too.
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
-
-#define VERSION 							"1.0.0 beta 6"
 
 #define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32

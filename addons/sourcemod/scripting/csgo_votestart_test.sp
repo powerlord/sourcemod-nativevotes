@@ -77,7 +77,7 @@ public Action:Cmd_VoteMulti(client, args)
 	if (entity > -1)
 	{
 		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", false);
-		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 3);
+		//SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 3);
 		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
 		for (new i = 0; i < 5; i++)
 		{
@@ -136,7 +136,7 @@ public Action:Cmd_VoteYesNo(client, args)
 	if (entity > -1)
 	{
 		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", true);
-		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 2);
+		//SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 2);
 		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
 		for (new i = 0; i < 5; i++)
 		{
@@ -158,6 +158,8 @@ public Action:Cmd_VoteYesNo(client, args)
 		SetEntProp(entity, Prop_Send, "m_nPotentialVotes", GetClientCount(true));
 	}
 
+	g_bVoteActive = true;
+	
 	LogMessage("Finished setting vote_controller properties.");
 
 	CreateTimer(0.2, Timer_StartYesNoVote, GetClientUserId(client));
@@ -226,7 +228,7 @@ public Action:Timer_ResetData(Handle:timer)
 	new entity = FindEntityByClassname(-1, "vote_controller");
 	if (entity > -1)
 	{
-		SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", -1);
+		//SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", -1);
 		for (new i = 0; i < 5; i++)
 		{
 			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
