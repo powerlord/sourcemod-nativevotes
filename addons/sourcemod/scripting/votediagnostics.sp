@@ -50,7 +50,7 @@ public Plugin:myinfo =
 	name = "L4D,L4D2,TF2,CS:GO Vote Sniffer",
 	author = "Powerlord",
 	description = "Sniff voting commands, events, and usermessages",
-	version = "1.2.3",
+	version = "1.2.4",
 	url = "http://www.sourcemod.net/"
 }
 
@@ -108,7 +108,7 @@ bool:CheckVoteController()
 
 bool:Game_IsGameSupported()
 {
-	g_EngineVersion = GetEngineVersionCompat();
+	g_EngineVersion = GetEngineVersion();
 	
 	switch (g_EngineVersion)
 	{
@@ -542,10 +542,8 @@ public Action:TF2CSGO_MessageVoteStart(UserMsg:msg_id, Handle:message, const pla
 	}
 
 	LogToFile(LOGFILE, "VoteStart Usermessage: team: %d, initiator: %d, issue: %s, otherTeamIssue: %s, param1: %s, yesNo: %d, player count: %d, voteType: %d", team, initiator, issue, otherTeamIssue, param1, yesNo, playersNum, voteType);
-	if (CheckVoteController())
-	{
-		LogToFile(LOGFILE, "Active Index for issue %s: %d", issue, GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex"));
-	}
+	
+	CreateTimer(0.0, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
 
 	return Plugin_Continue;
 }
@@ -759,108 +757,10 @@ public Action:CommandCallVote(client, const String:command[], argc)
 	return Plugin_Continue;
 }
 
-// Using this stock REQUIRES you to add the following to AskPluginLoad2:
-// MarkNativeAsOptional("GetEngineVersion");
-stock EngineVersion:GetEngineVersionCompat()
+public Action:Timer_TF2CSGO_VoteController(Handle:timer)
 {
-	new EngineVersion:version;
-	if (GetFeatureStatus(FeatureType_Native, "GetEngineVersion") != FeatureStatus_Available)
+	if (CheckVoteController())
 	{
-		new sdkVersion = GuessSDKVersion();
-		switch (sdkVersion)
-		{
-			case SOURCE_SDK_ORIGINAL:
-			{
-				version = Engine_Original;
-			}
-			
-			case SOURCE_SDK_DARKMESSIAH:
-			{
-				version = Engine_DarkMessiah;
-			}
-			
-			case SOURCE_SDK_EPISODE1:
-			{
-				version = Engine_SourceSDK2006;
-			}
-			
-			case SOURCE_SDK_EPISODE2:
-			{
-				version = Engine_SourceSDK2007;
-			}
-			
-			case SOURCE_SDK_BLOODYGOODTIME:
-			{
-				version = Engine_BloodyGoodTime;
-			}
-			
-			case SOURCE_SDK_EYE:
-			{
-				version = Engine_EYE;
-			}
-			
-			case SOURCE_SDK_CSS:
-			{
-				version = Engine_CSS;
-			}
-			
-			case SOURCE_SDK_EPISODE2VALVE:
-			{
-				decl String:gameFolder[8];
-				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
-				if (StrEqual(gameFolder, "dod", false))
-				{
-					version = Engine_DODS;
-				}
-				else if (StrEqual(gameFolder, "hl2mp", false))
-				{
-					version = Engine_HL2DM;
-				}
-				else
-				{
-					version = Engine_TF2;
-				}
-			}
-			
-			case SOURCE_SDK_LEFT4DEAD:
-			{
-				version = Engine_Left4Dead;
-			}
-			
-			case SOURCE_SDK_LEFT4DEAD2:
-			{
-				decl String:gameFolder[8];
-				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
-				if (StrEqual(gameFolder, "nd", false))
-				{
-					version = Engine_NuclearDawn;
-				}
-				else
-				{
-					version = Engine_Left4Dead2;
-				}
-			}
-			
-			case SOURCE_SDK_ALIENSWARM:
-			{
-				version = Engine_AlienSwarm;
-			}
-			
-			case SOURCE_SDK_CSGO:
-			{
-				version = Engine_CSGO;
-			}
-			
-			default:
-			{
-				version = Engine_Unknown;
-			}
-		}
+		
 	}
-	else
-	{
-		version = GetEngineVersion();
-	}
-	
-	return version;
 }

@@ -39,6 +39,8 @@
 
 #define VERSION "1.1"
 
+new bool:g_bVoteActive = false;
+
 public Plugin:myinfo = 
 {
 	name = "CSGO VoteStart Multiple Test",
@@ -67,7 +69,6 @@ public OnPluginStart()
 	RegAdminCmd("voteclear", Cmd_VoteFail, ADMFLAG_VOTE, "Multiple Choice Vote");
 	
 	AddCommandListener(Listener_Vote, "vote");
-	
 }
 
 public Action:Cmd_VoteMulti(client, args)
@@ -99,6 +100,22 @@ public Action:Cmd_VoteMulti(client, args)
 		SetEntProp(entity, Prop_Send, "m_nPotentialVotes", GetClientCount(true));
 	}
 
+	LogMessage("Finished setting vote_controller properties.");
+
+	g_bVoteActive = true;
+	
+	CreateTimer(0.2, Timer_StartMultiVote, GetClientUserId(client));
+	return Plugin_Handled;
+}
+
+public Action:Timer_StartMultiVote(Handle:timer, any:userid)
+{
+	new client = GetClientOfUserId(userid);
+	if (client <= 0 && client > MaxClients)
+	{
+		return Plugin_Continue;
+	}
+	
 	new Handle:voteStart = StartMessageAll("VoteStart", USERMSG_RELIABLE);
 	PbSetInt(voteStart, "team", -1);
 	PbSetInt(voteStart, "ent_idx", 99);
@@ -108,7 +125,10 @@ public Action:Cmd_VoteMulti(client, args)
 	PbSetString(voteStart, "other_team_str", "#SFUI_otherteam_vote_unimplemented");
 	PbSetInt(voteStart, "vote_type", 1);
 	EndMessage();	
+	
+	return Plugin_Stop;
 }
+
 
 public Action:Cmd_VoteYesNo(client, args)
 {
@@ -138,8 +158,20 @@ public Action:Cmd_VoteYesNo(client, args)
 		SetEntProp(entity, Prop_Send, "m_nPotentialVotes", GetClientCount(true));
 	}
 
-	PrintToChatAll("Finished setting vote_controller properties.");
+	LogMessage("Finished setting vote_controller properties.");
 
+	CreateTimer(0.2, Timer_StartYesNoVote, GetClientUserId(client));
+	return Plugin_Handled;
+}
+
+public Action:Timer_StartYesNoVote(Handle:timer, any:userid)
+{
+	new client = GetClientOfUserId(userid);
+	if (client <= 0 && client > MaxClients)
+	{
+		return Plugin_Continue;
+	}
+	
 	new Handle:voteStart = StartMessageAll("VoteStart", USERMSG_RELIABLE);
 	PbSetInt(voteStart, "team", -1);
 	PbSetInt(voteStart, "ent_idx", client);
@@ -149,24 +181,37 @@ public Action:Cmd_VoteYesNo(client, args)
 	PbSetString(voteStart, "other_team_str", "#SFUI_otherteam_vote_unimplemented");
 	PbSetInt(voteStart, "vote_type", 1);
 	EndMessage();	
-
-	return Plugin_Handled;
+	
+	return Plugin_Stop;
 }
 
 public Action:Cmd_VoteFail(client, args)
 {
-	VoteFail();
+	if (g_bVoteActive)
+		VoteFail();
+
 	return Plugin_Handled;
 }
 
 public Action:Listener_Vote(client, const String:command[], argc)
 {
+	if (!g_bVoteActive)
+	{
+		return Plugin_Continue;
+	}
+	
+	new ReplySource:oldSource = SetCmdReplySource(SM_REPLY_TO_CHAT);
+	ReplyToCommand(client, "Caught vote.");
+	
 	VoteFail();
+	
+	SetCmdReplySource(oldSource);
 	return Plugin_Handled;
 }
 
 VoteFail()
 {
+	g_bVoteActive = false;
 	new Handle:voteFailed = StartMessageAll("VoteFailed", USERMSG_RELIABLE);
 	
 	PbSetInt(voteFailed, "team", -1);
