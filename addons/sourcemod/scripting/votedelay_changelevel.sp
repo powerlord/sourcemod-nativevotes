@@ -34,7 +34,7 @@
 #include <sdktools>
 #pragma semicolon 1
 
-#define VERSION "1.0.0"
+#define VERSION "1.0.1"
 
 #define VOTE_STRING_SIZE					32
 
