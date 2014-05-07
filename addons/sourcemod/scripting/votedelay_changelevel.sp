@@ -172,7 +172,7 @@ bool:IsNativeVoteInProgress()
 {
 	if (CheckVoteController())
 	{
-		new activeIndex = GetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex");
+		new activeIndex = GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex");
 		if (activeIndex > -1)
 		{
 			return true;
