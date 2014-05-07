@@ -1,10 +1,10 @@
 /**
  * vim: set ts=4 :
  * =============================================================================
- * Name
- * Description
+ * Vote Delay: Changelevel
+ * Delay ChangeLevel and NextLevel votes until X rounds have passed
  *
- * Name (C)2014 Powerlord (Ross Bemrose).  All rights reserved.
+ * Vote Delay: Changelevel (C)2014 Powerlord (Ross Bemrose).  All rights reserved.
  * =============================================================================
  *
  * This program is free software; you can redistribute it and/or modify it under
