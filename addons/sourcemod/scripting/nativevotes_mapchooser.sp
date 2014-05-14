@@ -607,7 +607,7 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 	g_HasVoteStarted = true;
 	if (g_NativeVotes)
 	{
-		g_VoteMenu = NativeVotes_Create(Handler_MapVoteMenu, NativeVotesType_NextLevelMult, NATIVEVOTES_ACTIONS_DEFAULT | MenuAction_DisplayItem);
+		g_VoteMenu = NativeVotes_Create(Handler_NV_MapVoteMenu, NativeVotesType_NextLevelMult, NATIVEVOTES_ACTIONS_DEFAULT | MenuAction_DisplayItem);
 		NativeVotes_SetResultCallback(g_VoteMenu, Handler_NV_MapVoteFinished);
 	}
 	else
@@ -653,6 +653,7 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 		/* Smaller of the two - It should be impossible for nominations to exceed the size though (cvar changed mid-map?) */
 		new nominationsToAdd = nominateCount >= voteSize ? voteSize : nominateCount;
 		
+		
 		for (new i=0; i<nominationsToAdd; i++)
 		{
 			GetArrayString(g_NominateList, i, map, sizeof(map));
@@ -695,6 +696,12 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 		
 		while (i < voteSize)
 		{
+			if (count >= availableMaps)
+			{
+				//Run out of maps, this will have to do.
+				break;
+			}
+			
 			GetArrayString(g_NextMapList, count, map, sizeof(map));
 			count++;
 			
@@ -708,12 +715,6 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 				AddMenuItem(g_VoteMenu, map, map);
 			}
 			i++;
-			
-			if (count >= availableMaps)
-			{
-				//Run out of maps, this will have to do.
-				break;	
-			}
 		}
 		
 		/* Wipe out our nominations list - Nominations have already been informed of this */
@@ -766,6 +767,22 @@ InitiateVote(MapChange:when, Handle:inputlist=INVALID_HANDLE)
 		}
 	}
 	
+	/* There are no maps we could vote for. Don't show anything. */
+	if (g_NativeVotes && NativeVotes_GetItemCount(g_VoteMenu) == 0)
+	{
+		g_HasVoteStarted = false;
+		NativeVotes_Close(g_VoteMenu);
+		g_VoteMenu = INVALID_HANDLE;
+		return;
+	}
+	else if (!g_NativeVotes && GetMenuItemCount(g_VoteMenu) == 0)
+	{
+		g_HasVoteStarted = false;
+		CloseHandle(g_VoteMenu);
+		g_VoteMenu = INVALID_HANDLE;
+		return;
+	}
+	
 	new voteDuration = GetConVarInt(g_Cvar_VoteDuration);
 
 	if (g_NativeVotes)
@@ -795,7 +812,7 @@ public Handler_NV_VoteFinishedGeneric(Handle:menu,
 	new item_info[num_items][2];
 	
 	NativeVotes_FixResults(num_clients, client_indexes, client_votes, num_items, item_indexes, item_votes, client_info, item_info);
-	Handler_VoteFinishedGeneric(menu, num_votes, num_clients, client_info, num_items, item_info);
+	Handler_VoteFinishedGenericShared(menu, num_votes, num_clients, client_info, num_items, item_info, true);
 }
 
 public Handler_VoteFinishedGeneric(Handle:menu,
@@ -805,9 +822,20 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 						   num_items,
 						   const item_info[][2])
 {
+	Handler_VoteFinishedGenericShared(menu, num_votes, num_clients, client_info, num_items, item_info, false);
+}
+
+public Handler_VoteFinishedGenericShared(Handle:menu,
+						   num_votes, 
+						   num_clients,
+						   const client_info[][2], 
+						   num_items,
+						   const item_info[][2],
+						   bool:isNativeVotes)
+{
 	decl String:map[PLATFORM_MAX_PATH];
 	
-	if (g_NativeVotes)
+	if (isNativeVotes)
 	{
 		NativeVotes_GetItem(menu, item_info[0][VOTEINFO_ITEM_INDEX], map, sizeof(map));
 	}
@@ -859,7 +887,7 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 		PrintToChatAll("[SM] %t", "Current Map Extended", RoundToFloor(float(item_info[0][VOTEINFO_ITEM_VOTES])/float(num_votes)*100), num_votes);
 		LogAction(-1, -1, "Voting for next map has finished. The current map has been extended.");
 		
-		if (g_NativeVotes)
+		if (isNativeVotes)
 		{
 			NativeVotes_DisplayPassEx(menu, NativeVotesPass_Extend);
 		}
@@ -875,7 +903,7 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 		PrintToChatAll("[SM] %t", "Current Map Stays", RoundToFloor(float(item_info[0][VOTEINFO_ITEM_VOTES])/float(num_votes)*100), num_votes);
 		LogAction(-1, -1, "Voting for next map has finished. 'No Change' was the winner");
 		
-		if (g_NativeVotes)
+		if (isNativeVotes)
 		{
 			NativeVotes_DisplayPassEx(menu, NativeVotesPass_Extend);
 		}
@@ -906,7 +934,7 @@ public Handler_VoteFinishedGeneric(Handle:menu,
 		g_HasVoteStarted = false;
 		g_MapVoteCompleted = true;
 		
-		if (g_NativeVotes)
+		if (isNativeVotes)
 		{
 			NativeVotes_DisplayPass(menu, map);
 		}
@@ -936,7 +964,7 @@ public Handler_NV_MapVoteFinished(Handle:menu,
 			NativeVotes_DisplayFail(menu, NativeVotesFail_NotEnoughVotes);
 			
 			/* Insufficient Winning margin - Lets do a runoff */
-			g_VoteMenu = NativeVotes_Create(Handler_MapVoteMenu, NativeVotesType_NextLevelMult, NATIVEVOTES_ACTIONS_DEFAULT | MenuAction_DisplayItem);
+			g_VoteMenu = NativeVotes_Create(Handler_NV_MapVoteMenu, NativeVotesType_NextLevelMult, NATIVEVOTES_ACTIONS_DEFAULT | MenuAction_DisplayItem);
 			NativeVotes_SetResultCallback(g_VoteMenu, Handler_NV_VoteFinishedGeneric);
 
 			decl String:map1[PLATFORM_MAX_PATH];
@@ -949,7 +977,7 @@ public Handler_NV_MapVoteFinished(Handle:menu,
 			NativeVotes_GetItem(menu, item_indexes[0], map1, sizeof(map1), info1, sizeof(info1));
 			NativeVotes_GetItem(menu, item_indexes[1], map2, sizeof(map2), info2, sizeof(info2));
 			
-			CreateDataTimer(2.0, Timer_Runoff, data, TIMER_FLAG_NO_MAPCHANGE);
+			CreateDataTimer(2.0, Timer_NV_Runoff, data, TIMER_FLAG_NO_MAPCHANGE);
 			
 			WritePackString(data, map1);
 			WritePackString(data, info1);
@@ -974,12 +1002,12 @@ public Handler_NV_MapVoteFinished(Handle:menu,
 }
 
 // New in 1.5.1, used to fix revote not working properly
-public Action:Timer_Runoff(Handle:timer, Handle:data)
+public Action:Timer_NV_Runoff(Handle:timer, Handle:data)
 {
 	decl String:map[PLATFORM_MAX_PATH];
 	decl String:info[PLATFORM_MAX_PATH];
 	
-	g_VoteMenu = NativeVotes_Create(Handler_MapVoteMenu, NativeVotesType_NextLevelMult, NATIVEVOTES_ACTIONS_DEFAULT | MenuAction_DisplayItem);
+	g_VoteMenu = NativeVotes_Create(Handler_NV_MapVoteMenu, NativeVotesType_NextLevelMult, NATIVEVOTES_ACTIONS_DEFAULT | MenuAction_DisplayItem);
 	NativeVotes_SetResultCallback(g_VoteMenu, Handler_NV_VoteFinishedGeneric);
 	
 	ResetPack(data);
@@ -1052,74 +1080,33 @@ public Handler_MapVoteMenu(Handle:menu, MenuAction:action, param1, param2)
 		case MenuAction_End:
 		{
 			g_VoteMenu = INVALID_HANDLE;
-
-			if (g_NativeVotes)
-			{
-				NativeVotes_Close(menu);
-			}
-			else
-			{
-				CloseHandle(menu);
-			}
+			CloseHandle(menu);
 		}
 		
 		case MenuAction_Display:
 		{
-			if (!g_NativeVotes)
-			{
-				decl String:buffer[255];
-				Format(buffer, sizeof(buffer), "%T", "Vote Nextmap", param1);
+	 		decl String:buffer[255];
+			Format(buffer, sizeof(buffer), "%T", "Vote Nextmap", param1);
 
-				new Handle:panel = Handle:param2;
-				SetPanelTitle(panel, buffer);
-			}
+			new Handle:panel = Handle:param2;
+			SetPanelTitle(panel, buffer);
 		}		
 		
 		case MenuAction_DisplayItem:
 		{
-			new count = 0;
-			if (g_NativeVotes)
+			if (GetMenuItemCount(menu) - 1 == param2)
 			{
-				count = NativeVotes_GetItemCount(menu);
-			}
-			else
-			{
-				count = GetMenuItemCount(menu);
-			}
-			
-			if (count - 1 == param2)
-			{
-				decl String:map[PLATFORM_MAX_PATH];
-				new String:buffer[255];
-				
-				if (g_NativeVotes)
-				{
-					NativeVotes_GetItem(menu, param2, map, sizeof(map));
-				}
-				else
-				{
-					GetMenuItem(menu, param2, map, sizeof(map));
-				}
+				decl String:map[PLATFORM_MAX_PATH], String:buffer[255];
+				GetMenuItem(menu, param2, map, sizeof(map));
 				if (strcmp(map, VOTE_EXTEND, false) == 0)
 				{
 					Format(buffer, sizeof(buffer), "%T", "Extend Map", param1);
+					return RedrawMenuItem(buffer);
 				}
 				else if (strcmp(map, VOTE_DONTCHANGE, false) == 0)
 				{
 					Format(buffer, sizeof(buffer), "%T", "Dont Change", param1);
-				}
-				
-				if (buffer[0] != '\0')
-				{
-					if (g_NativeVotes)
-					{
-						NativeVotes_RedrawVoteItem(buffer);
-						return _:Plugin_Changed;
-					}
-					else
-					{
-						return RedrawMenuItem(buffer);
-					}
+					return RedrawMenuItem(buffer);					
 				}
 			}
 		}		
@@ -1127,57 +1114,109 @@ public Handler_MapVoteMenu(Handle:menu, MenuAction:action, param1, param2)
 		case MenuAction_VoteCancel:
 		{
 			// If we receive 0 votes, pick at random.
-			if (param1 == VoteCancel_NoVotes)
+			if (param1 == VoteCancel_NoVotes && GetConVarBool(g_Cvar_NoVoteMode))
 			{
-				if (GetConVarBool(g_Cvar_NoVoteMode))
+				new count = GetMenuItemCount(menu);
+				decl String:map[PLATFORM_MAX_PATH];
+				GetMenuItem(menu, 0, map, sizeof(map));
+				
+				// Make sure the first map in the menu isn't one of the special items.
+				// This would mean there are no real maps in the menu, because the special items are added after all maps. Don't do anything if that's the case.
+				if (strcmp(map, VOTE_EXTEND, false) != 0 && strcmp(map, VOTE_DONTCHANGE, false) != 0)
 				{
-					new count;
-					if (g_NativeVotes)
-					{
-						count = NativeVotes_GetItemCount(menu);
-					}
-					else
-					{
-						count = GetMenuItemCount(menu);
-					}
+					// Get a random map from the list.
 					new item = GetRandomInt(0, count - 1);
-					decl String:map[PLATFORM_MAX_PATH];
-					if (g_NativeVotes)
-					{
-						NativeVotes_GetItem(menu, item, map, sizeof(map));
-					}
-					else
-					{
-						GetMenuItem(menu, item, map, sizeof(map));
-					}
+					GetMenuItem(menu, item, map, sizeof(map));
 					
-					while (strcmp(map, VOTE_EXTEND, false) == 0)
+					// Make sure it's not one of the special items.
+					while (strcmp(map, VOTE_EXTEND, false) == 0 || strcmp(map, VOTE_DONTCHANGE, false) == 0)
 					{
 						item = GetRandomInt(0, count - 1);
-						if (g_NativeVotes)
-						{
-							NativeVotes_GetItem(menu, item, map, sizeof(map));
-						}
-						else
-						{
-							GetMenuItem(menu, item, map, sizeof(map));
-						}
+						GetMenuItem(menu, item, map, sizeof(map));
 					}
 					
 					SetNextMap(map);
 					g_MapVoteCompleted = true;
-					if (g_NativeVotes)
-					{
-						NativeVotes_DisplayPass(menu, map);
-					}
-				}
-				else if (g_NativeVotes)
-				{
-					NativeVotes_DisplayFail(menu, NativeVotesFail_NotEnoughVotes);
 				}
 			}
-			else if (g_NativeVotes && param1 == VoteCancel_Generic)
+			else
 			{
+				// We were actually cancelled. I guess we do nothing.
+			}
+			
+			g_HasVoteStarted = false;
+		}
+	}
+	
+	return 0;
+}
+
+public Handler_NV_MapVoteMenu(Handle:menu, MenuAction:action, param1, param2)
+{
+	switch (action)
+	{
+		case MenuAction_End:
+		{
+			g_VoteMenu = INVALID_HANDLE;
+			NativeVotes_Close(menu);
+		}
+		
+		case MenuAction_DisplayItem:
+		{
+			if (NativeVotes_GetItemCount(menu) - 1 == param2)
+			{
+				decl String:map[PLATFORM_MAX_PATH], String:buffer[255];
+				NativeVotes_GetItem(menu, param2, map, sizeof(map));
+				if (strcmp(map, VOTE_EXTEND, false) == 0)
+				{
+					Format(buffer, sizeof(buffer), "%T", "Extend Map", param1);
+					return _:NativeVotes_RedrawVoteItem(buffer);
+				}
+				else if (strcmp(map, VOTE_DONTCHANGE, false) == 0)
+				{
+					Format(buffer, sizeof(buffer), "%T", "Dont Change", param1);
+					return _:NativeVotes_RedrawVoteItem(buffer);
+				}
+			}
+		}		
+	
+		case MenuAction_VoteCancel:
+		{
+			// If we receive 0 votes, pick at random.
+			if (param1 == VoteCancel_NoVotes && GetConVarBool(g_Cvar_NoVoteMode))
+			{
+				new count = NativeVotes_GetItemCount(menu);
+				decl String:map[PLATFORM_MAX_PATH];
+				NativeVotes_GetItem(menu, 0, map, sizeof(map));
+				
+				// Make sure the first map in the menu isn't one of the special items.
+				// This would mean there are no real maps in the menu, because the special items are added after all maps. Don't do anything if that's the case.
+				if (strcmp(map, VOTE_EXTEND, false) != 0 && strcmp(map, VOTE_DONTCHANGE, false) != 0)
+				{
+					// Get a random map from the list.
+					new item = GetRandomInt(0, count - 1);
+					NativeVotes_GetItem(menu, item, map, sizeof(map));
+					
+					// Make sure it's not one of the special items.
+					while (strcmp(map, VOTE_EXTEND, false) == 0 || strcmp(map, VOTE_DONTCHANGE, false) == 0)
+					{
+						item = GetRandomInt(0, count - 1);
+						NativeVotes_GetItem(menu, item, map, sizeof(map));
+					}
+					
+					SetNextMap(map);
+					g_MapVoteCompleted = true;
+					NativeVotes_DisplayPass(menu, map);
+				}
+			}
+			else if (param1 == VoteCancel_NoVotes)
+			{
+				// We didn't have enough votes. Display the note enough votes fail message.
+				NativeVotes_DisplayFail(menu, NativeVotesFail_NotEnoughVotes);
+			}
+			else
+			{
+				// We were actually cancelled. Display the generic fail message
 				NativeVotes_DisplayFail(menu, NativeVotesFail_Generic);
 			}
 			
