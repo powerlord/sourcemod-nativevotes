@@ -42,7 +42,7 @@
 
 #include "nativevotes/data-keyvalues.sp"
 
-#define VERSION 							"1.0.0 beta 7"
+#define VERSION 							"1.0.0 beta 8"
 
 #define LOGTAG "NV"
 
@@ -1233,6 +1233,14 @@ public Native_Close(Handle:plugin, numParams)
 		}
 	}
 	
+	// This bit is necessary because the Forward system appears to not remove these when the forward Handle is closed
+	new Handle:menuForward = Data_GetHandler(vote);
+	RemoveAllFromForward(menuForward, plugin);
+	
+	new Handle:voteResults = Data_GetResultCallback(vote);
+	RemoveAllFromForward(voteResults, plugin);
+	
+	// Do the datatype-specific close operations
 	Data_CloseVote(vote);
 }
 

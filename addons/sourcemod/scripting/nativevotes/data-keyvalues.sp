@@ -293,20 +293,19 @@ Data_CloseVote(Handle:vote)
 		return;
 	}
 	
-	new Handle:handler = Handle:KvGetNum(vote, "handler_callback", _:INVALID_HANDLE);
+	new Handle:handler = Data_GetHandler(vote);
 	if (handler != INVALID_HANDLE)
 	{
 		CloseHandle(handler);
 	}
 	
-	new Handle:voteResults = Handle:KvGetNum(vote, "results_callback", _:INVALID_HANDLE);
+	new Handle:voteResults = Data_GetResultCallback(vote);
 	if (voteResults != INVALID_HANDLE)
 	{
 		CloseHandle(voteResults);
 	}
 	
 	new Handle:infoArray = Handle:KvGetNum(vote, INFO, _:INVALID_HANDLE);
-	
 	if (infoArray != INVALID_HANDLE)
 	{
 		CloseHandle(infoArray);
