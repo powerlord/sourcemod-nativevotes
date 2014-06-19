@@ -1075,7 +1075,7 @@ Internal_Reset()
 		g_hDisplayTimer = INVALID_HANDLE;
 	}
 	
-	CreateTimer(5.0, Game_ResetVote);
+	CreateTimer(5.0, Game_ResetVote, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 bool:Internal_IsVoteInProgress()
