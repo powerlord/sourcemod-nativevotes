@@ -310,7 +310,7 @@ bool:CheckVoteController()
 		entity = FindEntityByClassname(-1, "vote_controller");
 		if (entity == -1)
 		{
-			LogError("Could not find Vote Controller.");
+			//LogError("Could not find Vote Controller.");
 			return false;
 		}
 		
