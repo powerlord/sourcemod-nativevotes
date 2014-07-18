@@ -42,7 +42,7 @@
 
 #include "nativevotes/data-keyvalues.sp"
 
-#define VERSION 							"1.0.0 beta 10"
+#define VERSION 							"1.0.0 beta 11"
 
 #define LOGTAG "NV"
 
