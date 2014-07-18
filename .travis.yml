@@ -18,6 +18,6 @@ script:
   - ./spcomp nativevotes.sp
   - ./spcomp nativevotes-basecommands.sp
   - ./spcomp nativevotes_votetest.sp
-  - ./spcomp nativevotes_votemaanger_test.sp
+  - ./spcomp nativevotes_votemanager_test.sp
   - ./spcomp nativevotes_mapchooser.sp
   
