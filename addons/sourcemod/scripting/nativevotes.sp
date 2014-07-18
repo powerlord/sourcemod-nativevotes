@@ -68,6 +68,8 @@
 
 #define MAX_CALLVOTE_SIZE					128
 
+#define LOG
+
 //----------------------------------------------------------------------------
 // Global Variables
 new g_NextVote = 0;
@@ -288,14 +290,17 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			{
 				return Plugin_Continue;
 			}
-			
-			Call_StartForward(visForward);
-			Call_PushCell(client);
-			Call_PushString(voteCommand);
-			Call_Finish(result);
-			if (result >= Plugin_Handled)
+
+			if (visForward != INVALID_HANDLE)
 			{
-				return result;
+				Call_StartForward(visForward);
+				Call_PushCell(client);
+				Call_PushString(voteCommand);
+				Call_Finish(result);
+				if (result >= Plugin_Handled)
+				{
+					return result;
+				}
 			}
 			
 			new String:argument[64];
