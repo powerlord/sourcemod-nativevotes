@@ -699,7 +699,7 @@ static PerformVisChecks(client, Handle:hVoteTypes, Handle:hVisChecks)
 		new Handle:visForward;
 		if (GetTrieValue(hVisChecks, voteCommand, visForward))
 		{
-			new Action:hide;
+			new Action:hide = Plugin_Continue;
 			
 			Call_StartForward(visForward);
 			Call_PushCell(client);
