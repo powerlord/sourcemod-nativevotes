@@ -701,6 +701,9 @@ static PerformVisChecks(client, Handle:hVoteTypes, Handle:hVisChecks)
 		{
 			new Action:hide = Plugin_Continue;
 			
+#if defined LOG
+			LogMessage("Checking visibility forward for %s: %d", voteCommand, visForward);
+#endif
 			Call_StartForward(visForward);
 			Call_PushCell(client);
 			Call_PushString(voteCommand);
@@ -1902,24 +1905,36 @@ TF2_ParseVoteSetup(Handle:hVoteTypes)
 	{
 		if (GetConVarBool(g_Cvar_MvM_VoteChallenge_Enabled) && FindStringInArray(hVoteTypes, TF2_VOTE_STRING_CHANGEMISSION) == -1)
 		{
+#if defined LOG
+			LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CHANGEMISSION);
+#endif
 			ShiftArrayUp(hVoteTypes, 0);
 			SetArrayString(hVoteTypes, 0, TF2_VOTE_STRING_CHANGEMISSION);
 		}
 			
 		if (GetConVarBool(g_Cvar_MvM_VoteChangeLevel_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_CHANGELEVEL) == -1)
 		{
+#if defined LOG
+			LogMessage("Adding MvM vote: %s", TF2CSGO_VOTE_STRING_CHANGELEVEL);
+#endif
 			ShiftArrayUp(hVoteTypes, 0);
 			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_CHANGELEVEL);
 		}
 
 		if (GetConVarBool(g_Cvar_VoteRestart_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_RESTART) == -1)
 		{
+#if defined LOG
+			LogMessage("Adding MvM vote: %s", TF2CSGO_VOTE_STRING_RESTART);
+#endif
 			ShiftArrayUp(hVoteTypes, 0);
 			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_RESTART);
 		}
 
 		if (GetConVarBool(g_Cvar_MvM_VoteKick_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_KICK) == -1)
 		{
+#if defined LOG
+			LogMessage("Adding MvM vote: %s", TF2CSGO_VOTE_STRING_KICK);
+#endif
 			ShiftArrayUp(hVoteTypes, 0);
 			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_KICK);
 		}
@@ -1929,30 +1944,45 @@ TF2_ParseVoteSetup(Handle:hVoteTypes)
 	{
 		if (GetConVarBool(g_Cvar_VoteScramble_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_SCRAMBLE) == -1)
 		{
+#if defined LOG
+			LogMessage("Adding vote: %s", TF2CSGO_VOTE_STRING_SCRAMBLE);
+#endif
 			ShiftArrayUp(hVoteTypes, 0);
 			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_SCRAMBLE);
 		}
 		
 		if (GetConVarBool(g_Cvar_VoteNextLevel_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_NEXTLEVEL) == -1)
 		{
+#if defined LOG
+			LogMessage("Adding vote: %s", TF2CSGO_VOTE_STRING_NEXTLEVEL);
+#endif
 			ShiftArrayUp(hVoteTypes, 0);
 			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_NEXTLEVEL);
 		}
 		
 		if (GetConVarBool(g_Cvar_VoteChangeLevel_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_CHANGELEVEL) == -1)
 		{
+#if defined LOG
+			LogMessage("Adding vote: %s", TF2CSGO_VOTE_STRING_CHANGELEVEL);
+#endif
 			ShiftArrayUp(hVoteTypes, 0);
 			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_CHANGELEVEL);
 		}
 			
 		if (GetConVarBool(g_Cvar_VoteRestart_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_RESTART) == -1)
 		{
+#if defined LOG
+			LogMessage("Adding vote: %s", TF2CSGO_VOTE_STRING_RESTART);
+#endif
 			ShiftArrayUp(hVoteTypes, 0);
 			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_RESTART);
 		}
 			
 		if (GetConVarBool(g_Cvar_VoteKick_Enabled) && FindStringInArray(hVoteTypes, TF2CSGO_VOTE_STRING_KICK) == -1)
 		{
+#if defined LOG
+			LogMessage("Adding vote: %s", TF2CSGO_VOTE_STRING_KICK);
+#endif
 			ShiftArrayUp(hVoteTypes, 0);
 			SetArrayString(hVoteTypes, 0, TF2CSGO_VOTE_STRING_KICK);
 		}

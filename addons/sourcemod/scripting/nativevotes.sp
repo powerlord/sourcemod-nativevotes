@@ -55,7 +55,7 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define MAX_VOTE_ISSUES						20
+#define MAX_VOTE_ISSUES					20
 #define VOTE_STRING_SIZE					32
 
 //----------------------------------------------------------------------------
@@ -262,6 +262,9 @@ public Action:Command_CallVote(client, const String:command[], argc)
 		{
 			if (GetArraySize(g_hCallVoteCommandIndex) > 0)
 			{
+#if defined LOG
+				LogMessage("Overriding VoteSetup message, we have %d custom votes", GetArraySize(g_hCallVoteCommandIndex));
+#endif
 				Game_DisplayVoteSetup(client, g_hCallVoteCommandIndex, g_hCallVoteVisChecks);
 				return Plugin_Handled;
 			}
@@ -275,11 +278,18 @@ public Action:Command_CallVote(client, const String:command[], argc)
 		{
 			decl String:voteCommand[VOTE_STRING_SIZE];
 			GetCmdArg(1, voteCommand, VOTE_STRING_SIZE);
+
+#if defined LOG
+			LogMessage("User is attempting to call %s", voteCommand);
+#endif
 			
 			new Handle:callVoteForward = INVALID_HANDLE;
 			
 			if (!GetTrieValue(g_hCallVoteCommands, voteCommand, callVoteForward))
 			{
+#if defined LOG
+				LogMessage("We don't have a handler for %s, passing back to server", voteCommand);
+#endif
 				return Plugin_Continue;
 			}
 			
@@ -288,11 +298,17 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			
 			if (!ValidateForward(voteCommand, callVoteForward, visForward))
 			{
+#if defined LOG
+				LogMessage("Forward didn't validate for %s, passing back to server", voteCommand);
+#endif
 				return Plugin_Continue;
 			}
 
 			if (visForward != INVALID_HANDLE)
 			{
+#if defined LOG
+				LogMessage("Calling visForward for %s", voteCommand);
+#endif
 				Call_StartForward(visForward);
 				Call_PushCell(client);
 				Call_PushString(voteCommand);
@@ -332,6 +348,10 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			{
 				GetCmdArg(2, argument, sizeof(argument));
 			}
+
+#if defined LOG
+			LogMessage("Calling callVoteForward for %s", voteCommand);
+#endif
 			
 			Call_StartForward(callVoteForward);
 			Call_PushCell(client);
@@ -2207,11 +2227,17 @@ bool:ValidateForward(const String:voteCommand[], Handle:callVoteForward, Handle:
 	
 	if (GetForwardFunctionCount(callVoteForward) == 0)
 	{
+#if defined LOG
+		LogMessage("%s forward is empty, removing callVoteForward", voteCommand);
+#endif
 		RemoveFromTrie(g_hCallVoteCommands, voteCommand);
 		CloseHandle(callVoteForward);
 		
 		if (visForward != INVALID_HANDLE)
 		{
+#if defined LOG
+			LogMessage("Also removing visForward", voteCommand);
+#endif
 			RemoveFromTrie(g_hCallVoteVisChecks, voteCommand);
 			CloseHandle(visForward);
 		}
