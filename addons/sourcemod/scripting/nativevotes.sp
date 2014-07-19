@@ -544,6 +544,9 @@ OnVoteCancel(Handle:vote, reason)
 DoAction(Handle:vote, MenuAction:action, param1, param2, Action:def_res = Plugin_Continue)
 {
 	new Action:res = def_res;
+#if defined LOG
+	LogMessage("Calling Menu forward for vote: %d, action: %d, param1: %d, param2: %d", vote, action, param1, param2);
+#endif
 	
 	new Handle:handler = Data_GetHandler(vote);
 	Call_StartForward(handler);
@@ -612,6 +615,10 @@ OnVoteResults(Handle:vote, const votes[][], num_votes, item_count, const client_
 			client_indexes[i] = client_list[i][VOTEINFO_CLIENT_INDEX];
 			client_items[i] = client_list[i][VOTEINFO_CLIENT_ITEM];
 		}
+
+#if defined LOG
+		LogMessage("Calling results forward for vote: %d, num_votes, num_clients, item_count", vote, num_votes, num_clients, item_count);
+#endif
 		
 		Call_StartForward(resultsHandler);
 		Call_PushCell(vote);
