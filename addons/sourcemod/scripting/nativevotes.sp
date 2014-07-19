@@ -617,7 +617,7 @@ OnVoteResults(Handle:vote, const votes[][], num_votes, item_count, const client_
 		}
 
 #if defined LOG
-		LogMessage("Calling results forward for vote: %d, num_votes, num_clients, item_count", vote, num_votes, num_clients, item_count);
+		LogMessage("Calling results forward for vote: %d, num_votes: %d, num_clients: %d, item_count: %d", vote, num_votes, num_clients, item_count);
 #endif
 		
 		Call_StartForward(resultsHandler);
