@@ -42,7 +42,7 @@
 
 #include "nativevotes/data-keyvalues.sp"
 
-#define VERSION 							"1.0.0 beta 11"
+#define VERSION 							"1.0.0 beta 12"
 
 #define LOGTAG "NV"
 
@@ -544,11 +544,11 @@ OnVoteCancel(Handle:vote, reason)
 DoAction(Handle:vote, MenuAction:action, param1, param2, Action:def_res = Plugin_Continue)
 {
 	new Action:res = def_res;
-#if defined LOG
-	LogMessage("Calling Menu forward for vote: %d, action: %d, param1: %d, param2: %d", vote, action, param1, param2);
-#endif
-	
+
 	new Handle:handler = Data_GetHandler(vote);
+#if defined LOG
+	LogMessage("Calling Menu forward for vote: %d, handler: %d, action: %d, param1: %d, param2: %d", vote, handler, action, param1, param2);
+#endif
 	Call_StartForward(handler);
 	Call_PushCell(vote);
 	Call_PushCell(action);
@@ -1266,11 +1266,12 @@ public Native_Close(Handle:plugin, numParams)
 	}
 	
 	// This bit is necessary because the Forward system appears to not remove these when the forward Handle is closed
-	new Handle:menuForward = Data_GetHandler(vote);
-	RemoveAllFromForward(menuForward, plugin);
+	// This was necessary in SM 1.5.x, but has a REALLY high probability of crashing in SM 1.6, plus is no longer needed
+	//new Handle:menuForward = Data_GetHandler(vote);
+	//RemoveAllFromForward(menuForward, plugin);
 	
-	new Handle:voteResults = Data_GetResultCallback(vote);
-	RemoveAllFromForward(voteResults, plugin);
+	//new Handle:voteResults = Data_GetResultCallback(vote);
+	//RemoveAllFromForward(voteResults, plugin);
 	
 	// Do the datatype-specific close operations
 	Data_CloseVote(vote);
