@@ -458,6 +458,18 @@ bool:Game_DisplayVote(Handle:vote, clients[], num_clients)
 		}
 	}
 
+	
+#if defined LOG
+	decl String:details[MAX_VOTE_DETAILS_LENGTH];
+	decl String:translation[TRANSLATION_LENGTH];
+	
+	new NativeVotesType:voteType = Data_GetType(vote);
+	Data_GetDetails(vote, details, sizeof(details));
+	Game_VoteTypeToTranslation(voteType, translation, sizeof(translation));
+	
+	LogMessage("Displaying vote: type: %d, translation: \"%s\", details: \"%s\"", voteType, details);
+#endif
+	
 	return true;
 }
 
@@ -490,9 +502,12 @@ Game_DisplayRawVoteFail(NativeVotesFailType:reason, team, client=0)
 			TF2CSGO_VoteFail(reason, team, client);
 		}
 	}
+	
+#if defined LOG
+	if (client == 0)
+		LogMessage("Vote Failed: \"%d\"", reason);
+#endif
 }
-
-
 
 Game_DisplayVotePass(Handle:vote, const String:details[], client=0)
 {
@@ -560,6 +575,10 @@ Game_DisplayRawVotePass(NativeVotesPassType:passType, const String:details[], te
 		}
 	}
 	
+#if defined LOG
+	if (client != 0)
+		LogMessage("Vote Passed: \"%s\", \"%s\"", translation, details);
+#endif
 }
 
 Game_DisplayVotePassCustom(Handle:vote, const String:translation[], client)
@@ -592,6 +611,11 @@ Game_DisplayRawVotePassCustom(const String:translation[], team, client)
 			TF2CSGO_VotePass(TF2_VOTE_CUSTOM, translation, team, client);
 		}
 	}
+	
+#if defined LOG
+	if (client != 0)
+		LogMessage("Vote Passed Custom: \"%s\"", translation);
+#endif
 }
 
 Game_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
@@ -608,6 +632,10 @@ Game_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
 			TF2CSGO_CallVoteFail(client, reason, time);
 		}
 	}
+	
+#if defined LOG
+	LogMessage("Call vote failed: client: %N, reason: %d, time: %d", client, reason, time);
+#endif
 }
 
 Game_ClientSelectedItem(Handle:vote, client, item)
@@ -685,6 +713,28 @@ Game_DisplayVoteSetup(client, Handle:hVoteTypes, Handle:hVisChecks)
 			//TF2CSGO_DisplayVoteSetup(client, hVoteTypes);
 		}
 		
+	}
+}
+
+// stock because at the moment it's only used in logging code which isn't always compiled.
+stock Game_VoteTypeToTranslation(NativeVotesType:voteType, String:translation[], maxlength)
+{
+	switch(g_EngineVersion)
+	{
+		case Engine_Left4Dead, Engine_Left4Dead2:
+		{
+			L4DL4D2_VoteTypeToTranslation(voteType, translation, maxlength);
+		}
+		
+		case Engine_CSGO:
+		{
+			CSGO_VoteTypeToTranslation(voteType, translation, maxlength);
+		}
+		
+		case Engine_TF2:
+		{
+			TF2_VoteTypeToTranslation(voteType, translation, maxlength);
+		}
 	}
 }
 
@@ -1515,6 +1565,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	}
 	
 	g_curDisplayClient = 0;
+	
 }
 
 TF2CSGO_VotePass(const String:translation[], const String:details[], team, client=0)

@@ -1953,18 +1953,12 @@ public Native_SetTarget(Handle:plugin,  numParams)
 	
 	new client = GetNativeCell(2);
 	
-	if (client < -1 || client > MaxClients)
+	if (client < 1 || client > MaxClients || !IsClientConnected(client))
 	{
-		ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid", client);
+		ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", client);
 		return;
 	}
 	
-	if (!IsClientConnected(client))
-	{
-		ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not connected", client);
-		return;
-	}
-
 	new userid;
 	decl String:steamId[20];
 	
@@ -2082,6 +2076,12 @@ public Native_IsVoteCommandRegistered(Handle:plugin, numParams)
 public Native_DisplayCallVoteFail(Handle:plugin, numParams)
 {
 	new client = GetNativeCell(1);
+	
+	if (client < 1 || client > MaxClients || !IsClientConnected(client))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", client);
+		return;
+	}
 	
 	new NativeVotesCallFailType:reason = NativeVotesCallFailType:GetNativeCell(2);
 	
