@@ -467,7 +467,7 @@ bool:Game_DisplayVote(Handle:vote, clients[], num_clients)
 	Data_GetDetails(vote, details, sizeof(details));
 	Game_VoteTypeToTranslation(voteType, translation, sizeof(translation));
 	
-	LogMessage("Displaying vote: type: %d, translation: \"%s\", details: \"%s\"", voteType, details);
+	LogMessage("Displaying vote: type: %d, translation: \"%s\", details: \"%s\"", voteType, translation, details);
 #endif
 	
 	return true;
