@@ -44,6 +44,12 @@
 #define NATIVEVOTES_EXTEND 			"Extend current Map" /** Defined in TF2, but doesn't appear to be localized */
 
 #define NATIVEVOTES_ALL_TEAMS		-1 // Defined by TF2, may be the same in L4D/L4D2
+#define NATIVEVOTES_TF2_ALL_TEAMS	0 // Defined by TF2, may be the same in L4D/L4D2
+#define NATIVEVOTES_TEAM_UNASSIGNED 0 // For completeness, do not otherwise use
+#define NATIVEVOTES_TEAM_SPECTATOR	1 // Spectators
+#define NATIVEVOTES_TEAM_1			2 // RED/Survivors/Terrorists
+#define NATIVEVOTES_TEAM_2			3 // BLU/Infected/Counter-Terrorists
+
 #define NATIVEVOTES_SERVER_INDEX 	99 // Defined by TF2, may be the same in L4D/L4D2
 
 // These may seem backwards, but this is the order that the votes appear in the vote screen
@@ -100,6 +106,12 @@ enum NativeVotesType
 	NativeVotesType_Surrender,		/**< CS:GO: Yes/No, details are ignored */
 	NativeVotesType_Rematch,		/**< CS:GO: Yes/No, details are ignored */
 	NativeVotesType_Continue,		/**< CS:GO: Yes/No, details are ignored */
+	NativeVotesType_StartRound,		/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_Eternaween,		/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_AutoBalanceOn,	/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_AutoBalanceOff,	/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_ClassLimitsOn,	/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_ClassLimitsOff,	/**< TF2: Yes/No, details are ignored */
 };
 
 enum NativeVotesPassType
@@ -122,6 +134,12 @@ enum NativeVotesPassType
 	NativeVotesPass_Surrender,			/**< CS:GO: Details are ignored */
 	NativeVotesPass_Rematch,			/**< CS:GO: Details are ignored */
 	NativeVotesPass_Continue,			/**< CS:GO: Details are ignored */
+	NativeVotesPass_StartRound,			/**< TF2: Details are ignored */
+	NativeVotesPass_Eternaween,			/**< TF2: Details are ignored */
+	NativeVotesPass_AutoBalanceOn,		/**< TF2: Yes/No, details are ignored */
+	NativeVotesPass_AutoBalanceOff,		/**< TF2: Yes/No, details are ignored */
+	NativeVotesPass_ClassLimitsOn,		/**< TF2: Yes/No, details are ignored */
+	NativeVotesPass_ClassLimitsOff,		/**< TF2: Yes/No, details are ignored */
 };
 
 /**
@@ -158,6 +176,7 @@ enum NativeVotesCallFailType
 	NativeVotesCallFail_MapNotValid = 16,		/**< ???: Map is invalid. */
 	NativeVotesCallFail_KickTime = 17,			/**< ???: Cannot kick for time. */
 	NativeVotesCallFail_KickDuringRound = 18,	/**< ???: Cannot kick during a round. */
+	NativeVotesCallFail_AlreadyActive = 19		/**< TF2: Cannot call vote because modification (Eternaween) is already active (may not work) */
 };
 
 /*
@@ -764,7 +783,7 @@ stock bool:NativeVotes_IsNewVoteAllowed()
  * 						Plugin_Handled to return a blank VoteSetup usermessage
  * 						Plugin_Stop to prevent VoteSetup usermessage (not recommended)
  */
-functag public Action:NativeVotes_CallVoteSetupHandler(client, NativeVotesType:voteTypes[]);
+//functag public Action:NativeVotes_CallVoteSetupHandler(client, NativeVotesType:voteTypes[]);
 
 /**
  * Forward for "callvote" handling
@@ -779,7 +798,7 @@ functag public Action:NativeVotes_CallVoteSetupHandler(client, NativeVotesType:v
  * 						Plugin_Handled if you processed this vote type
  * 						Plugin_Stop to block the vote type (not recommended)
  */
-functag public Action:NativeVotes_CallVoteHandler(client, NativeVotesType:voteType, const String:voteArgument[], target);
+//functag public Action:NativeVotes_CallVoteHandler(client, NativeVotesType:voteType, const String:voteArgument[], target);
 
 /**
  * Register a plugin as a vote manager.
@@ -789,7 +808,7 @@ functag public Action:NativeVotes_CallVoteHandler(client, NativeVotesType:voteTy
  * @param setupHandler	Handler to override the which vote types your server supports.  Only useful on TF2 and CS:GO.
  * @noreturn
  */
-native NativeVotes_RegisterVoteManager(NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteSetupHandler:setupHandler=INVALID_FUNCTION);
+//native NativeVotes_RegisterVoteManager(NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteSetupHandler:setupHandler=INVALID_FUNCTION);
 
 /**
  *  Send a call vote fail screen to a user

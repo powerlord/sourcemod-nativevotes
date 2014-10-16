@@ -126,6 +126,30 @@
 #define TF2_VOTE_CHANGEMISSION_START		"#TF_vote_changechallenge"
 #define TF2_VOTE_CHANGEMISSION_PASSED		"#TF_vote_passed_changechallenge"
 
+// User vote for eternaween
+#define TF2_VOTE_ETERNAWEEN_START			"#TF_vote_eternaween"
+#define TF2_VOTE_ETERNAWEEN_PASSED			"#TF_vote_passed_eternaween"
+
+// User vote to start round
+#define TF2_VOTE_ROUND_START				"#TF_vote_td_start_round"
+#define TF2_VOTE_ROUND_PASSED				"#TF_vote_passed_td_start_round"
+
+// User vote to enable autobalance
+#define TF2_VOTE_AUTOBALANCE_ENABLE_START	"#TF_vote_autobalance_enable"
+#define TF2_VOTE_AUTOBALANCE_ENABLE_PASSED	"#TF_vote_passed_autobalance_enable"
+
+// User vote to disable autobalance
+#define TF2_VOTE_AUTOBALANCE_DISABLE_START	"#TF_vote_autobalance_disable"
+#define TF2_VOTE_AUTOBALANCE_DISABLE_PASSED	"#TF_vote_passed_autobalance_disable"
+
+// User vote to enable classlimits
+#define TF2_VOTE_CLASSLIMITS_ENABLE_START	"#TF_vote_classlimits_enable"
+#define TF2_VOTE_CLASSLIMITS_ENABLE_PASSED	"#TF_vote_passed_classlimits_enable"
+
+// User vote to disable classlimits
+#define TF2_VOTE_CLASSLIMITS_DISABLE_START	"#TF_vote_classlimits_disable"
+#define TF2_VOTE_CLASSLIMITS_DISABLE_PASSED	"#TF_vote_passed_classlimits_disable"
+
 // While not a vote string, it works just as well.
 #define TF2_VOTE_CUSTOM						"#TF_playerid_noteam"
 
@@ -145,10 +169,10 @@
 
 // User vote to change maps.
 #define CSGO_VOTE_CHANGELEVEL_START			"#SFUI_vote_changelevel"
-#define CSGO_VOTE_CHANGELEVEL_PASSED		"#SFUI_vote_passed_changelevel"
+#define CSGO_VOTE_CHANGELEVEL_PASSED			"#SFUI_vote_passed_changelevel"
 
 // User vote to change next level.
-#define CSGO_VOTE_NEXTLEVEL_SINGLE_START	"#SFUI_vote_nextlevel"
+#define CSGO_VOTE_NEXTLEVEL_SINGLE_START		"#SFUI_vote_nextlevel"
 #define CSGO_VOTE_NEXTLEVEL_MULTIPLE_START	"#SFUI_vote_nextlevel_choices" // Started by server
 #define CSGO_VOTE_NEXTLEVEL_EXTEND_PASSED	"#SFUI_vote_passed_nextlevel_extend"
 #define CSGO_VOTE_NEXTLEVEL_PASSED			"#SFUI_vote_passed_nextlevel"
@@ -184,11 +208,9 @@
 new g_VoteController = -1;
 new g_bUserBuf = false;
 
-new EngineVersion:g_EngineVersion = Engine_Unknown;
-
 bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 {
-	g_EngineVersion = GetEngineVersionCompat();
+	g_EngineVersion = GetEngineVersion();
 	g_bUserBuf = GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf;
 	
 	//LogMessage("Detected Engine version: %d", g_EngineVersion);
@@ -529,6 +551,7 @@ Game_UpdateVoteCounts(Handle:hVoteCounts, totalClients)
 	}
 }
 
+/*
 Game_DisplayVoteSetup(client, const NativeVotesType:voteTypes[])
 {
 	switch (g_EngineVersion)
@@ -549,7 +572,7 @@ Game_DisplayVoteSetup(client, const NativeVotesType:voteTypes[])
 		}
 	}
 }
-
+*/
 Game_UpdateClientCount(num_clients)
 {
 	switch(g_EngineVersion)
@@ -1435,6 +1458,7 @@ TF2CSGO_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time)
 	EndMessage();
 }
 
+/*
 TF2CSGO_VoteTypeToVoteString(NativeVotesType:voteType, String:voteString[], maxlength)
 {
 	new bool:valid = false;
@@ -1542,6 +1566,7 @@ TF2CSGO_DisplayVoteSetup(client, const NativeVotesType:voteTypes[])
 	
 	EndMessage();
 }
+*/
 
 TF2CSGO_ResetVote()
 {
@@ -1568,7 +1593,9 @@ bool:TF2_CheckVoteType(NativeVotesType:voteType)
 		case NativeVotesType_Custom_YesNo, NativeVotesType_Restart,
 		NativeVotesType_Kick, NativeVotesType_KickIdle, NativeVotesType_KickScamming, NativeVotesType_KickCheating,
 		NativeVotesType_ChgLevel, NativeVotesType_NextLevel, NativeVotesType_ScrambleNow, NativeVotesType_ScrambleEnd,
-		NativeVotesType_ChgMission:
+		NativeVotesType_ChgMission, NativeVotesType_StartRound, NativeVotesType_Eternaween,
+		NativeVotesType_AutoBalanceOn, NativeVotesType_AutoBalanceOff,
+		NativeVotesType_ClassLimitsOn, NativeVotesType_ClassLimitsOff:
 		{
 			return true;
 		}
@@ -1588,7 +1615,9 @@ bool:TF2_CheckVotePassType(NativeVotesPassType:passType)
 	{
 		case NativeVotesPass_Custom, NativeVotesPass_Restart, NativeVotesPass_ChgLevel,
 		NativeVotesPass_Kick, NativeVotesPass_NextLevel, NativeVotesPass_Extend,
-		NativeVotesPass_Scramble, NativeVotesPass_ChgMission:
+		NativeVotesPass_Scramble, NativeVotesPass_ChgMission, NativeVotesPass_StartRound, NativeVotesPass_Eternaween,
+		NativeVotesPass_AutoBalanceOn, NativeVotesPass_AutoBalanceOff,
+		NativeVotesPass_ClassLimitsOn, NativeVotesPass_ClassLimitsOff:
 		{
 			return true;
 		}
@@ -1665,6 +1694,36 @@ bool:TF2_VoteTypeToTranslation(NativeVotesType:voteType, String:translation[], m
 			strcopy(translation, maxlength, TF2_VOTE_CHANGEMISSION_START);
 		}
 		
+		case NativeVotesType_StartRound:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_ROUND_START);
+		}
+		
+		case NativeVotesType_Eternaween:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_ETERNAWEEN_START);
+		}
+		
+		case NativeVotesType_AutoBalanceOn:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_AUTOBALANCE_ENABLE_START);
+		}
+		
+		case NativeVotesType_AutoBalanceOff:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_AUTOBALANCE_DISABLE_START);
+		}
+		
+		case NativeVotesType_ClassLimitsOn:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_CLASSLIMITS_ENABLE_START);
+		}
+		
+		case NativeVotesType_ClassLimitsOff:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_CLASSLIMITS_DISABLE_START);
+		}
+		
 		default:
 		{
 			strcopy(translation, maxlength, TF2_VOTE_CUSTOM);
@@ -1711,6 +1770,36 @@ TF2_VotePassToTranslation(NativeVotesPassType:passType, String:translation[], ma
 		case NativeVotesPass_ChgMission:
 		{
 			strcopy(translation, maxlength, TF2_VOTE_CHANGEMISSION_PASSED);
+		}
+		
+		case NativeVotesPass_StartRound:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_ROUND_PASSED);
+		}
+		
+		case NativeVotesPass_Eternaween:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_ETERNAWEEN_PASSED);
+		}
+		
+		case NativeVotesPass_AutoBalanceOn:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_AUTOBALANCE_ENABLE_PASSED);
+		}
+		
+		case NativeVotesPass_AutoBalanceOff:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_AUTOBALANCE_DISABLE_PASSED);
+		}
+		
+		case NativeVotesPass_ClassLimitsOn:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_CLASSLIMITS_ENABLE_PASSED);
+		}
+		
+		case NativeVotesPass_ClassLimitsOff:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_CLASSLIMITS_DISABLE_PASSED);
 		}
 		
 		default:

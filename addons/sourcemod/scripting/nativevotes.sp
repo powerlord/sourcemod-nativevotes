@@ -36,6 +36,8 @@
 
 #include "include/nativevotes.inc"
 
+new EngineVersion:g_EngineVersion = Engine_Unknown;
+
 #include "nativevotes/data-keyvalues.sp"
 
 #define LOGTAG "NV"
@@ -49,9 +51,9 @@
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define VERSION 							"0.8.2"
+#define VERSION 							"0.8.3"
 
-#define MAX_VOTE_ISSUES						20
+#define MAX_VOTE_ISSUES					20
 #define VOTE_STRING_SIZE					32
 
 //----------------------------------------------------------------------------
@@ -79,8 +81,8 @@ new Handle:g_Cvar_VoteDelay;
 
 // Public Forwards
 
-new Handle:g_Forward_OnCallVoteSetup;
-new Handle:g_Forward_OnCallVote;
+//new Handle:g_Forward_OnCallVoteSetup;
+//new Handle:g_Forward_OnCallVote;
 
 //----------------------------------------------------------------------------
 // Used to track current vote data
@@ -167,7 +169,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_DisplayPassCustomToOne", Native_DisplayPassCustomToOne);
 	CreateNative("NativeVotes_DisplayPassEx", Native_DisplayPassEx);
 	CreateNative("NativeVotes_DisplayFail", Native_DisplayFail);
-	CreateNative("NativeVotes_RegisterVoteManager", Native_RegisterVoteManager);
+	//CreateNative("NativeVotes_RegisterVoteManager", Native_RegisterVoteManager);
 	CreateNative("NativeVotes_DisplayCallVoteFail", Native_DisplayCallVoteFail);
 	CreateNative("NativeVotes_RedrawVoteTitle", Native_RedrawVoteTitle);
 	CreateNative("NativeVotes_RedrawVoteItem", Native_RedrawVoteItem);
@@ -195,10 +197,11 @@ public OnPluginStart()
 	AddCommandListener(Command_Vote, "vote"); // TF2, CS:GO
 	//AddCommandListener(Command_Vote, "Vote"); // L4D, L4D2
 	
-	g_Forward_OnCallVoteSetup = CreateForward(ET_Event, Param_Cell, Param_Array);
-	g_Forward_OnCallVote = CreateForward(ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	// This is basically dead as of the 2014-10-15 update
+	//g_Forward_OnCallVoteSetup = CreateForward(ET_Event, Param_Cell, Param_Array);
+	//g_Forward_OnCallVote = CreateForward(ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	
-	AddCommandListener(Command_CallVote, "callvote"); // All games
+	//AddCommandListener(Command_CallVote, "callvote"); // All games
 	
 	g_hVotes = CreateArray(_, Game_GetMaxItems());
 	
@@ -236,6 +239,7 @@ public OnClientDisconnect_Post(client)
 	}
 }
 
+/*
 public Action:Command_CallVote(client, const String:command[], argc)
 {
 	if (Internal_IsVoteInProgress())
@@ -340,7 +344,7 @@ public Action:Command_CallVote(client, const String:command[], argc)
 	return result;
 
 }
-
+*/
 public OnVoteDelayChange(Handle:convar, const String:oldValue[], const String:newValue[])
 {
 	/* See if the new vote delay isn't something we need to account for */
@@ -1639,6 +1643,11 @@ public Native_SetTeam(Handle:plugin, numParams)
 		return;
 	}
 	
+	if (g_EngineVersion == Engine_TF2 && team == NATIVEVOTES_ALL_TEAMS)
+	{
+		team = NATIVEVOTES_TF2_ALL_TEAMS;
+	}
+	
 	Data_SetTeam(vote, team);
 }
 
@@ -1951,6 +1960,36 @@ NativeVotesPassType:VoteTypeToVotePass(NativeVotesType:voteType)
 			passType = NativeVotesPass_Continue;
 		}
 		
+		case NativeVotesType_StartRound:
+		{
+			passType = NativeVotesPass_StartRound;
+		}
+		
+		case NativeVotesType_Eternaween:
+		{
+			passType = NativeVotesPass_Eternaween;
+		}
+		
+		case NativeVotesType_AutoBalanceOn:
+		{
+			passType = NativeVotesPass_AutoBalanceOn;
+		}
+		
+		case NativeVotesType_AutoBalanceOff:
+		{
+			passType = NativeVotesPass_AutoBalanceOff;
+		}
+		
+		case NativeVotesType_ClassLimitsOn:
+		{
+			passType = NativeVotesPass_ClassLimitsOn;
+		}
+		
+		case NativeVotesType_ClassLimitsOff:
+		{
+			passType = NativeVotesPass_ClassLimitsOff;
+		}
+		
 		default:
 		{
 			passType = NativeVotesPass_Custom;
@@ -1958,113 +1997,6 @@ NativeVotesPassType:VoteTypeToVotePass(NativeVotesType:voteType)
 	}
 	
 	return passType;
-}
-
-// Using this stock REQUIRES you to add the following to AskPluginLoad2:
-// MarkNativeAsOptional("GetEngineVersion");
-stock EngineVersion:GetEngineVersionCompat()
-{
-	new EngineVersion:version;
-	if (GetFeatureStatus(FeatureType_Native, "GetEngineVersion") != FeatureStatus_Available)
-	{
-		LogMessage("New Engine Detection is not available, old engine detection will be used");
-		new sdkVersion = GuessSDKVersion();
-		switch (sdkVersion)
-		{
-			case SOURCE_SDK_ORIGINAL:
-			{
-				version = Engine_Original;
-			}
-			
-			case SOURCE_SDK_DARKMESSIAH:
-			{
-				version = Engine_DarkMessiah;
-			}
-			
-			case SOURCE_SDK_EPISODE1:
-			{
-				version = Engine_SourceSDK2006;
-			}
-			
-			case SOURCE_SDK_EPISODE2:
-			{
-				version = Engine_SourceSDK2007;
-			}
-			
-			case SOURCE_SDK_BLOODYGOODTIME:
-			{
-				version = Engine_BloodyGoodTime;
-			}
-			
-			case SOURCE_SDK_EYE:
-			{
-				version = Engine_EYE;
-			}
-			
-			case SOURCE_SDK_CSS:
-			{
-				version = Engine_CSS;
-			}
-			
-			case SOURCE_SDK_EPISODE2VALVE:
-			{
-				decl String:gameFolder[PLATFORM_MAX_PATH];
-				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
-				if (StrEqual(gameFolder, "dod", false))
-				{
-					version = Engine_DODS;
-				}
-				else if (StrEqual(gameFolder, "hl2mp", false))
-				{
-					version = Engine_HL2DM;
-				}
-				else
-				{
-					version = Engine_TF2;
-				}
-			}
-			
-			case SOURCE_SDK_LEFT4DEAD:
-			{
-				version = Engine_Left4Dead;
-			}
-			
-			case SOURCE_SDK_LEFT4DEAD2:
-			{
-				decl String:gameFolder[PLATFORM_MAX_PATH];
-				GetGameFolderName(gameFolder, PLATFORM_MAX_PATH);
-				if (StrEqual(gameFolder, "nd", false))
-				{
-					version = Engine_NuclearDawn;
-				}
-				else
-				{
-					version = Engine_Left4Dead2;
-				}
-			}
-			
-			case SOURCE_SDK_ALIENSWARM:
-			{
-				version = Engine_AlienSwarm;
-			}
-			
-			case SOURCE_SDK_CSGO:
-			{
-				version = Engine_CSGO;
-			}
-			
-			default:
-			{
-				version = Engine_Unknown;
-			}
-		}
-	}
-	else
-	{
-		version = GetEngineVersion();
-	}
-	
-	return version;
 }
 
 stock GetEngineVersionName(EngineVersion:version, String:printName[], maxlength)
