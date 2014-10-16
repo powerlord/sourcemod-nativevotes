@@ -6,7 +6,7 @@ before_install:
   - sudo apt-get install -y g++-multilib
 
 install:
-  - wget http://www.sourcemod.net/smdrop/1.6/sourcemod-1.6.0-git4525-linux.tar.gz -O /tmp/sourcemod.tar.gz
+  - wget http://www.sourcemod.net/smdrop/1.6/sourcemod-1.6.2-git4576-linux.tar.gz -O /tmp/sourcemod.tar.gz
   - tar -xzvf /tmp/sourcemod.tar.gz
 
 before_script:
