@@ -40,6 +40,8 @@
 
 #include "include/nativevotes.inc"
 
+new EngineVersion:g_EngineVersion = Engine_Unknown;
+
 #include "nativevotes/data-keyvalues.sp"
 
 #define VERSION 							"1.0.0 beta 13"
@@ -204,7 +206,8 @@ public OnPluginStart()
 	AddCommandListener(Command_Vote, "vote"); // TF2, CS:GO
 	//AddCommandListener(Command_Vote, "Vote"); // L4D, L4D2
 	
-	AddCommandListener(Command_CallVote, "callvote"); // All games
+	// As of 2014-10-15, the whole callvote system is broken and will likely stay that way
+	//AddCommandListener(Command_CallVote, "callvote"); // All games
 	
 	g_hVotes = CreateArray(_, Game_GetMaxItems());
 	
@@ -1720,6 +1723,11 @@ public Native_SetTeam(Handle:plugin, numParams)
 		return;
 	}
 	
+	if (g_EngineVersion == Engine_TF2 && team == NATIVEVOTES_ALL_TEAMS)
+	{
+		team = NATIVEVOTES_TF2_ALL_TEAMS;
+	}
+	
 	Data_SetTeam(vote, team);
 }
 
@@ -1829,6 +1837,11 @@ public Native_DisplayRawPass(Handle:plugin, numParams)
 	GetNativeString(2, winner, len+1);
 	new team = GetNativeCell(3);
 
+	if (g_EngineVersion == Engine_TF2 && team == NATIVEVOTES_ALL_TEAMS)
+	{
+		team = NATIVEVOTES_TF2_ALL_TEAMS;
+	}
+	
 	Game_DisplayRawVotePass(passType, winner, team);
 }
 
@@ -1849,6 +1862,11 @@ public Native_DisplayRawPassToOne(Handle:plugin, numParams)
 	GetNativeString(3, winner, len+1);
 	new team = GetNativeCell(4);
 
+	if (g_EngineVersion == Engine_TF2 && team == NATIVEVOTES_ALL_TEAMS)
+	{
+		team = NATIVEVOTES_TF2_ALL_TEAMS;
+	}
+	
 	Game_DisplayRawVotePass(passType, winner, team, client);
 }
 
@@ -1888,6 +1906,11 @@ public Native_DisplayRawFail(Handle:plugin, numParams)
 	
 	new team = GetNativeCell(2);
 
+	if (g_EngineVersion == Engine_TF2 && team == NATIVEVOTES_ALL_TEAMS)
+	{
+		team = NATIVEVOTES_TF2_ALL_TEAMS;
+	}
+	
 	Game_DisplayRawVoteFail(reason, team);
 }
 
@@ -1899,6 +1922,11 @@ public Native_DisplayRawFailToOne(Handle:plugin, numParams)
 	new NativeVotesFailType:reason = NativeVotesFailType:GetNativeCell(2);
 	
 	new team = GetNativeCell(3);
+	
+	if (g_EngineVersion == Engine_TF2 && team == NATIVEVOTES_ALL_TEAMS)
+	{
+		team = NATIVEVOTES_TF2_ALL_TEAMS;
+	}
 	
 	Game_DisplayRawVoteFail(reason, team, client);
 }

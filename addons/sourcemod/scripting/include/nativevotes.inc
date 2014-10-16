@@ -43,7 +43,8 @@
 
 #define NATIVEVOTES_EXTEND 			"Extend current Map" /** Defined in TF2, but doesn't appear to be localized */
 
-#define NATIVEVOTES_ALL_TEAMS		-1 // Defined by TF2, may be the same in L4D/L4D2
+#define NATIVEVOTES_ALL_TEAMS		-1 // Formerly defined by TF2, may be the same in L4D/L4D2/CSGO
+#define NATIVEVOTES_TF2_ALL_TEAMS	0 // Defined by TF2, may be the same in L4D/L4D2
 #define NATIVEVOTES_TEAM_UNASSIGNED 0 // For completeness, do not otherwise use
 #define NATIVEVOTES_TEAM_SPECTATOR	1 // Spectators
 #define NATIVEVOTES_TEAM_1			2 // RED/Survivors/Terrorists
@@ -108,6 +109,10 @@ enum NativeVotesType
 	NativeVotesType_Continue,		/**< CS:GO: Yes/No, details are ignored */
 	NativeVotesType_StartRound,		/**< TF2: Yes/No, details are ignored */
 	NativeVotesType_Eternaween,		/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_AutoBalanceOn,	/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_AutoBalanceOff,	/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_ClassLimitsOn,	/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_ClassLimitsOff,	/**< TF2: Yes/No, details are ignored */
 };
 
 enum NativeVotesPassType
@@ -132,6 +137,10 @@ enum NativeVotesPassType
 	NativeVotesPass_Continue,			/**< CS:GO: Details are ignored */
 	NativeVotesPass_StartRound,			/**< TF2: Details are ignored */
 	NativeVotesPass_Eternaween,			/**< TF2: Details are ignored */
+	NativeVotesPass_AutoBalanceOn,		/**< TF2: Yes/No, details are ignored */
+	NativeVotesPass_AutoBalanceOff,		/**< TF2: Yes/No, details are ignored */
+	NativeVotesPass_ClassLimitsOn,		/**< TF2: Yes/No, details are ignored */
+	NativeVotesPass_ClassLimitsOff,		/**< TF2: Yes/No, details are ignored */
 };
 
 /**

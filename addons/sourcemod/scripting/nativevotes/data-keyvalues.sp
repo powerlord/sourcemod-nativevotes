@@ -205,7 +205,14 @@ Handle:Data_CreateVote(NativeVotesType:voteType, MenuAction:actions)
 	KvSetNum(vote, "actions", _:actions);
 	KvSetNum(vote, "result_callback", _:voteResults);
 	KvSetNum(vote, "initiator", NATIVEVOTES_SERVER_INDEX);
-	KvSetNum(vote, "team", NATIVEVOTES_ALL_TEAMS);
+	if (g_EngineVersion == Engine_TF2)
+	{
+		KvSetNum(vote, "team", NATIVEVOTES_TF2_ALL_TEAMS);
+	}
+	else
+	{
+		KvSetNum(vote, "team", NATIVEVOTES_ALL_TEAMS);
+	}
 	KvSetNum(vote, "flags", 0);
 	KvSetString(vote, "custom_title", "");
 	
