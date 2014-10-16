@@ -2243,6 +2243,36 @@ NativeVotesPassType:VoteTypeToVotePass(NativeVotesType:voteType)
 			passType = NativeVotesPass_Continue;
 		}
 		
+		case NativeVotesType_StartRound:
+		{
+			passType = NativeVotesPass_StartRound;
+		}
+		
+		case NativeVotesType_Eternaween:
+		{
+			passType = NativeVotesPass_Eternaween;
+		}
+		
+		case NativeVotesType_AutoBalanceOn:
+		{
+			passType = NativeVotesPass_AutoBalanceOn;
+		}
+		
+		case NativeVotesType_AutoBalanceOff:
+		{
+			passType = NativeVotesPass_AutoBalanceOff;
+		}
+		
+		case NativeVotesType_ClassLimitsOn:
+		{
+			passType = NativeVotesPass_ClassLimitsOn;
+		}
+		
+		case NativeVotesType_ClassLimitsOff:
+		{
+			passType = NativeVotesPass_ClassLimitsOff;
+		}
+		
 		default:
 		{
 			passType = NativeVotesPass_Custom;
