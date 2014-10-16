@@ -44,7 +44,7 @@ new EngineVersion:g_EngineVersion = Engine_Unknown;
 
 #include "nativevotes/data-keyvalues.sp"
 
-#define VERSION 							"1.0.0 beta 13"
+#define VERSION 							"1.0.0 beta 14"
 
 #define LOGTAG "NV"
 
