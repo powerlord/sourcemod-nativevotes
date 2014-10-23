@@ -977,7 +977,7 @@ public Handler_NV_MapVoteFinished(Handle:menu,
 			NativeVotes_GetItem(menu, item_indexes[0], map1, sizeof(map1), info1, sizeof(info1));
 			NativeVotes_GetItem(menu, item_indexes[1], map2, sizeof(map2), info2, sizeof(info2));
 			
-			CreateDataTimer(2.0, Timer_NV_Runoff, data, TIMER_FLAG_NO_MAPCHANGE);
+			CreateDataTimer(3.0, Timer_NV_Runoff, data, TIMER_FLAG_NO_MAPCHANGE);
 			
 			WritePackString(data, map1);
 			WritePackString(data, info1);
