@@ -51,7 +51,7 @@
 #undef REQUIRE_PLUGIN
 #include <nativevotes>
 
-#define VERSION "1.5.5"
+#define VERSION "1.6.0"
 
 public Plugin:myinfo =
 {
@@ -1001,7 +1001,7 @@ public Handler_NV_MapVoteFinished(Handle:menu,
 	Handler_NV_VoteFinishedGeneric(menu, num_votes, num_clients, client_indexes, client_votes, num_items, item_indexes, item_votes);
 }
 
-// New in 1.5.1, used to fix revote not working properly
+// New in 1.5.1, used to fix runoff not working properly
 public Action:Timer_NV_Runoff(Handle:timer, Handle:data)
 {
 	decl String:map[PLATFORM_MAX_PATH];
