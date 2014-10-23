@@ -958,7 +958,7 @@ public Handler_NV_MapVoteFinished(Handle:menu,
 		new Float:winningvotes = float(item_votes[0]);
 		new Float:required = num_votes * (GetConVarFloat(g_Cvar_RunOffPercent) / 100.0);
 		
-		if (winningvotes <= required)
+		if (winningvotes < required)
 		{
 			//Added in 1.5.1
 			NativeVotes_DisplayFail(menu, NativeVotesFail_NotEnoughVotes);
@@ -1038,7 +1038,7 @@ public Handler_MapVoteFinished(Handle:menu,
 		new Float:winningvotes = float(item_info[0][VOTEINFO_ITEM_VOTES]);
 		new Float:required = num_votes * (GetConVarFloat(g_Cvar_RunOffPercent) / 100.0);
 		
-		if (winningvotes <= required)
+		if (winningvotes < required)
 		{
 			/* Insufficient Winning margin - Lets do a runoff */
 			g_VoteMenu = CreateMenu(Handler_MapVoteMenu, MenuAction:MENU_ACTIONS_ALL);
