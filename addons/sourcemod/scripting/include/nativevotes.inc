@@ -357,8 +357,8 @@ native NativeVotes_SetTarget(Handle:vote, client, bool:setDetails=true);
 native NativeVotes_GetTarget(Handle:vote);
 
 /**
- * Get the Steam ID of a vote's target
- * Useful if the target has disconnect from the server during a vote.
+ * Get the SteamID2 of a vote's target
+ * Useful if the target has disconnected from the server during a vote.
  * This was added in specifically for Kick/Ban votes
  *
  * @param vote				Vote Handle.
