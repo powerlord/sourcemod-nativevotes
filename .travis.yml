@@ -6,7 +6,7 @@ before_install:
   - sudo apt-get install -y g++-multilib
 
 install:
-  - wget http://tf2.rbemrose.com/sourcemod/sourcemod01.7.0-linux.tar.gz -O /tmp/sourcemod.tar.gz
+  - wget http://tf2.rbemrose.com/sourcemod/sourcemod-1.7.0-linux.tar.gz -O /tmp/sourcemod.tar.gz
   - tar -xzvf /tmp/sourcemod.tar.gz
 
 before_script:
