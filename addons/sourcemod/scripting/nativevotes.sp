@@ -1221,7 +1221,7 @@ public Native_Create(Handle:plugin, numParams)
 	
 	if (handler == INVALID_FUNCTION)
 	{
-		ThrowNativeError(SP_ERROR_NATIVE, "Menuhandler handle %x is invalid", handler);
+		ThrowNativeError(SP_ERROR_NATIVE, "Menuhandler is invalid");
 	}
 	
 	new Handle:vote;
@@ -1595,20 +1595,20 @@ public Native_SetResultCallback(Handle:plugin, numParams)
 		return;
 	}
 	
-	new NativeVotes_VoteHandler:function = GetNativeCell(2);
+	new NativeVotes_VoteHandler:handler = GetNativeCell(2);
 	
-	if (function == INVALID_FUNCTION)
+	if (handler == INVALID_FUNCTION)
 	{
-		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes_VoteHandler function %x is invalid", function);
+		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes_VoteHandler is invalid");
 		return;
 	}
 	
 	new Handle:voteResults = Data_GetResultCallback(vote);
 	
 	RemoveAllFromForward(voteResults, plugin);
-	if (!AddToForward(voteResults, plugin, function))
+	if (!AddToForward(voteResults, plugin, handler))
 	{
-		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes_VoteHandler function %x is invalid", function);
+		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes_VoteHandler cannot be added to forward");
 	}
 }
 
