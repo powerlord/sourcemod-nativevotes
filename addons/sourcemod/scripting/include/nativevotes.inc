@@ -32,7 +32,7 @@
 #include <menus>
 #include <sourcemod>
 
-// NativeVotes 1.0 series
+// NativeVotes 1.1 series
 
 #if defined _nativevotes_included
  #endinput
@@ -188,6 +188,27 @@ enum NativeVotesKickType
 	NativeVotesKickType_Idle,				/**< TF2/CS:GO: Client chose Idle from the list */
 	NativeVotesKickType_Scamming,			/**< TF2/CS:GO: Client chose Scamming from the list */
 	NativeVotesKickType_Cheating,			/**< TF2/CS:GO: Client chose Cheating from the list */	
+}
+
+/**
+ * Types of votes that can be overridden in the client vote menu
+ * 
+ * Only TF2 supports this feature
+ */
+enum NativeVotesOverride
+{
+	NativeVotesOverride_None,
+	NativeVotesOverride_Restart,
+	NativeVotesOverride_Kick,
+	NativeVotesOverride_ChgLevel,
+	NativeVotesOverride_NextLevel,
+	NativeVotesOverride_Scramble,
+	NativeVotesOverride_ChgMission,
+	NativeVotesOverride_Eternaween,
+	NativeVotesOverride_AutoBalanceOn,
+	NativeVotesOverride_AutoBalanceOff,
+	NativeVotesOverride_ClassLimitsOn,
+	NativeVotesOverride_ClassLimitsOff,
 }
 
 /*
@@ -907,7 +928,7 @@ stock bool:NativeVotes_IsNewVoteAllowed()
  * 						Plugin_Handled if you processed this vote type
  * 						Plugin_Stop to block the vote type (not recommended)
  */
-functag public Action:NativeVotes_CallVoteHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target);
+functag public Action:NativeVotes_CallVoteHandler(client, NativeVotesOverride:overrideType, const String:voteArgument[], NativeVotesKickType:kickType, target);
 
 /**
  * Forward for "callvote" visibility check.
@@ -922,52 +943,39 @@ functag public Action:NativeVotes_CallVoteHandler(client, const String:voteComma
  *
  * The highest return value will be the one that takes effect.
  */
-functag public Action:NativeVotes_CallVoteVisCheck(client, const String:voteCommand[]);
+functag public Action:NativeVotes_CallVoteVisCheck(client, NativeVotesOverride:overrideType);
+
+/**
+ * Are vote commands supported by this game?
+ * 
+ * @return			true if they are supported, false if not.
+ *                     As of this writing, only TF2 will return true
+ */
+native bool:NativeVotes_AreVoteCommandsSupported();
 
 /**
  * Register a vote command for the callvote command.
  * 
+ * This function is only relevant to TF2.
+ * 
  * @param voteCommand	vote command to register
  * @param callHandler	Handler to register
  * @param visHandler	Optional Handler to determine if this vote is visible to a player
  * @noreturn
- * 
- * SPECIAL NOTES ON THIS FUNCTION:
- * YOU SHOULD CHOOSE A UNIQUE VOTE NAME.  The reason for this is that other plugins can register votes with the same name as yours and
- * they will be called in a random order
- *
- * Valve's games treat specific callvote types differently in the HUD.
- * 
- * All Games:
- *   - "Kick" will automatically bring up a list of players on the current team when selected.  On TF2 and CS:GO, this also includes
- *     the kick reason dropdown.
- * 
- * TF2/CS:GO:
- *   - "NextLevel" and "ChangeLevel" will bring up a list of maps on your machine.
- * 
- * TF2:
- *   - "ChangeMission" in MvM displays a list of population files for the current map.
  */
-native NativeVotes_RegisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
+native NativeVotes_RegisterVoteCommand(NativeVotesOverride:overrideType, NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
 
 /**
  * Unregister a vote command for the callvote command 
  * 
+ * This function is only relevant to TF2.
+ * 
  * @param voteCommand	vote command to register
  * @param callHandler	Handler to register
  * @param visHandler	Optional Handler to determine if this vote is visible to a player
  * @noreturn
  */
-native NativeVotes_UnregisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
-
-/**
- * Check if a vote command is registered
- * 
- * @param voteCommand	vote command to register
- * @return				true if the command was registered
- * 						false if a command isn't registered
- */
-native bool:NativeVotes_IsVoteCommandRegistered(const String:voteCommand[]);
+native NativeVotes_UnregisterVoteCommand(NativeVotesOverride:overrideType, NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
 
 /**
  * Send a call vote fail screen to a user
@@ -976,8 +984,8 @@ native bool:NativeVotes_IsVoteCommandRegistered(const String:voteCommand[]);
  * 
  * @param client		The client to display the fail screen to
  * @param reason		A vote call fail reason
- * @param time			For NativeVotesCallFail_Recent, the number of seconds until the vote
- * 						can be called again. For NativeVotesCallFail_PlayerNotFound, may be the player userid
+ * @param time		For NativeVotesCallFail_Recent, the number of seconds until the vote
+ * 					can be called again. For NativeVotesCallFail_PlayerNotFound, may be the player userid
  */
 native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time=0);
 
@@ -1022,13 +1030,14 @@ public SharedPlugin:__pl_nativevotes =
 {
 	name = "nativevotes",
 	file = "nativevotes.smx",
-#if defined REQUIRE_PLUGINS
+#if defined REQUIRE_PLUGIN
 	required = 1,
 #else
 	required = 0,
 #endif
 };
 
+#if !defined REQUIRE_PLUGIN
 public __pl_nativevotes_SetNTVOptional()
 {
 	MarkNativeAsOptional("NativeVotes_IsVoteTypeSupported");
@@ -1071,6 +1080,7 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_DisplayFail");
 	MarkNativeAsOptional("NativeVotes_DisplayRawFail");
 	MarkNativeAsOptional("NativeVotes_DisplayRawFailToOne");
+	MarkNativeAsOptional("NativeVotes_AreVoteCommandsSupported");
 	MarkNativeAsOptional("NativeVotes_RegisterVoteCommand");
 	MarkNativeAsOptional("NativeVotes_UnregisterVoteCommand");
 	MarkNativeAsOptional("NativeVotes_IsVoteCommandRegistered");
@@ -1078,3 +1088,4 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_RedrawVoteTitle");
 	MarkNativeAsOptional("NativeVotes_RedrawVoteItem");
 }
+#endif

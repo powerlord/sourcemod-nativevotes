@@ -44,7 +44,7 @@ new EngineVersion:g_EngineVersion = Engine_Unknown;
 
 #include "nativevotes/data-keyvalues.sp"
 
-#define VERSION 							"1.0.0 beta 14"
+#define VERSION 							"1.1.0 alpha 1"
 
 #define LOGTAG "NV"
 
@@ -110,9 +110,14 @@ new g_ClientVotes[MAXPLAYERS+1];
 new bool:g_bRevoting[MAXPLAYERS+1];
 new String:g_LeaderList[1024];
 
-new Handle:g_hCallVoteCommands;
-new Handle:g_hCallVoteVisChecks;
-new Handle:g_hCallVoteCommandIndex;
+enum CallVoteData
+{
+	Handle:CallVote_Forward,
+	Handle:CallVote_Vis,
+	bool:voteDisabled,
+}
+
+new g_CallVotes[NativeVotesOverride][CallVoteData];
 
 #include "nativevotes/game.sp"
 
@@ -175,10 +180,9 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_DisplayFail", Native_DisplayFail);
 	CreateNative("NativeVotes_DisplayRawFail", Native_DisplayRawFail);
 	CreateNative("NativeVotes_DisplayRawFailToOne", Native_DisplayRawFailToOne);
-	//CreateNative("NativeVotes_RegisterVoteManager", Native_RegisterVoteManager);
+	CreateNative("NativeVotes_AreVoteCommandsSupported", Native_AreVoteCommandsSupported);
 	CreateNative("NativeVotes_RegisterVoteCommand", Native_RegisterVoteCommand);
 	CreateNative("NativeVotes_UnregisterVoteCommand", Native_UnregisterVoteCommand);
-	CreateNative("NativeVotes_IsVoteCommandRegistered", Native_IsVoteCommandRegistered);
 	CreateNative("NativeVotes_DisplayCallVoteFail", Native_DisplayCallVoteFail);
 	CreateNative("NativeVotes_RedrawVoteTitle", Native_RedrawVoteTitle);
 	CreateNative("NativeVotes_RedrawVoteItem", Native_RedrawVoteItem);
@@ -203,17 +207,22 @@ public OnPluginStart()
 	
 	HookConVarChange(g_Cvar_VoteDelay, OnVoteDelayChange);
 
-	AddCommandListener(Command_Vote, "vote"); // TF2, CS:GO
-	//AddCommandListener(Command_Vote, "Vote"); // L4D, L4D2
+	AddCommandListener(Command_Vote, "vote"); // All games, command listeners aren't case sensitive
 	
-	// As of 2014-10-15, the whole callvote system is broken and will likely stay that way
-	//AddCommandListener(Command_CallVote, "callvote"); // All games
+	// The new version of the CallVote system is TF2 only
+	if (g_EngineVersion == Engine_TF2)
+	{
+		AddCommandListener(Command_CallVote, "callvote");
+		
+		// None is type 0, which has no overrides
+		for (new i = 1; i < sizeof(g_CallVotes); i++)
+		{
+			g_CallVotes[i][CallVote_Forward] = CreateForward(ET_Hook, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
+			g_CallVotes[i][CallVote_Vis] = CreateForward(ET_Hook, Param_Cell, Param_Cell);
+		}
+	}
 	
 	g_hVotes = CreateArray(_, Game_GetMaxItems());
-	
-	g_hCallVoteCommands = CreateTrie();
-	g_hCallVoteVisChecks = CreateTrie();
-	g_hCallVoteCommandIndex = CreateArray(ByteCountToCells(MAX_CALLVOTE_SIZE));
 	
 	AutoExecConfig(true, "nativevotes");
 }
@@ -263,12 +272,25 @@ public Action:Command_CallVote(client, const String:command[], argc)
 		// No args means that we need to return a CallVoteSetup usermessage
 		case 0:
 		{
-			if (GetArraySize(g_hCallVoteCommandIndex) > 0)
+			//TODO This section needs to be redone to deal with sv_vote_ui_hide_disabled_issues and votes that are only valid in MvM
+			
+			new bool:overridesPresent = false;
+			new Handle:hVoteTypes = CreateArray();
+			for (new i = 1; i < sizeof(g_CallVotes); i++)
+			{
+				if (GetForwardFunctionCount(g_CallVotes[i][CallVote_Forward]) > 0)
+				{
+					overridesPresent = true;
+					PushArrayCell(hVoteTypes, i);
+				}
+			}
+			
+			if (overridesPresent)
 			{
 #if defined LOG
-				LogMessage("Overriding VoteSetup message, we have %d custom votes", GetArraySize(g_hCallVoteCommandIndex));
+				LogMessage("Overriding VoteSetup message");
 #endif
-				Game_DisplayVoteSetup(client, g_hCallVoteCommandIndex, g_hCallVoteVisChecks);
+				Game_DisplayVoteSetup(client, hVoteTypes);
 				return Plugin_Handled;
 			}
 			else
@@ -286,9 +308,9 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			LogMessage("User is attempting to call %s", voteCommand);
 #endif
 			
-			new Handle:callVoteForward = INVALID_HANDLE;
+			new NativeVotesOverride:overrideType = Game_VoteStringToVoteOverride(voteCommand);
 			
-			if (!GetTrieValue(g_hCallVoteCommands, voteCommand, callVoteForward))
+			if (GetForwardFunctionCount(g_CallVotes[overrideType][CallVote_Forward]) == 0)
 			{
 #if defined LOG
 				LogMessage("We don't have a handler for %s, passing back to server", voteCommand);
@@ -296,30 +318,17 @@ public Action:Command_CallVote(client, const String:command[], argc)
 				return Plugin_Continue;
 			}
 			
-			new Handle:visForward = INVALID_HANDLE;
-			GetTrieValue(g_hCallVoteVisChecks, voteCommand, visForward);
-			
-			if (!ValidateForward(voteCommand, callVoteForward, visForward))
-			{
+			// Vis checks are done here just in case something went wrong and the vote option was shown to a person it shouldn't be.
 #if defined LOG
-				LogMessage("Forward didn't validate for %s, passing back to server", voteCommand);
+			LogMessage("Calling visForward for %s", voteCommand);
 #endif
-				return Plugin_Continue;
-			}
-
-			if (visForward != INVALID_HANDLE)
+			Call_StartForward(g_CallVotes[overrideType][CallVote_Vis]);
+			Call_PushCell(client);
+			Call_PushCell(overrideType);
+			Call_Finish(result);
+			if (result >= Plugin_Handled)
 			{
-#if defined LOG
-				LogMessage("Calling visForward for %s", voteCommand);
-#endif
-				Call_StartForward(visForward);
-				Call_PushCell(client);
-				Call_PushString(voteCommand);
-				Call_Finish(result);
-				if (result >= Plugin_Handled)
-				{
-					return result;
-				}
+				return result;
 			}
 			
 			new String:argument[64];
@@ -356,9 +365,9 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			LogMessage("Calling callVoteForward for %s", voteCommand);
 #endif
 			
-			Call_StartForward(callVoteForward);
+			Call_StartForward(g_CallVotes[overrideType][CallVote_Forward]);
 			Call_PushCell(client);
-			Call_PushString(voteCommand);
+			Call_PushCell(overrideType);
 			Call_PushString(argument);
 			Call_PushCell(kickType);
 			Call_PushCell(target);
@@ -1199,6 +1208,27 @@ CancelVoting()
 	EndVoting();
 }
 
+PerformVisChecks(client, Handle:hVoteTypes)
+{
+	// Iterate backwards so we can safely remove items
+	for (new i = GetArraySize(hVoteTypes) - 1; i >= 0; i--)
+	{
+		new NativeVotesOverride:overrideType = GetArrayCell(hVoteTypes, i);
+		new Action:hide = Plugin_Continue;
+		
+#if defined LOG
+		LogMessage("Checking visibility forward for %d: %d", overrideType, g_CallVotes[overrideType][CallVote_Vis]);
+#endif
+		Call_StartForward(g_CallVotes[overrideType][CallVote_Vis]);
+		Call_PushCell(client);
+		Call_PushCell(overrideType);
+		Call_Finish(hide);
+		if (hide >= Plugin_Handled)
+		{
+			RemoveFromArray(hVoteTypes, i);
+		}
+	}
+}
 
 //----------------------------------------------------------------------------
 // Natives
@@ -2023,84 +2053,64 @@ public Native_SetTarget(Handle:plugin,  numParams)
 	}
 }
 
-// native NativeVotes_RegisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
+// native bool:NativeVotes_AreVoteCommandsSupported();
+public Native_AreVoteCommandsSupported(Handle:plugin, numParams)
+{
+	return Game_AreVoteCommandsSupported();
+}
+
+// native NativeVotes_RegisterVoteCommand(NativeVotesOverride:overrideType, NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
 public Native_RegisterVoteCommand(Handle:plugin, numParams)
 {
-	new size;
-	GetNativeStringLength(1, size);
-	new String:voteCommand[size+1];
-	GetNativeString(1, voteCommand, size+1);
+	new NativeVotesOverride:overrideType = GetNativeCell(1);
 	new Function:callVoteHandler = GetNativeFunction(2);
 	new Function:visHandler = GetNativeFunction(3);
 	
-	new Handle:callVoteForward;
-	new Handle:visForward;
-	
-	if (!GetTrieValue(g_hCallVoteCommands, voteCommand, callVoteForward))
+	if (_:overrideType > sizeof(g_CallVotes))
 	{
-		callVoteForward = CreateForward(ET_Hook, Param_Cell, Param_String, Param_String, Param_Cell, Param_Cell);
-		
-		SetTrieValue(g_hCallVoteCommands, voteCommand, callVoteForward);
-		PushArrayString(g_hCallVoteCommandIndex, voteCommand);
+		ThrowNativeError(SP_ERROR_NATIVE, "Override Type %d is not supported by this version of NativeVotes", overrideType);
+		return;
 	}
 	
-	// This check is a safety check, as g_hCallVoteCommands and g_hCallVoteVisChecks should have identical keys and forwards
-	if (!GetTrieValue(g_hCallVoteVisChecks, voteCommand, visForward))
+	if (callVoteHandler == INVALID_FUNCTION)
 	{
-		visForward = CreateForward(ET_Hook, Param_Cell, Param_String);
-		SetTrieValue(g_hCallVoteVisChecks, voteCommand, visForward);
+		ThrowNativeError(SP_ERROR_NATIVE, "CallVoteHandler function was invalid");
+		return;
 	}
 	
-	AddToForward(callVoteForward, plugin, callVoteHandler);
+	AddToForward(g_CallVotes[overrideType][CallVote_Forward], plugin, callVoteHandler);
+	
 	if (visHandler != INVALID_FUNCTION)
 	{
-		AddToForward(visForward, plugin, visHandler);
+		AddToForward(g_CallVotes[overrideType][CallVote_Vis], plugin, visHandler);
 	}
 }
 
-// native NativeVotes_UnregisterVoteCommand(const String:voteCommand[], NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
+// native NativeVotes_UnregisterVoteCommand(NativeVotesOverride:overrideType, NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
 public Native_UnregisterVoteCommand(Handle:plugin, numParams)
 {
-	new size;
-	GetNativeStringLength(1, size);
-	new String:voteCommand[size+1];
-	GetNativeString(1, voteCommand, size+1);
+	new NativeVotesOverride:overrideType = GetNativeCell(1);
 	new Function:callVoteHandler = GetNativeFunction(2);
 	new Function:visHandler = GetNativeFunction(3);
-	
-	new Handle:callVoteForward;
-	new Handle:visForward;
-	if (GetTrieValue(g_hCallVoteCommands, voteCommand, callVoteForward))
-	{
-		RemoveFromForward(callVoteForward, plugin, callVoteHandler);
-		
-		if (visHandler != INVALID_FUNCTION && GetTrieValue(g_hCallVoteVisChecks, voteCommand, visForward))
-		{
-			RemoveFromForward(visForward, plugin, visHandler);
-		}
-		
-		ValidateForward(voteCommand, callVoteForward, visForward);
-	}
-}
 
-// native bool:NativeVotes_IsVoteCommandRegistered(const String:voteCommand[]);
-public Native_IsVoteCommandRegistered(Handle:plugin, numParams)
-{
-	new size;
-	GetNativeStringLength(1, size);
-	new String:voteCommand[size+1];
-	
-	new Handle:callVoteForward;
-	
-	if (GetTrieValue(g_hCallVoteCommands, voteCommand, callVoteForward))
+	if (_:overrideType > sizeof(g_CallVotes))
 	{
-		if (GetForwardFunctionCount(callVoteForward) > 0)
-		{
-			return true;
-		}
+		ThrowNativeError(SP_ERROR_NATIVE, "Override Type %d is not supported by this version of NativeVotes", overrideType);
+		return;
 	}
 	
-	return false;
+	if (callVoteHandler == INVALID_FUNCTION)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "CallVoteHandler function was invalid");
+		return;
+	}
+	
+	RemoveFromForward(g_CallVotes[overrideType][CallVote_Forward], plugin, callVoteHandler);
+
+	if (visHandler != INVALID_FUNCTION)
+	{
+		RemoveFromForward(g_CallVotes[overrideType][CallVote_Vis], plugin, visHandler);
+	}
 }
 
 // native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time=0);
@@ -2283,43 +2293,6 @@ NativeVotesPassType:VoteTypeToVotePass(NativeVotesType:voteType)
 	}
 	
 	return passType;
-}
-
-// This validates that a forward has at least 1 entry
-// It also cleans up the list when a forward is empty
-bool:ValidateForward(const String:voteCommand[], Handle:callVoteForward, Handle:visForward)
-{
-	if (callVoteForward == INVALID_HANDLE)
-	{
-		return false;
-	}
-	
-	if (GetForwardFunctionCount(callVoteForward) == 0)
-	{
-#if defined LOG
-		LogMessage("%s forward is empty, removing callVoteForward", voteCommand);
-#endif
-		RemoveFromTrie(g_hCallVoteCommands, voteCommand);
-		CloseHandle(callVoteForward);
-		
-		if (visForward != INVALID_HANDLE)
-		{
-#if defined LOG
-			LogMessage("Also removing visForward", voteCommand);
-#endif
-			RemoveFromTrie(g_hCallVoteVisChecks, voteCommand);
-			CloseHandle(visForward);
-		}
-		
-		new pos = FindStringInArray(g_hCallVoteCommandIndex, voteCommand);
-		if (pos > -1)
-		{
-			RemoveFromArray(g_hCallVoteCommandIndex, pos);
-		}
-		return false;
-	}
-	
-	return true;
 }
 
 stock GetEngineVersionName(EngineVersion:version, String:printName[], maxlength)
