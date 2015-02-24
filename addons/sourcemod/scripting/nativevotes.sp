@@ -1993,12 +1993,15 @@ public Native_SetTarget(Handle:plugin,  numParams)
 	if (client <= 0)
 	{
 		userid = 0;
-		strcopy(steamId, sizeof(steamId), "");
+		steamId = "";
 	}
 	else
 	{
 		userid = GetClientUserId(client);
-		GetClientAuthString(client, steamId, sizeof(steamId));
+		if (!GetClientAuthId(client, AuthId_Steam2, steamId, sizeof(steamId)))
+		{
+			steamId = "";
+		}
 	}
 
 	Data_SetTarget(vote, userid);
@@ -2027,8 +2030,8 @@ public Native_RegisterVoteCommand(Handle:plugin, numParams)
 	GetNativeStringLength(1, size);
 	new String:voteCommand[size+1];
 	GetNativeString(1, voteCommand, size+1);
-	new Function:callVoteHandler = Function:GetNativeCell(2);
-	new Function:visHandler = Function:GetNativeCell(3);
+	new Function:callVoteHandler = GetNativeFunction(2);
+	new Function:visHandler = GetNativeFunction(3);
 	
 	new Handle:callVoteForward;
 	new Handle:visForward;
@@ -2062,8 +2065,8 @@ public Native_UnregisterVoteCommand(Handle:plugin, numParams)
 	GetNativeStringLength(1, size);
 	new String:voteCommand[size+1];
 	GetNativeString(1, voteCommand, size+1);
-	new Function:callVoteHandler = Function:GetNativeCell(2);
-	new Function:visHandler = Function:GetNativeCell(3);
+	new Function:callVoteHandler = GetNativeFunction(2);
+	new Function:visHandler = GetNativeFunction(3);
 	
 	new Handle:callVoteForward;
 	new Handle:visForward;
