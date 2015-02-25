@@ -1780,7 +1780,7 @@ TF2CSGO_DisplayVoteSetup(client, Handle:hVoteTypes)
 			
 			BfWriteString(voteSetup, voteIssue);
 			BfWriteString(voteSetup, translation);
-			BfWriteByte(voteSetup, true); // This should be controlled by sv_vote_ui_hide_disabled_issues
+			BfWriteBool(voteSetup, true); // This should be controlled by sv_vote_ui_hide_disabled_issues
 		}
 	}
 	
