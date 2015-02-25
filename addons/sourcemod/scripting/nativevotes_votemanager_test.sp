@@ -60,47 +60,47 @@ public OnAllPluginsLoaded()
 {
 	if (GetConVarBool(g_Cvar_Enabled))
 	{
-		NativeVotes_RegisterVoteCommand("VoteTest", CallVoteTestHandler);
-		NativeVotes_RegisterVoteCommand("Kick", CallKickVoteHandler);
-		NativeVotes_RegisterVoteCommand("AdminVoteTest", CallVoteAdminTestHandler, CallVoteAdminVisHandler);
+		NativeVotes_RegisterVoteCommand(NativeVotesOverride_Restart, CallVoteTestHandler);
+		NativeVotes_RegisterVoteCommand(NativeVotesOverride_Kick, CallKickVoteHandler);
+		NativeVotes_RegisterVoteCommand(NativeVotesOverride_Scramble, CallVoteAdminTestHandler, CallVoteAdminVisHandler);
 	}
 }
 
 public OnPluginEnd()
 {
-	NativeVotes_UnregisterVoteCommand("VoteTest", CallVoteTestHandler);
-	NativeVotes_UnregisterVoteCommand("Kick", CallKickVoteHandler);
-	NativeVotes_UnregisterVoteCommand("AdminVoteTest", CallVoteAdminTestHandler, CallVoteAdminVisHandler);
+		NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Restart, CallVoteTestHandler);
+		NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Kick, CallKickVoteHandler);
+		NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Scramble, CallVoteAdminTestHandler, CallVoteAdminVisHandler);
 }
 
 public EnabledChanged(Handle:convar, const String:oldValue[], const String:newValue[])
 {
 	if (GetConVarBool(convar))
 	{
-		NativeVotes_RegisterVoteCommand("VoteTest", CallVoteTestHandler);
-		NativeVotes_RegisterVoteCommand("Kick", CallKickVoteHandler);
-		NativeVotes_RegisterVoteCommand("AdminVoteTest", CallVoteAdminTestHandler, CallVoteAdminVisHandler);
+		NativeVotes_RegisterVoteCommand(NativeVotesOverride_Restart, CallVoteTestHandler);
+		NativeVotes_RegisterVoteCommand(NativeVotesOverride_Kick, CallKickVoteHandler);
+		NativeVotes_RegisterVoteCommand(NativeVotesOverride_Scramble, CallVoteAdminTestHandler, CallVoteAdminVisHandler);
 	}
 	else
 	{
-		NativeVotes_UnregisterVoteCommand("VoteTest", CallVoteTestHandler);
-		NativeVotes_UnregisterVoteCommand("Kick", CallKickVoteHandler);
-		NativeVotes_UnregisterVoteCommand("AdminVoteTest", CallVoteAdminTestHandler, CallVoteAdminVisHandler);
+		NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Restart, CallVoteTestHandler);
+		NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Kick, CallKickVoteHandler);
+		NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Scramble, CallVoteAdminTestHandler, CallVoteAdminVisHandler);
 	}
 }
 
-public Action:CallVoteTestHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target)
+public Action:CallVoteTestHandler(client, NativeVotesOverride:overrideType, const String:voteArgument[], NativeVotesKickType:kickType, target)
 {
 	new ReplySource:old = SetCmdReplySource(SM_REPLY_TO_CHAT);
 
-	ReplyToCommand(client, "Attempted to call VoteTest");
+	ReplyToCommand(client, "Attempted to call Restart vote");
 	
 	SetCmdReplySource(old);
 
 	return Plugin_Handled;
 }
 
-public Action:CallVoteAdminVisHandler(client, const String:voteCommand[])
+public Action:CallVoteAdminVisHandler(client, NativeVotesOverride:overrideType)
 {
 	if (CheckCommandAccess(client, "adminvotetest", ADMFLAG_VOTE, true))
 	{
@@ -110,18 +110,18 @@ public Action:CallVoteAdminVisHandler(client, const String:voteCommand[])
 	return Plugin_Handled;
 }
 
-public Action:CallVoteAdminTestHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target)
+public Action:CallVoteAdminTestHandler(client, NativeVotesOverride:overrideType, const String:voteArgument[], NativeVotesKickType:kickType, target)
 {
 	new ReplySource:old = SetCmdReplySource(SM_REPLY_TO_CHAT);
 
-	ReplyToCommand(client, "Attempted to call AdminVoteTest");
+	ReplyToCommand(client, "Attempted to call Admin-protected Scramble vote");
 	
 	SetCmdReplySource(old);
 	
 	return Plugin_Handled;
 }
 
-public Action:CallKickVoteHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target)
+public Action:CallKickVoteHandler(client, NativeVotesOverride:overrideType, const String:voteArgument[], NativeVotesKickType:kickType, target)
 {
 	new ReplySource:old = SetCmdReplySource(SM_REPLY_TO_CHAT);
 	
