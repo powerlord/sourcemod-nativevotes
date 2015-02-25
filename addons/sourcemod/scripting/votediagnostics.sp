@@ -457,7 +457,7 @@ message CCSUsrMsg_VoteSetup
 */
 public Action:TF2CSGO_MessageVoteSetup(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
 {
-	new String:options[1025];
+	new String:options[2049];
 	new count;
 	
 	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
@@ -467,8 +467,8 @@ public Action:TF2CSGO_MessageVoteSetup(UserMsg:msg_id, Handle:message, const pla
 		{
 			decl String:option[MAX_ARG_SIZE];
 			PbReadString(message, "potential_issues", option, MAX_ARG_SIZE, i);
-			StrCat(options, MAX_ARG_SIZE, option);
-			StrCat(options, MAX_ARG_SIZE, " ");
+			StrCat(options, sizeof(options), option);
+			StrCat(options, sizeof(options), " ");
 		}
 	}
 	else
@@ -476,10 +476,16 @@ public Action:TF2CSGO_MessageVoteSetup(UserMsg:msg_id, Handle:message, const pla
 		count = BfReadByte(message);
 		for (new i = 0; i < count; i++)
 		{
-			decl String:option[MAX_ARG_SIZE];
-			BfReadString(message, option, MAX_ARG_SIZE);
-			StrCat(options, MAX_ARG_SIZE, option);
-			StrCat(options, MAX_ARG_SIZE, " ");
+			decl String:option[MAX_ARG_SIZE*2+1];
+			decl String:potential_issue[MAX_ARG_SIZE];
+			decl String:translation[MAX_ARG_SIZE];
+			BfReadString(message, potential_issue, MAX_ARG_SIZE);
+			BfReadString(message, translation, MAX_ARG_SIZE);
+			
+			new bool:enabled = BfReadBool(message);
+			Format(option, sizeof(option), "(%s, %s, %d) ", potential_issue, translation, enabled);
+			
+			StrCat(options, sizeof(options), option);
 		}
 	}
 
