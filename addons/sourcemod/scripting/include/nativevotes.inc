@@ -205,10 +205,8 @@ enum NativeVotesOverride
 	NativeVotesOverride_Scramble,
 	NativeVotesOverride_ChgMission,
 	NativeVotesOverride_Eternaween,
-	NativeVotesOverride_AutoBalanceOn,
-	NativeVotesOverride_AutoBalanceOff,
-	NativeVotesOverride_ClassLimitsOn,
-	NativeVotesOverride_ClassLimitsOff,
+	NativeVotesOverride_AutoBalance,
+	NativeVotesOverride_ClassLimits,
 }
 
 /*

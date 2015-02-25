@@ -106,11 +106,9 @@
 // Thus, this is the name we will use for it internally
 #define TF2_VOTE_STRING_ETERNAWEEN			"Eternaween"
 
-//TODO: Check these values on a real server
-#define TF2_VOTE_STRING_AUTOBALANCE_ON		"AutoBalanceOn" 
-#define TF2_VOTE_STRING_AUTOBALANCE_OFF		"AutoBalanceOff"
-#define TF2_VOTE_STRING_CLASSLIMIT_ON		"ClassLimitOn"
-#define TF2_VOTE_STRING_CLASSLIMIT_OFF		"ClassLimitOff"
+// These are toggles, but the on and off versions are identical
+#define TF2_VOTE_STRING_AUTOBALANCE			"TeamAutoBalance" 
+#define TF2_VOTE_STRING_CLASSLIMIT			"ClassLimits"
 
 // Menu items for votes
 #define TF2_VOTE_MENU_RESTART				"#TF_RestartGame"
@@ -2063,7 +2061,7 @@ TF2_ParseVoteSetup(Handle:hVoteTypes)
 			if (GetConVarInt(g_Cvar_ClassLimit) > 0 && FindValueInArray(hVoteTypes, NativeVotesType_ClassLimitsOff) == -1)
 			{
 #if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT_OFF);
+				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT);
 #endif
 				ShiftArrayUp(hVoteTypes, 0);
 				SetArrayCell(hVoteTypes, 0, NativeVotesType_ClassLimitsOff);
@@ -2071,7 +2069,7 @@ TF2_ParseVoteSetup(Handle:hVoteTypes)
 			else if (GetConVarInt(g_Cvar_ClassLimit) == 0 && FindValueInArray(hVoteTypes, NativeVotesType_ClassLimitsOn) == -1)
 			{
 #if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT_ON);
+				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT);
 #endif
 				ShiftArrayUp(hVoteTypes, 0);
 				SetArrayCell(hVoteTypes, 0, NativeVotesType_ClassLimitsOn);
@@ -2122,7 +2120,7 @@ TF2_ParseVoteSetup(Handle:hVoteTypes)
 			if (GetConVarBool(g_Cvar_AutoBalance) && FindValueInArray(hVoteTypes, NativeVotesType_AutoBalanceOff) == -1)
 			{
 #if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_AUTOBALANCE_OFF);
+				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_AUTOBALANCE);
 #endif
 				ShiftArrayUp(hVoteTypes, 0);
 				SetArrayCell(hVoteTypes, 0, NativeVotesType_AutoBalanceOff);
@@ -2130,7 +2128,7 @@ TF2_ParseVoteSetup(Handle:hVoteTypes)
 			else if (!GetConVarBool(g_Cvar_AutoBalance) && FindValueInArray(hVoteTypes, NativeVotesType_AutoBalanceOn) == -1)
 			{
 #if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_AUTOBALANCE_ON);
+				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_AUTOBALANCE);
 #endif
 				ShiftArrayUp(hVoteTypes, 0);
 				SetArrayCell(hVoteTypes, 0, NativeVotesType_AutoBalanceOn);
@@ -2142,7 +2140,7 @@ TF2_ParseVoteSetup(Handle:hVoteTypes)
 			if (GetConVarInt(g_Cvar_ClassLimit) > 0 && FindValueInArray(hVoteTypes, NativeVotesType_ClassLimitsOff) == -1)
 			{
 #if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT_OFF);
+				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT);
 #endif
 				ShiftArrayUp(hVoteTypes, 0);
 				SetArrayCell(hVoteTypes, 0, NativeVotesType_ClassLimitsOff);
@@ -2150,7 +2148,7 @@ TF2_ParseVoteSetup(Handle:hVoteTypes)
 			else if (GetConVarInt(g_Cvar_ClassLimit) == 0 && FindValueInArray(hVoteTypes, NativeVotesType_ClassLimitsOn) == -1)
 			{
 #if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT_ON);
+				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT);
 #endif
 				ShiftArrayUp(hVoteTypes, 0);
 				SetArrayCell(hVoteTypes, 0, NativeVotesType_ClassLimitsOn);
@@ -2573,21 +2571,27 @@ stock NativeVotesType:TF2_VoteStringToVoteType(const String:voteString[])
 	{
 		voteType = NativeVotesType_Eternaween;
 	}
-	else if (StrEqual(voteString, TF2_VOTE_STRING_AUTOBALANCE_ON, false))
+	else if (StrEqual(voteString, TF2_VOTE_STRING_AUTOBALANCE, false))
 	{
-		voteType = NativeVotesType_AutoBalanceOn;
+		if (GetConVarBool(g_Cvar_AutoBalance))
+		{
+			voteType = NativeVotesType_AutoBalanceOff;
+		}
+		else
+		{
+			voteType = NativeVotesType_AutoBalanceOn;
+		}
 	}
-	else if (StrEqual(voteString, TF2_VOTE_STRING_AUTOBALANCE_OFF, false))
+	else if (StrEqual(voteString, TF2_VOTE_STRING_CLASSLIMIT, false))
 	{
-		voteType = NativeVotesType_AutoBalanceOff;
-	}
-	else if (StrEqual(voteString, TF2_VOTE_STRING_CLASSLIMIT_ON, false))
-	{
-		voteType = NativeVotesType_ClassLimitsOn;
-	}
-	else if (StrEqual(voteString, TF2_VOTE_STRING_CLASSLIMIT_OFF, false))
-	{
-		voteType = NativeVotesType_ClassLimitsOff;
+		if (GetConVarInt(g_Cvar_ClassLimit))
+		{
+			voteType = NativeVotesType_ClassLimitsOff;
+		}
+		else
+		{
+			voteType = NativeVotesType_ClassLimitsOn;
+		}
 	}
 	
 	return voteType;
@@ -2746,21 +2750,13 @@ stock NativeVotesOverride:TF2_VoteStringToVoteOverride(const String:voteString[]
 	{
 		overrideType = NativeVotesOverride_Eternaween;
 	}
-	else if (StrEqual(voteString, TF2_VOTE_STRING_AUTOBALANCE_ON, false))
+	else if (StrEqual(voteString, TF2_VOTE_STRING_AUTOBALANCE, false))
 	{
-		overrideType = NativeVotesOverride_AutoBalanceOn;
+		overrideType = NativeVotesOverride_AutoBalance;
 	}
-	else if (StrEqual(voteString, TF2_VOTE_STRING_AUTOBALANCE_OFF, false))
+	else if (StrEqual(voteString, TF2_VOTE_STRING_CLASSLIMIT, false))
 	{
-		overrideType = NativeVotesOverride_AutoBalanceOff;
-	}
-	else if (StrEqual(voteString, TF2_VOTE_STRING_CLASSLIMIT_ON, false))
-	{
-		overrideType = NativeVotesOverride_ClassLimitsOn;
-	}
-	else if (StrEqual(voteString, TF2_VOTE_STRING_CLASSLIMIT_OFF, false))
-	{
-		overrideType = NativeVotesOverride_ClassLimitsOff;
+		overrideType = NativeVotesOverride_ClassLimits;
 	}
 	
 	return overrideType;
@@ -2807,27 +2803,15 @@ stock bool:TF2_OverrideTypeToVoteString(NativeVotesOverride:overrideType, String
 			valid = true;
 		}
 		
-		case NativeVotesOverride_AutoBalanceOn:
+		case NativeVotesOverride_AutoBalance:
 		{
-			strcopy(voteString, maxlength, TF2_VOTE_STRING_AUTOBALANCE_ON);
+			strcopy(voteString, maxlength, TF2_VOTE_STRING_AUTOBALANCE);
 			valid = true;
 		}
 		
-		case NativeVotesOverride_AutoBalanceOff:
+		case NativeVotesOverride_ClassLimits:
 		{
-			strcopy(voteString, maxlength, TF2_VOTE_STRING_AUTOBALANCE_OFF);
-			valid = true;
-		}
-		
-		case NativeVotesOverride_ClassLimitsOn:
-		{
-			strcopy(voteString, maxlength, TF2_VOTE_STRING_CLASSLIMIT_ON);
-			valid = true;
-		}
-		
-		case NativeVotesOverride_ClassLimitsOff:
-		{
-			strcopy(voteString, maxlength, TF2_VOTE_STRING_CLASSLIMIT_OFF);
+			strcopy(voteString, maxlength, TF2_VOTE_STRING_CLASSLIMIT);
 			valid = true;
 		}
 	}
@@ -2876,27 +2860,29 @@ stock bool:TF2_OverrideTypeToTranslationString(NativeVotesOverride:overrideType,
 			valid = true;
 		}
 		
-		case NativeVotesOverride_AutoBalanceOn:
+		case NativeVotesOverride_AutoBalance:
 		{
-			strcopy(translationString, maxlength, TF2_VOTE_MENU_AUTOBALANCE_ON);
+			if (GetConVarBool(g_Cvar_AutoBalance))
+			{
+				strcopy(translationString, maxlength, TF2_VOTE_MENU_AUTOBALANCE_OFF);
+			}
+			else
+			{
+				strcopy(translationString, maxlength, TF2_VOTE_MENU_AUTOBALANCE_ON);
+			}
 			valid = true;
 		}
 		
-		case NativeVotesOverride_AutoBalanceOff:
+		case NativeVotesOverride_ClassLimits:
 		{
-			strcopy(translationString, maxlength, TF2_VOTE_MENU_AUTOBALANCE_OFF);
-			valid = true;
-		}
-		
-		case NativeVotesOverride_ClassLimitsOn:
-		{
-			strcopy(translationString, maxlength, TF2_VOTE_MENU_CLASSLIMIT_ON);
-			valid = true;
-		}
-		
-		case NativeVotesOverride_ClassLimitsOff:
-		{
-			strcopy(translationString, maxlength, TF2_VOTE_MENU_CLASSLIMIT_OFF);
+			if (GetConVarInt(g_Cvar_ClassLimit))
+			{
+				strcopy(translationString, maxlength, TF2_VOTE_MENU_CLASSLIMIT_OFF);
+			}
+			else
+			{
+				strcopy(translationString, maxlength, TF2_VOTE_MENU_CLASSLIMIT_ON);
+			}
 			valid = true;
 		}
 	}

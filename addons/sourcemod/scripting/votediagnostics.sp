@@ -476,13 +476,13 @@ public Action:TF2CSGO_MessageVoteSetup(UserMsg:msg_id, Handle:message, const pla
 		count = BfReadByte(message);
 		for (new i = 0; i < count; i++)
 		{
-			decl String:option[MAX_ARG_SIZE*2+1];
-			decl String:potential_issue[MAX_ARG_SIZE];
-			decl String:translation[MAX_ARG_SIZE];
+			new String:option[MAX_ARG_SIZE*2+1];
+			new String:potential_issue[MAX_ARG_SIZE];
+			new String:translation[MAX_ARG_SIZE];
 			BfReadString(message, potential_issue, MAX_ARG_SIZE);
 			BfReadString(message, translation, MAX_ARG_SIZE);
 			
-			new bool:enabled = BfReadBool(message);
+			new enabled = BfReadByte(message);
 			Format(option, sizeof(option), "(%s, %s, %d) ", potential_issue, translation, enabled);
 			
 			StrCat(options, sizeof(options), option);
