@@ -210,7 +210,7 @@ public OnPluginStart()
 	AddCommandListener(Command_Vote, "vote"); // All games, command listeners aren't case sensitive
 	
 	// The new version of the CallVote system is TF2 only
-	if (g_EngineVersion == Engine_TF2)
+	if (Game_AreVoteCommandsSupported())
 	{
 		AddCommandListener(Command_CallVote, "callvote");
 		

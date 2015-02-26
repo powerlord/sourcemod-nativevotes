@@ -1591,6 +1591,7 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		g_curDisplayClient = 0;
 		new maxCount = Data_GetItemCount(vote);
 		
+		/*
 		new Handle:optionsEvent = CreateEvent("vote_options");
 		for (new j = 0; j < maxCount; j++)
 		{
@@ -1603,7 +1604,8 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 		}
 		SetEventInt(optionsEvent, "count", maxCount);
 		FireEvent(optionsEvent);
-		
+		*/
+	
 		if (!bYesNo && actions & MenuAction_DisplayItem)
 		{
 			optionsEvent = CreateEvent("vote_options");
