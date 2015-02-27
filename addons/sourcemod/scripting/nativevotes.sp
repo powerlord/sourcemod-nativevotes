@@ -110,14 +110,21 @@ new g_ClientVotes[MAXPLAYERS+1];
 new bool:g_bRevoting[MAXPLAYERS+1];
 new String:g_LeaderList[1024];
 
-enum CallVoteData
+enum CallVoteForwards
 {
 	Handle:CallVote_Forward,
 	Handle:CallVote_Vis,
-	bool:voteDisabled,
 }
 
-new g_CallVotes[NativeVotesOverride][CallVoteData];
+enum CallVoteListData
+{
+	NativeVotesOverride:CallVoteList_VoteType,
+	bool:CallVoteList_VoteEnabled,
+}
+
+new g_CallVotes[NativeVotesOverride][CallVoteForwards];
+
+new Handle:g_Cvar_HideDisabledIssues;
 
 #include "nativevotes/game.sp"
 
@@ -212,6 +219,9 @@ public OnPluginStart()
 	// The new version of the CallVote system is TF2 only
 	if (Game_AreVoteCommandsSupported())
 	{
+		// TF2 specific, will move if we need to
+		g_Cvar_HideDisabledIssues = FindConVar("sv_vote_ui_hide_disabled_issues");
+		
 		AddCommandListener(Command_CallVote, "callvote");
 		
 		// None is type 0, which has no overrides
@@ -274,14 +284,24 @@ public Action:Command_CallVote(client, const String:command[], argc)
 		{
 			//TODO This section needs to be redone to deal with sv_vote_ui_hide_disabled_issues and votes that are only valid in MvM
 			
+			new Handle:hVoteTypes = CreateArray(_:CallVoteListData); // Stores arrays of CallVoteListData
+			
+			Game_AddDefaultVotes(hVoteTypes, GetConVarBool(g_Cvar_HideDisabledIssues));
+
 			new bool:overridesPresent = false;
-			new Handle:hVoteTypes = CreateArray();
 			for (new i = 1; i < sizeof(g_CallVotes); i++)
 			{
 				if (GetForwardFunctionCount(g_CallVotes[i][CallVote_Forward]) > 0)
 				{
 					overridesPresent = true;
-					PushArrayCell(hVoteTypes, i);
+					new NativeVotesOverride:override = NativeVotesOverride:i;
+					if (!FindVoteInArray(hVoteTypes, override))
+					{
+						new voteType[CallVoteListData];
+						voteType[CallVoteList_VoteType] = override;
+						voteType[CallVoteList_VoteEnabled] = true;
+						PushArrayArray(hVoteTypes, voteType[0]);
+					}
 				}
 			}
 			
@@ -291,10 +311,12 @@ public Action:Command_CallVote(client, const String:command[], argc)
 				LogMessage("Overriding VoteSetup message");
 #endif
 				Game_DisplayVoteSetup(client, hVoteTypes);
+				CloseHandle(hVoteTypes);
 				return Plugin_Handled;
 			}
 			else
 			{
+				CloseHandle(hVoteTypes);
 				return Plugin_Continue;
 			}
 		}
@@ -378,6 +400,23 @@ public Action:Command_CallVote(client, const String:command[], argc)
 	// Default to continue if we're not processing things
 	return result;
 
+}
+
+FindVoteInArray(Handle:array, NativeVotesOverride:value)
+{
+	new size = GetArraySize(array);
+	for (new i = 0; i < size; i++)
+	{
+		new voteData[CallVoteListData];
+		GetArrayArray(array, i, voteData[0]);
+		
+		if (voteData[CallVoteList_VoteType] == value)
+		{
+			return true;
+		}
+	}
+	
+	return false;
 }
 
 public OnVoteDelayChange(Handle:convar, const String:oldValue[], const String:newValue[])

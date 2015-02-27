@@ -260,7 +260,6 @@ new Handle:g_Cvar_MvM_VoteClassLimits_Enabled;
 
 new Handle:g_Cvar_ClassLimit;
 new Handle:g_Cvar_AutoBalance;
-new Handle:g_Cvar_HideDisabledIssues;
 
 bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 {
@@ -298,7 +297,6 @@ bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 			
 			g_Cvar_ClassLimit = FindConVar("tf_classlimit");
 			g_Cvar_AutoBalance = FindConVar("mp_autoteambalance");
-			g_Cvar_HideDisabledIssues = FindConVar("sv_vote_ui_hide_disabled_issues");
 			return true;
 		}
 	}
@@ -971,6 +969,17 @@ stock bool:Game_OverrideTypeToTranslationString(NativeVotesOverride:overrideType
 	}
 	
 	return false;
+}
+
+Game_AddDefaultVotes(Handle:hVoteTypes, bool:bHideDisabledVotes)
+{
+	switch (g_EngineVersion)
+	{
+		case Engine_TF2:
+		{
+			TF2_AddDefaultVotes(hVoteTypes, bHideDisabledVotes);
+		}
+	}
 }
 
 
@@ -1764,9 +1773,10 @@ TF2CSGO_DisplayVoteSetup(client, Handle:hVoteTypes)
 	{
 		new String:voteIssue[128];
 		
-		new NativeVotesOverride:overrideType = GetArrayCell(hVoteTypes, i);
+		new voteData[CallVoteListData];
+		GetArrayArray(hVoteTypes, i, voteData[0]);
 		
-		Game_OverrideTypeToVoteString(overrideType, voteIssue, sizeof(voteIssue));
+		Game_OverrideTypeToVoteString(voteData[CallVoteList_VoteType], voteIssue, sizeof(voteIssue));
 		
 		
 		if(g_bUserBuf)
@@ -1776,11 +1786,11 @@ TF2CSGO_DisplayVoteSetup(client, Handle:hVoteTypes)
 		else
 		{
 			new String:translation[128];
-			Game_OverrideTypeToTranslationString(overrideType, translation, sizeof(translation));
+			Game_OverrideTypeToTranslationString(voteData[CallVoteList_VoteType], translation, sizeof(translation));
 			
 			BfWriteString(voteSetup, voteIssue);
 			BfWriteString(voteSetup, translation);
-			BfWriteByte(voteSetup, 1); // This should be controlled by sv_vote_ui_hide_disabled_issues
+			BfWriteByte(voteSetup, voteData[CallVoteList_VoteEnabled]);
 		}
 	}
 	
@@ -2044,6 +2054,74 @@ TF2_VotePassToTranslation(NativeVotesPassType:passType, String:translation[], ma
 		{
 			strcopy(translation, maxlength, TF2_VOTE_CUSTOM);
 		}
+	}
+}
+
+TF2_AddDefaultVotes(Handle:hVoteTypes, bool:bHideDisabledVotes)
+{
+	new globalEnable = GetConVarBool(g_Cvar_Votes_Enabled);
+	if (!globalEnable && !bHideDisabledVotes)
+	{
+		return;
+	}
+
+	if (GameRules_GetProp("m_bPlayingMannVsMachine"))
+	{
+		// Default MvM vote types
+		
+		// Kick
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_Kick, globalEnable && GetConVarBool(g_Cvar_MvM_VoteKick_Enabled));
+		
+		// Restart
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_Restart, globalEnable && GetConVarBool(g_Cvar_VoteRestart_Enabled));
+		
+		// ChgLevel
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_ChgLevel, globalEnable && GetConVarBool(g_Cvar_VoteChangeLevel_Enabled));
+		
+		// ChgMission
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_ChgMission, globalEnable && GetConVarBool(g_Cvar_MvM_VoteChallenge_Enabled));
+		
+		// ClassLimits
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_ClassLimits, globalEnable && GetConVarBool(g_Cvar_MvM_VoteClassLimits_Enabled));
+	}
+	else
+	{
+		// Default vote types
+
+		// Kick
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_Kick, globalEnable && GetConVarBool(g_Cvar_VoteKick_Enabled));
+		
+		// Restart
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_Restart, globalEnable && GetConVarBool(g_Cvar_VoteRestart_Enabled));
+		
+		// ChgLevel
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_ChgLevel, globalEnable && GetConVarBool(g_Cvar_VoteChangeLevel_Enabled));
+		
+		// NextLevel
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_NextLevel, globalEnable && GetConVarBool(g_Cvar_VoteNextLevel_Enabled));
+		
+		// Scramble
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_Scramble, globalEnable && GetConVarBool(g_Cvar_VoteScramble_Enabled));
+		
+		// ClassLimits
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_ClassLimits, globalEnable && GetConVarBool(g_Cvar_VoteClassLimits_Enabled));
+		
+		// AutoBalance
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_AutoBalance, globalEnable && GetConVarBool(g_Cvar_VoteAutoBalance_Enabled));
+	}
+	
+}
+
+VoteTypeSet(Handle:hVoteTypes, bool:bHideDisabledVotes, NativeVotesOverride:voteType, bool:bEnabled)
+{
+	new voteList[CallVoteListData];
+	
+	if (bEnabled || !bHideDisabledVotes)
+	{
+		voteList[CallVoteList_VoteType] = voteType;
+		voteList[CallVoteList_VoteEnabled] = bEnabled;
+		
+		PushArrayArray(hVoteTypes, voteList[0]);
 	}
 }
 
@@ -2635,24 +2713,14 @@ stock NativeVotesOverride:TF2_VoteTypeToVoteOverride(NativeVotesType:voteType)
 			overrideType = NativeVotesOverride_Eternaween;
 		}
 		
-		case NativeVotesType_AutoBalanceOn:
+		case NativeVotesType_AutoBalanceOn, NativeVotesType_AutoBalanceOff:
 		{
-			overrideType = NativeVotesOverride_AutoBalanceOn;
+			overrideType = NativeVotesOverride_AutoBalance;
 		}
 		
-		case NativeVotesType_AutoBalanceOff:
+		case NativeVotesType_ClassLimitsOn, NativeVotesType_ClassLimitsOff:
 		{
-			overrideType = NativeVotesOverride_AutoBalanceOff;
-		}
-		
-		case NativeVotesType_ClassLimitsOn:
-		{
-			overrideType = NativeVotesOverride_ClassLimitsOn;
-		}
-		
-		case NativeVotesType_ClassLimitsOff:
-		{
-			overrideType = NativeVotesOverride_ClassLimitsOff;
+			overrideType = NativeVotesOverride_ClassLimits;
 		}
 	}
 	
@@ -2700,24 +2768,14 @@ stock NativeVotesType:TF2_VoteOverrideToVoteType(NativeVotesOverride:overrideTyp
 			voteType = NativeVotesType_Eternaween;
 		}
 		
-		case NativeVotesOverride_AutoBalanceOn:
+		case NativeVotesOverride_AutoBalance:
 		{
 			voteType = NativeVotesType_AutoBalanceOn;
 		}
 		
-		case NativeVotesOverride_AutoBalanceOff:
-		{
-			voteType = NativeVotesType_AutoBalanceOff;
-		}
-		
-		case NativeVotesOverride_ClassLimitsOn:
+		case NativeVotesOverride_ClassLimits:
 		{
 			voteType = NativeVotesType_ClassLimitsOn;
-		}
-		
-		case NativeVotesOverride_ClassLimitsOff:
-		{
-			voteType = NativeVotesType_ClassLimitsOff;
 		}
 	}
 	
