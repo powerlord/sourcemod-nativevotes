@@ -252,11 +252,13 @@ new Handle:g_Cvar_VoteNextLevel_Enabled;
 new Handle:g_Cvar_VoteChangeLevel_Enabled;
 new Handle:g_Cvar_MvM_VoteChangeLevel_Enabled;
 new Handle:g_Cvar_VoteRestart_Enabled;
+new Handle:g_Cvar_MvM_VoteRestart_Enabled;
 new Handle:g_Cvar_VoteScramble_Enabled;
 new Handle:g_Cvar_MvM_VoteChallenge_Enabled;
 new Handle:g_Cvar_VoteAutoBalance_Enabled;
 new Handle:g_Cvar_VoteClassLimits_Enabled;
 new Handle:g_Cvar_MvM_VoteClassLimits_Enabled;
+
 
 new Handle:g_Cvar_ClassLimit;
 new Handle:g_Cvar_AutoBalance;
@@ -289,6 +291,7 @@ bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 			g_Cvar_VoteChangeLevel_Enabled = FindConVar("sv_vote_issue_changelevel_allowed");
 			g_Cvar_MvM_VoteChangeLevel_Enabled = FindConVar("sv_vote_issue_changelevel_allowed_mvm");
 			g_Cvar_VoteRestart_Enabled = FindConVar("sv_vote_issue_restart_game_allowed");
+			g_Cvar_MvM_VoteRestart_Enabled = FindConVar("sv_vote_issue_restart_game_allowed_mvm");
 			g_Cvar_VoteScramble_Enabled = FindConVar("sv_vote_issue_scramble_teams_allowed");
 			g_Cvar_MvM_VoteChallenge_Enabled = FindConVar("sv_vote_issue_mvm_challenge_allowed");
 			g_Cvar_VoteAutoBalance_Enabled = FindConVar("sv_vote_issue_autobalance_allowed");
@@ -734,29 +737,21 @@ Game_DisplayVoteSetup(client, Handle:hVoteTypes)
 	{
 		case Engine_Left4Dead:
 		{
-			//L4D_ParseVoteSetup(hVoteTypes);
-			//PerformVisChecks(client, hVoteTypes, callVotes);
 			//L4D_DisplayVoteSetup(client, voteTypes);
 		}
 		
 		case Engine_Left4Dead2:
 		{
-			//L4D2_ParseVoteSetup(hVoteTypes);
-			//PerformVisChecks(client, hVoteTypes, callVotes);
 			//L4D2_DisplayVoteSetup(client, voteTypes);
 		}
 		
 		case Engine_TF2:
 		{
-			TF2_ParseVoteSetup(hVoteTypes);
-			PerformVisChecks(client, hVoteTypes);
 			TF2CSGO_DisplayVoteSetup(client, hVoteTypes);
 		}
 		
 		case Engine_CSGO:
 		{
-			//CSGO_ParseVoteSetup(hVoteTypes);
-			//PerformVisChecks(client, hVoteTypes, callVotes);
 			//TF2CSGO_DisplayVoteSetup(client, hVoteTypes);
 		}
 		
@@ -2060,7 +2055,7 @@ TF2_VotePassToTranslation(NativeVotesPassType:passType, String:translation[], ma
 TF2_AddDefaultVotes(Handle:hVoteTypes, bool:bHideDisabledVotes)
 {
 	new globalEnable = GetConVarBool(g_Cvar_Votes_Enabled);
-	if (!globalEnable && !bHideDisabledVotes)
+	if (!globalEnable && bHideDisabledVotes)
 	{
 		return;
 	}
@@ -2073,10 +2068,10 @@ TF2_AddDefaultVotes(Handle:hVoteTypes, bool:bHideDisabledVotes)
 		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_Kick, globalEnable && GetConVarBool(g_Cvar_MvM_VoteKick_Enabled));
 		
 		// Restart
-		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_Restart, globalEnable && GetConVarBool(g_Cvar_VoteRestart_Enabled));
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_Restart, globalEnable && GetConVarBool(g_Cvar_MvM_VoteRestart_Enabled));
 		
 		// ChgLevel
-		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_ChgLevel, globalEnable && GetConVarBool(g_Cvar_VoteChangeLevel_Enabled));
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_ChgLevel, globalEnable && GetConVarBool(g_Cvar_MvM_VoteChangeLevel_Enabled));
 		
 		// ChgMission
 		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_ChgMission, globalEnable && GetConVarBool(g_Cvar_MvM_VoteChallenge_Enabled));
@@ -2122,164 +2117,6 @@ VoteTypeSet(Handle:hVoteTypes, bool:bHideDisabledVotes, NativeVotesOverride:vote
 		voteList[CallVoteList_VoteEnabled] = bEnabled;
 		
 		PushArrayArray(hVoteTypes, voteList[0]);
-	}
-}
-
-//TODO This section needs to be redone to deal with sv_vote_ui_hide_disabled_issues and votes that are only valid in MvM
-TF2_ParseVoteSetup(Handle:hVoteTypes)
-{
-	if (!GetConVarBool(g_Cvar_Votes_Enabled))
-	{
-		return;
-	}
-	
-	new bool:isMvM = bool:GameRules_GetProp("m_bPlayingMannVsMachine");
-	if (isMvM)
-	{
-		if (GetConVarBool(g_Cvar_MvM_VoteClassLimits_Enabled))
-		{
-			if (GetConVarInt(g_Cvar_ClassLimit) > 0 && FindValueInArray(hVoteTypes, NativeVotesType_ClassLimitsOff) == -1)
-			{
-#if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT);
-#endif
-				ShiftArrayUp(hVoteTypes, 0);
-				SetArrayCell(hVoteTypes, 0, NativeVotesType_ClassLimitsOff);
-			}
-			else if (GetConVarInt(g_Cvar_ClassLimit) == 0 && FindValueInArray(hVoteTypes, NativeVotesType_ClassLimitsOn) == -1)
-			{
-#if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT);
-#endif
-				ShiftArrayUp(hVoteTypes, 0);
-				SetArrayCell(hVoteTypes, 0, NativeVotesType_ClassLimitsOn);
-			}
-		}
-		
-		if (GetConVarBool(g_Cvar_MvM_VoteChallenge_Enabled) && FindValueInArray(hVoteTypes, NativeVotesType_ChgMission) == -1)
-		{
-#if defined LOG
-			LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CHANGEMISSION);
-#endif
-			ShiftArrayUp(hVoteTypes, 0);
-			SetArrayCell(hVoteTypes, 0, NativeVotesType_ChgMission);
-		}
-			
-		if (GetConVarBool(g_Cvar_MvM_VoteChangeLevel_Enabled) && FindValueInArray(hVoteTypes, NativeVotesType_ChgLevel) == -1)
-		{
-#if defined LOG
-			LogMessage("Adding MvM vote: %s", TF2CSGO_VOTE_STRING_CHANGELEVEL);
-#endif
-			ShiftArrayUp(hVoteTypes, 0);
-			SetArrayCell(hVoteTypes, 0, NativeVotesType_ChgLevel);
-		}
-
-		if (GetConVarBool(g_Cvar_VoteRestart_Enabled) && FindValueInArray(hVoteTypes, NativeVotesType_Restart) == -1)
-		{
-#if defined LOG
-			LogMessage("Adding MvM vote: %s", TF2CSGO_VOTE_STRING_RESTART);
-#endif
-			ShiftArrayUp(hVoteTypes, 0);
-			SetArrayCell(hVoteTypes, 0, NativeVotesType_Restart);
-		}
-
-		if (GetConVarBool(g_Cvar_MvM_VoteKick_Enabled) && FindValueInArray(hVoteTypes, NativeVotesType_Kick) == -1)
-		{
-#if defined LOG
-			LogMessage("Adding MvM vote: %s", TF2CSGO_VOTE_STRING_KICK);
-#endif
-			ShiftArrayUp(hVoteTypes, 0);
-			SetArrayCell(hVoteTypes, 0,  NativeVotesType_Kick);
-		}
-		
-	}
-	else
-	{
-		if (GetConVarBool(g_Cvar_VoteAutoBalance_Enabled))
-		{
-			if (GetConVarBool(g_Cvar_AutoBalance) && FindValueInArray(hVoteTypes, NativeVotesType_AutoBalanceOff) == -1)
-			{
-#if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_AUTOBALANCE);
-#endif
-				ShiftArrayUp(hVoteTypes, 0);
-				SetArrayCell(hVoteTypes, 0, NativeVotesType_AutoBalanceOff);
-			}
-			else if (!GetConVarBool(g_Cvar_AutoBalance) && FindValueInArray(hVoteTypes, NativeVotesType_AutoBalanceOn) == -1)
-			{
-#if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_AUTOBALANCE);
-#endif
-				ShiftArrayUp(hVoteTypes, 0);
-				SetArrayCell(hVoteTypes, 0, NativeVotesType_AutoBalanceOn);
-			}
-		}
-		
-		if (GetConVarBool(g_Cvar_VoteClassLimits_Enabled))
-		{
-			if (GetConVarInt(g_Cvar_ClassLimit) > 0 && FindValueInArray(hVoteTypes, NativeVotesType_ClassLimitsOff) == -1)
-			{
-#if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT);
-#endif
-				ShiftArrayUp(hVoteTypes, 0);
-				SetArrayCell(hVoteTypes, 0, NativeVotesType_ClassLimitsOff);
-			}
-			else if (GetConVarInt(g_Cvar_ClassLimit) == 0 && FindValueInArray(hVoteTypes, NativeVotesType_ClassLimitsOn) == -1)
-			{
-#if defined LOG
-				LogMessage("Adding MvM vote: %s", TF2_VOTE_STRING_CLASSLIMIT);
-#endif
-				ShiftArrayUp(hVoteTypes, 0);
-				SetArrayCell(hVoteTypes, 0, NativeVotesType_ClassLimitsOn);
-			}
-		}
-		
-		if (GetConVarBool(g_Cvar_VoteScramble_Enabled) && FindValueInArray(hVoteTypes, NativeVotesType_ScrambleNow) == -1)
-		{
-#if defined LOG
-			LogMessage("Adding vote: %s", TF2CSGO_VOTE_STRING_SCRAMBLE);
-#endif
-			ShiftArrayUp(hVoteTypes, 0);
-			SetArrayCell(hVoteTypes, 0, NativeVotesType_ScrambleNow);
-		}
-		
-		if (GetConVarBool(g_Cvar_VoteNextLevel_Enabled) && FindValueInArray(hVoteTypes, NativeVotesType_NextLevel) == -1)
-		{
-#if defined LOG
-			LogMessage("Adding vote: %s", TF2CSGO_VOTE_STRING_NEXTLEVEL);
-#endif
-			ShiftArrayUp(hVoteTypes, 0);
-			SetArrayCell(hVoteTypes, 0, NativeVotesType_NextLevel);
-		}
-		
-		if (GetConVarBool(g_Cvar_VoteChangeLevel_Enabled) && FindValueInArray(hVoteTypes, NativeVotesType_ChgLevel) == -1)
-		{
-#if defined LOG
-			LogMessage("Adding vote: %s", TF2CSGO_VOTE_STRING_CHANGELEVEL);
-#endif
-			ShiftArrayUp(hVoteTypes, 0);
-			SetArrayCell(hVoteTypes, 0, NativeVotesType_ChgLevel);
-		}
-			
-		if (GetConVarBool(g_Cvar_VoteRestart_Enabled) && FindValueInArray(hVoteTypes, NativeVotesType_Restart) == -1)
-		{
-#if defined LOG
-			LogMessage("Adding vote: %s", TF2CSGO_VOTE_STRING_RESTART);
-#endif
-			ShiftArrayUp(hVoteTypes, 0);
-			SetArrayCell(hVoteTypes, 0, NativeVotesType_Restart);
-		}
-			
-		if (GetConVarBool(g_Cvar_VoteKick_Enabled) && FindValueInArray(hVoteTypes, NativeVotesType_Kick) == -1)
-		{
-#if defined LOG
-			LogMessage("Adding vote: %s", TF2CSGO_VOTE_STRING_KICK);
-#endif
-			ShiftArrayUp(hVoteTypes, 0);
-			SetArrayCell(hVoteTypes, 0, NativeVotesType_Kick);
-		}
-		
 	}
 }
 

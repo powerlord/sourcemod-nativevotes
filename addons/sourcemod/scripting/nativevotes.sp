@@ -225,6 +225,7 @@ public OnPluginStart()
 		AddCommandListener(Command_CallVote, "callvote");
 		
 		// None is type 0, which has no overrides
+		// As of 2015-02-27, there are 9 votes for a total of 18 private forwards created here.
 		for (new i = 1; i < sizeof(g_CallVotes); i++)
 		{
 			g_CallVotes[i][CallVote_Forward] = CreateForward(ET_Hook, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
@@ -282,23 +283,21 @@ public Action:Command_CallVote(client, const String:command[], argc)
 		// No args means that we need to return a CallVoteSetup usermessage
 		case 0:
 		{
-			//TODO This section needs to be redone to deal with sv_vote_ui_hide_disabled_issues and votes that are only valid in MvM
-			
 			new Handle:hVoteTypes = CreateArray(_:CallVoteListData); // Stores arrays of CallVoteListData
 			
 			Game_AddDefaultVotes(hVoteTypes, GetConVarBool(g_Cvar_HideDisabledIssues));
 
+			// Add our overridden votes to the system
 			new bool:overridesPresent = false;
 			for (new i = 1; i < sizeof(g_CallVotes); i++)
 			{
 				if (GetForwardFunctionCount(g_CallVotes[i][CallVote_Forward]) > 0)
 				{
 					overridesPresent = true;
-					new NativeVotesOverride:override = NativeVotesOverride:i;
-					if (!FindVoteInArray(hVoteTypes, override))
+					if (!FindVoteInArray(hVoteTypes, NativeVotesOverride:i))
 					{
 						new voteType[CallVoteListData];
-						voteType[CallVoteList_VoteType] = override;
+						voteType[CallVoteList_VoteType] = NativeVotesOverride:i;
 						voteType[CallVoteList_VoteEnabled] = true;
 						PushArrayArray(hVoteTypes, voteType[0]);
 					}
@@ -307,6 +306,7 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			
 			if (overridesPresent)
 			{
+				PerformVisChecks(client, hVoteTypes);
 #if defined LOG
 				LogMessage("Overriding VoteSetup message");
 #endif
@@ -1252,19 +1252,30 @@ PerformVisChecks(client, Handle:hVoteTypes)
 	// Iterate backwards so we can safely remove items
 	for (new i = GetArraySize(hVoteTypes) - 1; i >= 0; i--)
 	{
-		new NativeVotesOverride:overrideType = GetArrayCell(hVoteTypes, i);
+		new voteData[CallVoteListData];
+		GetArrayArray(hVoteTypes, i, voteData[0]);
+		
 		new Action:hide = Plugin_Continue;
 		
 #if defined LOG
-		LogMessage("Checking visibility forward for %d: %d", overrideType, g_CallVotes[overrideType][CallVote_Vis]);
+		LogMessage("Checking visibility forward for %d: %d", voteData[CallVoteList_VoteType], g_CallVotes[voteData[CallVoteList_VoteType]][CallVote_Vis]);
 #endif
-		Call_StartForward(g_CallVotes[overrideType][CallVote_Vis]);
+		Call_StartForward(g_CallVotes[voteData[CallVoteList_VoteType]][CallVote_Vis]);
 		Call_PushCell(client);
-		Call_PushCell(overrideType);
+		Call_PushCell(voteData[CallVoteList_VoteType]);
 		Call_Finish(hide);
 		if (hide >= Plugin_Handled)
 		{
-			RemoveFromArray(hVoteTypes, i);
+			if (GetConVarBool(g_Cvar_HideDisabledIssues))
+			{
+				// Since we hide disabled issues, remove it from the arraylist
+				RemoveFromArray(hVoteTypes, i);
+			}
+			else
+			{
+				// Arrays are pass by ref, so this should update the one inside the ArrayList
+				voteData[CallVoteList_VoteEnabled] = false;
+			}
 		}
 	}
 }
