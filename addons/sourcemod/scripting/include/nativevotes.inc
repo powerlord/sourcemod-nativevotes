@@ -121,7 +121,7 @@ enum NativeVotesPassType
 	NativeVotesPass_Custom,				/**< Details are custom pass message */
 	NativeVotesPass_ChgCampaign,		/**< L4D/L4D2: Details are campaign name */
 	NativeVotesPass_ChgDifficulty,		/**< L4D/L4D2/TF2: Details are difficulty number in L4D/L4D2 and mission name in TF2 */
-	NativeVotesPass_ReturnToLobby,      /**< L4D/L4D2: Details are ignored */
+	NativeVotesPass_ReturnToLobby,		/**< L4D/L4D2: Details are ignored */
 	NativeVotesPass_AlltalkOn,			/**< L4D2: Details are ignored */
 	NativeVotesPass_AlltalkOff,			/**< L4D2: Details are ignored */
 	NativeVotesPass_Restart,			/**< Details are ignored */
@@ -148,33 +148,41 @@ enum NativeVotesPassType
  */
 enum NativeVotesFailType
 {
-	NativeVotesFail_Generic = 0,		/**< Vote was generically cancelled. */
+	NativeVotesFail_Generic = 0,			/**< Vote was generically cancelled. */
 	NativeVotesFail_Loses = 3,			/**< No votes outnumbered Yes votes */
 	NativeVotesFail_NotEnoughVotes = 4,	/**< Vote did not receive enough votes. */
 };
 
 /**
  * Reasons a callvote command failed.
- * This is provided as a convenience to plugin authors as it's not strictly part of the vote system
+ * 
+ * This will mainly be used by VoteCommand overrides, although it is available to all games
+ * as a convenience.
+ * 
+ * Note:
+ * 0-1 match for all games.
+ * 2-14 match for TF2 and CS:GO
+ * 15 is different for TF2 and CS:GO as they were added after the vote system was copied.
+ * 16+ are exclusive to TF2.
  */
 enum NativeVotesCallFailType
 {
-	NativeVotesCallFail_Generic = 0,			/**< Generic fail. */
-	NativeVotesCallFail_Loading = 1,			/**< L4D/L4D2: Players are still loading. */
+	NativeVotesCallFail_Generic = 0,				/**< Generic fail. */
+	NativeVotesCallFail_Loading = 1,				/**< L4D/L4D2: Players are still loading. */
 	NativeVotesCallFail_Recent = 2,				/**< TF2/CS:GO: You can't call another vote yet: Argument is seconds until you can call another vote. */
 	NativeVotesCallFail_Disabled = 5,			/**< TF2/CS:GO: Server has disabled that issue. */
-	NativeVotesCallFail_MapNotFound = 6,		/**< TF2/CS:GO: Server does not have that map. */
+	NativeVotesCallFail_MapNotFound = 6,			/**< TF2/CS:GO: Server does not have that map. */
 	NativeVotesCallFail_SpecifyMap = 7,			/**< TF2/CS:GO: You must specify a map. */
 	NativeVotesCallFail_Failed = 8,				/**< TF2/CS:GO: This vote failed recently: Argument is seconds until this vote can be called again. */
 	NativeVotesCallFail_WrongTeam = 9,			/**< TF2/CS:GO: Team can't call this vote. */
 	NativeVotesCallFail_Waiting = 10,			/**< TF2/CS:GO: Vote can't be called during Waiting For Players. */
-	NativeVotesCallFail_PlayerNotFound = 11,	/**< TF2/CS:GO: Player to kick can't be found. Buggy in TF2. */
+	NativeVotesCallFail_PlayerNotFound = 11,		/**< TF2/CS:GO: Player to kick can't be found. Buggy in TF2. */
 	NativeVotesCallFail_Unknown = 11,
 	NativeVotesCallFail_CantKickAdmin = 12,		/**< TF2/CS:GO: Can't kick server admin. */
 	NativeVotesCallFail_ScramblePending = 13,	/**< TF2/CS:GO: Team Scramble is pending. */
-	NativeVotesCallFail_Spectators = 14,		/**< TF2/CS:GO: Spectators aren't allowed to call votes. */
+	NativeVotesCallFail_Spectators = 14,			/**< TF2/CS:GO: Spectators aren't allowed to call votes. */
 	NativeVotesCallFail_LevelSet = 15,			/**< TF2: Next level already set. */
-	NativeVotesCallFail_Warmup = 15,			/**< CSGO: Vote can't be called during Warmup */
+	NativeVotesCallFail_Warmup = 15,				/**< CSGO: Vote can't be called during Warmup */
 	NativeVotesCallFail_MapNotValid = 16,		/**< TF2: Map is not in MapCycle. */
 	NativeVotesCallFail_KickTime = 17,			/**< TF2: Cannot kick at this time: Argument is seconds until you can call another kick vote. */
 	NativeVotesCallFail_KickDuringRound = 18,	/**< TF2: Cannot kick during a round. */
@@ -193,6 +201,9 @@ enum NativeVotesKickType
 /**
  * Types of votes that can be overridden in the client vote menu
  * 
+ * Note that menus use the same command for enable and disable votes,
+ * so their overrides reflect this
+ * 
  * Only TF2 supports this feature
  */
 enum NativeVotesOverride
@@ -209,7 +220,7 @@ enum NativeVotesOverride
 	NativeVotesOverride_ClassLimits,
 }
 
-/*
+/**
  * Is a specific vote type supported by this game?
  * 
  * @param voteType			Vote type
@@ -220,14 +231,14 @@ native bool:NativeVotes_IsVoteTypeSupported(NativeVotesType:voteType);
  * Creates a new, empty vote.
  * 
  * @param handler			Function which will receive vote actions.
- * @param voteType			Vote type, cannot be changed after set
- * @param actions			Optionally set which actions to receive.  Start, 
- *							Cancel, and End will always be received regardless
- *							of whether they are set or not.  They are also
- *							the only default actions.
- * @return					A new vote Handle on INVALID_HANDLE if a vote type is unsupported by this game.
+ * @param voteType		Vote type, cannot be changed after set
+ * @param actions			Optionally set which actions to receive.  VoteStart,
+ * 						VoteCancel, VoteEnd, and End will always be received
+ * 						regardless of whether they are set or not.  They are
+ * 						also the only default actions.
+ * @return				A new vote Handle on INVALID_HANDLE if a vote type is unsupported by this game.
  */
-native Handle:NativeVotes_Create(MenuHandler:handler, NativeVotesType:voteType,
+native Handle:NativeVotes_Create(NativeVotes_Handler:handler, NativeVotesType:voteType,
 							MenuAction:actions=NATIVEVOTES_ACTIONS_DEFAULT);
 
 /**
@@ -436,18 +447,30 @@ native NativeVotes_GetOptionFlags(Handle:vote);
 native NativeVotes_Cancel();
 
 /**
+ * Called when a vote action is completed.
+ * 
+ * This is a clone of the SM 1.6 MenuHandler for future compatibility.
+ *
+ * @param vote			The vote being acted upon.
+ * @param action			The action of the vote.
+ * @param param1			First action parameter (usually the client).
+ * @param param2			Second action parameter (usually the item).
+ */
+functag public NativeVotes_Handler(Handle:vote, MenuAction:action, param1, param2);
+
+/**
  * Callback for when a vote has ended and results are available.
  * 
  * Due to SourceMod Forward limitations in plugins, multi-dimension arrays can't be passed
  * to forwards.  This means we have to split the client_info and item_info arrays into
  * their components.
  * 
- * @param vote				The vote being voted on.
- * @param num_votes			Number of votes tallied in total.
+ * @param vote			The vote being voted on.
+ * @param num_votes		Number of votes tallied in total.
  * @param num_clients		Number of clients who could vote.
  * @param client_indexes	Array of client indexes. Parallel with client_votes.
  * @param client_votes		Array of client votes. Parallel with client_indexes.
- * @param num_items			Number of unique items that were selected.
+ * @param num_items		Number of unique items that were selected.
  * @param item_indexes		Array of vote item indexes. Parallel with item_votes..
  * @param item_votes		Array of vote vote counts. Parallel with item_indexes.
  * @noreturn
