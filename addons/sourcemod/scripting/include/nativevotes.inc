@@ -327,7 +327,7 @@ native NativeVotes_GetItemCount(Handle:vote);
  * @noreturn
  * @error					Invalid Handle.
  */
-native NativeVotes_SetDetails(Handle:vote, const String:argument[]);
+native NativeVotes_SetDetails(Handle:vote, String:fmt[], any:...);
 
 /**
  * Returns the text of a vote's details if set.
@@ -348,7 +348,7 @@ native NativeVotes_GetDetails(Handle:vote, String:buffer[], maxlength);
  * @noreturn
  * @error					Invalid Handle.
  */
-native NativeVotes_SetTitle(Handle:vote, const String:argument[]);
+native NativeVotes_SetTitle(Handle:vote, String:fmt[], any:...);
 
 /**
  * Return the vote's Title.

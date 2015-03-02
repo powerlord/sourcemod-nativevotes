@@ -1553,7 +1553,7 @@ public Native_GetDetails(Handle:plugin, numParams)
 	SetNativeString(2, details, len);
 }
 
-// native NativeVotes_SetDetails(Handle:vote, const String:argument[]);
+// native NativeVotes_SetDetails(Handle:vote, String:fmt[], any:...);
 public Native_SetDetails(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1563,11 +1563,9 @@ public Native_SetDetails(Handle:plugin, numParams)
 		return;
 	}
 	
-	new len;
-	GetNativeStringLength(2, len);
+	new String:details[MAX_VOTE_DETAILS_LENGTH];
 	
-	decl String:details[len+1];
-	GetNativeString(2, details, len+1);
+	FormatNativeString(0, 2, 3, sizeof(details), _, details);
 	
 	Data_SetDetails(vote, details);
 }
@@ -1591,7 +1589,7 @@ public Native_GetTitle(Handle:plugin, numParams)
 	SetNativeString(2, title, len);
 }
 
-// native NativeVotes_SetTitle(Handle:vote, const String:argument[]);
+// native NativeVotes_SetTitle(Handle:vote, String:fmt[], any:...);
 public Native_SetTitle(Handle:plugin, numParams)
 {
 	new Handle:vote = GetNativeCell(1);
@@ -1601,11 +1599,9 @@ public Native_SetTitle(Handle:plugin, numParams)
 		return;
 	}
 	
-	new len;
-	GetNativeStringLength(2, len);
+	new String:details[MAX_VOTE_DETAILS_LENGTH];
 	
-	decl String:details[len+1];
-	GetNativeString(2, details, len+1);
+	FormatNativeString(0, 2, 3, sizeof(details), _, details);
 	
 	Data_SetTitle(vote, details);
 }
