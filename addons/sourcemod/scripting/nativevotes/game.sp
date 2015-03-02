@@ -68,15 +68,15 @@
 #define L4D_VOTE_CHANGELEVEL_PASSED			"#L4D_vote_passed_chapter_change"
 
 // User vote to return to lobby.
-#define L4D_VOTE_RETURNTOLOBBY_START		"#L4D_vote_return_to_lobby"
+#define L4D_VOTE_RETURNTOLOBBY_START			"#L4D_vote_return_to_lobby"
 #define L4D_VOTE_RETURNTOLOBBY_PASSED		"#L4D_vote_passed_return_to_lobby"
 
 // User vote to change difficulty.
 #define L4D_VOTE_CHANGEDIFFICULTY_START		"#L4D_vote_change_difficulty"
-#define L4D_VOTE_CHANGEDIFFICULTY_PASSED	"#L4D_vote_passed_change_difficulty"
+#define L4D_VOTE_CHANGEDIFFICULTY_PASSED		"#L4D_vote_passed_change_difficulty"
 
 // While not a vote string, it works just as well.
-#define L4D_VOTE_CUSTOM						"#L4D_TargetID_Player"
+#define L4D_VOTE_CUSTOM					"#L4D_TargetID_Player"
 
 //----------------------------------------------------------------------------
 // L4D2
@@ -95,7 +95,7 @@
 #define TF2CSGO_VOTE_STRING_RESTART			"RestartGame"
 #define TF2CSGO_VOTE_STRING_CHANGELEVEL		"ChangeLevel"
 #define TF2CSGO_VOTE_STRING_NEXTLEVEL		"NextLevel"
-#define TF2CSGO_VOTE_STRING_SCRAMBLE		"ScrambleTeams"
+#define TF2CSGO_VOTE_STRING_SCRAMBLE			"ScrambleTeams"
 
 //----------------------------------------------------------------------------
 // TF2
@@ -125,8 +125,8 @@
 
 // User vote to kick user.
 #define TF2_VOTE_KICK_IDLE_START			"#TF_vote_kick_player_idle"
-#define TF2_VOTE_KICK_SCAMMING_START		"#TF_vote_kick_player_scamming"
-#define TF2_VOTE_KICK_CHEATING_START		"#TF_vote_kick_player_cheating"
+#define TF2_VOTE_KICK_SCAMMING_START			"#TF_vote_kick_player_scamming"
+#define TF2_VOTE_KICK_CHEATING_START			"#TF_vote_kick_player_cheating"
 #define TF2_VOTE_KICK_START					"#TF_vote_kick_player_other"
 #define TF2_VOTE_KICK_PASSED				"#TF_vote_passed_kick_player"
 
@@ -141,16 +141,16 @@
 // User vote to change next level.
 #define TF2_VOTE_NEXTLEVEL_SINGLE_START		"#TF_vote_nextlevel"
 #define TF2_VOTE_NEXTLEVEL_MULTIPLE_START	"#TF_vote_nextlevel_choices" // Started by server
-#define TF2_VOTE_NEXTLEVEL_EXTEND_PASSED	"#TF_vote_passed_nextlevel_extend"
+#define TF2_VOTE_NEXTLEVEL_EXTEND_PASSED		"#TF_vote_passed_nextlevel_extend"
 #define TF2_VOTE_NEXTLEVEL_PASSED			"#TF_vote_passed_nextlevel"
 
 // User vote to scramble teams.  Can be immediate or end of round.
 #define TF2_VOTE_SCRAMBLE_IMMEDIATE_START	"#TF_vote_scramble_teams"
-#define TF2_VOTE_SCRAMBLE_ROUNDEND_START	"#TF_vote_should_scramble_round"
+#define TF2_VOTE_SCRAMBLE_ROUNDEND_START		"#TF_vote_should_scramble_round"
 #define TF2_VOTE_SCRAMBLE_PASSED 			"#TF_vote_passed_scramble_teams"
 
 // User vote to change MvM mission
-#define TF2_VOTE_CHANGEMISSION_START		"#TF_vote_changechallenge"
+#define TF2_VOTE_CHANGEMISSION_START			"#TF_vote_changechallenge"
 #define TF2_VOTE_CHANGEMISSION_PASSED		"#TF_vote_passed_changechallenge"
 
 // User vote for eternaween
@@ -178,7 +178,7 @@
 #define TF2_VOTE_CLASSLIMITS_DISABLE_PASSED	"#TF_vote_passed_classlimits_disable"
 
 // While not a vote string, it works just as well.
-#define TF2_VOTE_CUSTOM						"#TF_playerid_noteam"
+#define TF2_VOTE_CUSTOM					"#TF_playerid_noteam"
 
 //----------------------------------------------------------------------------
 // CSGO
@@ -196,10 +196,10 @@
 
 // User vote to change maps.
 #define CSGO_VOTE_CHANGELEVEL_START			"#SFUI_vote_changelevel"
-#define CSGO_VOTE_CHANGELEVEL_PASSED		"#SFUI_vote_passed_changelevel"
+#define CSGO_VOTE_CHANGELEVEL_PASSED			"#SFUI_vote_passed_changelevel"
 
 // User vote to change next level.
-#define CSGO_VOTE_NEXTLEVEL_SINGLE_START	"#SFUI_vote_nextlevel"
+#define CSGO_VOTE_NEXTLEVEL_SINGLE_START		"#SFUI_vote_nextlevel"
 #define CSGO_VOTE_NEXTLEVEL_MULTIPLE_START	"#SFUI_vote_nextlevel_choices" // Started by server
 #define CSGO_VOTE_NEXTLEVEL_EXTEND_PASSED	"#SFUI_vote_passed_nextlevel_extend"
 #define CSGO_VOTE_NEXTLEVEL_PASSED			"#SFUI_vote_passed_nextlevel"
@@ -220,7 +220,7 @@
 #define CSGO_VOTE_REMATCH_PASSED			"#SFUI_vote_passed_rematch"
 
 #define CSGO_VOTE_CONTINUE_START			"#SFUI_vote_continue"
-#define CSGO_VOTE_CONTINUE_OTHERTEAM		"#SFUI_otherteam_vote_continue_or_surrender"
+#define CSGO_VOTE_CONTINUE_OTHERTEAM			"#SFUI_otherteam_vote_continue_or_surrender"
 #define CSGO_VOTE_CONTINUE_PASSED			"#SFUI_vote_passed_continue"
 
 #define CSGO_VOTE_UNIMPLEMENTED_OTHERTEAM	"#SFUI_otherteam_vote_unimplemented"
@@ -242,26 +242,27 @@ enum
 	ValveVote_SwapTeams = 5,
 }
 
-new g_VoteController = -1;
-new g_bUserBuf = false;
+static g_VoteController = -1;
+static g_bUserBuf = false;
 
-new Handle:g_Cvar_Votes_Enabled;
-new Handle:g_Cvar_VoteKick_Enabled;
-new Handle:g_Cvar_MvM_VoteKick_Enabled;
-new Handle:g_Cvar_VoteNextLevel_Enabled;
-new Handle:g_Cvar_VoteChangeLevel_Enabled;
-new Handle:g_Cvar_MvM_VoteChangeLevel_Enabled;
-new Handle:g_Cvar_VoteRestart_Enabled;
-new Handle:g_Cvar_MvM_VoteRestart_Enabled;
-new Handle:g_Cvar_VoteScramble_Enabled;
-new Handle:g_Cvar_MvM_VoteChallenge_Enabled;
-new Handle:g_Cvar_VoteAutoBalance_Enabled;
-new Handle:g_Cvar_VoteClassLimits_Enabled;
-new Handle:g_Cvar_MvM_VoteClassLimits_Enabled;
+static Handle:g_Cvar_Votes_Enabled;
+static Handle:g_Cvar_VoteKick_Enabled;
+static Handle:g_Cvar_MvM_VoteKick_Enabled;
+static Handle:g_Cvar_VoteNextLevel_Enabled;
+static Handle:g_Cvar_VoteChangeLevel_Enabled;
+static Handle:g_Cvar_MvM_VoteChangeLevel_Enabled;
+static Handle:g_Cvar_VoteRestart_Enabled;
+static Handle:g_Cvar_MvM_VoteRestart_Enabled;
+static Handle:g_Cvar_VoteScramble_Enabled;
+static Handle:g_Cvar_MvM_VoteChallenge_Enabled;
+static Handle:g_Cvar_VoteAutoBalance_Enabled;
+static Handle:g_Cvar_VoteClassLimits_Enabled;
+static Handle:g_Cvar_MvM_VoteClassLimits_Enabled;
 
+static Handle:g_Cvar_ClassLimit;
+static Handle:g_Cvar_AutoBalance;
 
-new Handle:g_Cvar_ClassLimit;
-new Handle:g_Cvar_AutoBalance;
+static Handle:g_Cvar_HideDisabledIssues;
 
 bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 {
@@ -276,10 +277,22 @@ bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 	
 	switch (g_EngineVersion)
 	{
+		case Engine_Left4Dead, Engine_Left4Dead2, Engine_CSGO, Engine_TF2:
+		{
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+Game_InitializeCvars()
+{
+	switch (g_EngineVersion)
+	{
 		case Engine_Left4Dead, Engine_Left4Dead2, Engine_CSGO:
 		{
 			g_Cvar_Votes_Enabled = FindConVar("sv_allow_votes");
-			return true;
 		}
 		
 		case Engine_TF2:
@@ -300,11 +313,10 @@ bool:Game_IsGameSupported(String:engineName[]="", maxlength=0)
 			
 			g_Cvar_ClassLimit = FindConVar("tf_classlimit");
 			g_Cvar_AutoBalance = FindConVar("mp_autoteambalance");
-			return true;
+			
+			g_Cvar_HideDisabledIssues = FindConVar("sv_vote_ui_hide_disabled_issues");
 		}
 	}
-	
-	return false;
 }
 
 NativeVotesKickType:Game_GetKickType(const String:param1[], &target)
@@ -966,17 +978,29 @@ stock bool:Game_OverrideTypeToTranslationString(NativeVotesOverride:overrideType
 	return false;
 }
 
-Game_AddDefaultVotes(Handle:hVoteTypes, bool:bHideDisabledVotes)
+Game_AddDefaultVotes(Handle:hVoteTypes)
 {
 	switch (g_EngineVersion)
 	{
 		case Engine_TF2:
 		{
-			TF2_AddDefaultVotes(hVoteTypes, bHideDisabledVotes);
+			TF2_AddDefaultVotes(hVoteTypes, Game_AreDisabledIssuesHidden());
 		}
 	}
 }
 
+bool:Game_AreDisabledIssuesHidden()
+{
+	switch (g_EngineVersion)
+	{
+		case Engine_TF2:
+		{
+			return GetConVarBool(g_Cvar_HideDisabledIssues);
+		}
+	}
+	
+	return true;
+}
 
 //----------------------------------------------------------------------------
 // L4D/L4D2 shared functions
@@ -1505,7 +1529,8 @@ TF2CSGO_DisplayVote(Handle:vote, clients[], num_clients)
 	
 	new String:details[MAX_VOTE_DETAILS_LENGTH];
 	
-	new voteIndex = TF2CSGO_GetVoteType(voteType);
+	//new voteIndex = TF2CSGO_GetVoteType(voteType);
+	new voteIndex = 0;
 	
 	switch (voteType)
 	{
@@ -2349,7 +2374,7 @@ CSGO_ParseVoteSetup(Handle:hVoteTypes)
 }
 */
 
-TF2CSGO_GetVoteType(NativeVotesType:voteType)
+stock TF2CSGO_GetVoteType(NativeVotesType:voteType)
 {
 	new valveVoteType = ValveVote_Restart;
 	

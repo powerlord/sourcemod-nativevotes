@@ -124,8 +124,6 @@ enum CallVoteListData
 
 new g_CallVotes[NativeVotesOverride][CallVoteForwards];
 
-new Handle:g_Cvar_HideDisabledIssues;
-
 #include "nativevotes/game.sp"
 
 public Plugin:myinfo = 
@@ -212,6 +210,8 @@ public OnPluginStart()
 	g_Cvar_VoteClientConsole = CreateConVar("nativevotes_progress_client_console", "0", "Show current vote progress as console messages to clients", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_Cvar_VoteDelay = CreateConVar("nativevotes_vote_delay", "30", "Sets the recommended time in between public votes", FCVAR_NONE, true, 0.0, true);
 	
+	Game_InitializeCvars();
+	
 	HookConVarChange(g_Cvar_VoteDelay, OnVoteDelayChange);
 
 	AddCommandListener(Command_Vote, "vote"); // All games, command listeners aren't case sensitive
@@ -219,9 +219,6 @@ public OnPluginStart()
 	// The new version of the CallVote system is TF2 only
 	if (Game_AreVoteCommandsSupported())
 	{
-		// TF2 specific, will move if we need to
-		g_Cvar_HideDisabledIssues = FindConVar("sv_vote_ui_hide_disabled_issues");
-		
 		AddCommandListener(Command_CallVote, "callvote");
 		
 		// None is type 0, which has no overrides
@@ -285,7 +282,7 @@ public Action:Command_CallVote(client, const String:command[], argc)
 		{
 			new Handle:hVoteTypes = CreateArray(_:CallVoteListData); // Stores arrays of CallVoteListData
 			
-			Game_AddDefaultVotes(hVoteTypes, GetConVarBool(g_Cvar_HideDisabledIssues));
+			Game_AddDefaultVotes(hVoteTypes);
 
 			// Add our overridden votes to the system
 			new bool:overridesPresent = false;
@@ -1266,7 +1263,7 @@ PerformVisChecks(client, Handle:hVoteTypes)
 		Call_Finish(hide);
 		if (hide >= Plugin_Handled)
 		{
-			if (GetConVarBool(g_Cvar_HideDisabledIssues))
+			if (Game_AreDisabledIssuesHidden())
 			{
 				// Since we hide disabled issues, remove it from the arraylist
 				RemoveFromArray(hVoteTypes, i);
