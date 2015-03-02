@@ -86,7 +86,7 @@ new Handle:g_Cvar_VoteDelay;
 
 //----------------------------------------------------------------------------
 // Used to track current vote data
-new Handle:g_hVoteTimer;
+//new Handle:g_hVoteTimer;
 new Handle:g_hDisplayTimer;
 
 new g_Clients;
@@ -451,7 +451,7 @@ public OnMapEnd()
 		g_hDisplayTimer = INVALID_HANDLE;
 	}
 
-	g_hVoteTimer = INVALID_HANDLE;
+//	g_hVoteTimer = INVALID_HANDLE;
 }
 
 public Action:Command_Vote(client, const String:command[], argc)
@@ -862,7 +862,7 @@ EndVoting()
 		 * we need to save our states.
 		 */
 		new Handle:vote = g_hCurVote;
-		Internal_Reset();
+		Internal_Reset(true);
 		OnVoteCancel(vote, VoteCancel_Generic);
 		OnEnd(vote, MenuEnd_VotingCancelled);
 		return;
@@ -1138,7 +1138,7 @@ stock Internal_GetCurrentVote()
 	return g_hCurVote;
 }
 
-Internal_Reset()
+Internal_Reset(bool:cancel=false)
 {
 	g_Clients = 0;
 	g_Items = 0;
@@ -1155,7 +1155,10 @@ Internal_Reset()
 		g_hDisplayTimer = INVALID_HANDLE;
 	}
 	
-	CreateTimer(5.0, Game_ResetVote, TIMER_FLAG_NO_MAPCHANGE);
+	if (!cancel)
+	{
+		CreateTimer(5.0, Game_ResetVote, TIMER_FLAG_NO_MAPCHANGE);
+	}
 }
 
 bool:Internal_IsVoteInProgress()
@@ -1337,12 +1340,14 @@ public Native_Close(Handle:plugin, numParams)
 	if (g_hCurVote == vote)
 	{
 		g_hCurVote = INVALID_HANDLE;
-		
+
+/*		
 		if (g_hVoteTimer != INVALID_HANDLE)
 		{
 			KillTimer(g_hVoteTimer);
 			g_hVoteTimer = INVALID_HANDLE;
 		}
+*/
 	}
 	
 	// This bit is necessary because the Forward system appears to not remove these when the forward Handle is closed
