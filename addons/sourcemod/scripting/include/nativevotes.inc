@@ -504,6 +504,7 @@ functag public NativeVotes_VoteHandler(Handle:vote,
  *							defines.
  * @noreturn
  */
+#pragma deprecated NativeVotes_VoteHandler has an incompatible signature with VoteHandler now
 stock NativeVotes_FixResults(num_clients,
 							const client_indexes[],
 							const client_votes[],
