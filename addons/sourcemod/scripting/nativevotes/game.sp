@@ -571,21 +571,21 @@ Game_DisplayRawVoteFail(NativeVotesFailType:reason, team, client=0)
 #endif
 }
 
-Game_DisplayVotePass(Handle:vote, const String:details[], client=0)
+Game_DisplayVotePass(Handle:vote, const String:details[]="", client=0)
 {
 	new NativeVotesPassType:passType = VoteTypeToVotePass(Data_GetType(vote));
 	
 	Game_DisplayVotePassEx(vote, passType, details, client);
 }
 
-Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const String:details[], client=0)
+Game_DisplayVotePassEx(Handle:vote, NativeVotesPassType:passType, const String:details[]="", client=0)
 {
 	new team = Data_GetTeam(vote);
 
-	Game_DisplayRawVotePass(passType, details, team, client);
+	Game_DisplayRawVotePass(passType, team, client, details);
 }
 
-Game_DisplayRawVotePass(NativeVotesPassType:passType, const String:details[], team, client=0)
+Game_DisplayRawVotePass(NativeVotesPassType:passType, team, client=0, const String:details[]="")
 {
 	decl String:translation[TRANSLATION_LENGTH];
 

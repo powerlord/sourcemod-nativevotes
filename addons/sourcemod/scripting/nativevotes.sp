@@ -179,7 +179,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_DisplayPass", Native_DisplayPass);
 	CreateNative("NativeVotes_DisplayPassCustomToOne", Native_DisplayPassCustomToOne);
 	CreateNative("NativeVotes_DisplayPassEx", Native_DisplayPassEx);
-	CreateNative("NativeVotes_DisplayRawPass", Native_DisplayRawPass);
+	//CreateNative("NativeVotes_DisplayRawPass", Native_DisplayRawPass);
 	CreateNative("NativeVotes_DisplayRawPassToOne", Native_DisplayRawPassToOne);
 	CreateNative("NativeVotes_DisplayRawPassCustomToOne", Native_DisplayRawPassCustomToOne);
 	CreateNative("NativeVotes_DisplayFail", Native_DisplayFail);
@@ -1569,7 +1569,8 @@ public Native_SetDetails(Handle:plugin, numParams)
 	}
 	
 	new String:details[MAX_VOTE_DETAILS_LENGTH];
-	
+
+	//SetGlobalTransTarget(LANG_SERVER);
 	FormatNativeString(0, 2, 3, sizeof(details), _, details);
 	
 	Data_SetDetails(vote, details);
@@ -1606,6 +1607,7 @@ public Native_SetTitle(Handle:plugin, numParams)
 	
 	new String:details[MAX_VOTE_DETAILS_LENGTH];
 	
+	//SetGlobalTransTarget(LANG_SERVER);
 	FormatNativeString(0, 2, 3, sizeof(details), _, details);
 	
 	Data_SetTitle(vote, details);
@@ -1846,12 +1848,18 @@ public Native_DisplayPass(Handle:plugin, numParams)
 		return;
 	}
 
-	new len;
-	GetNativeStringLength(2, len);
-	new String:winner[len+1];
-	GetNativeString(2, winner, len+1);
+	if (numParams >= 2)
+	{
+		new String:winner[TRANSLATION_LENGTH];
+		FormatNativeString(0, 2, 3, sizeof(winner), _, winner);
+		
+		Game_DisplayVotePass(vote, winner);
+	}
+	else
+	{
+		Game_DisplayVotePass(vote);		
+	}
 
-	Game_DisplayVotePass(vote, winner);
 }
 
 // native NativeVotes_DisplayPassCustomToOne(Handle:vote, client, const String:format[], any:...);
@@ -1890,16 +1898,23 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Invalid vote pass type: %d", passType);
 	}
-
-	new len;
-	GetNativeStringLength(3, len);
-	new String:winner[len+1];
-	GetNativeString(3, winner, len+1);
-
-	Game_DisplayVotePassEx(vote, passType, winner);
+	
+	if (numParams >= 3)
+	{
+		new String:winner[TRANSLATION_LENGTH];
+		//SetGlobalTransTarget(LANG_SERVER);
+		FormatNativeString(0, 3, 4, sizeof(winner), _, winner);
+		
+		Game_DisplayVotePassEx(vote, passType, winner);
+	}
+	else
+	{
+		Game_DisplayVotePassEx(vote, passType);
+	}
 }
 
 // native NativeVotes_DisplayRawPass(NativeVotesPassType:passType, const String:details[]="", team=NATIVEVOTES_ALL_TEAMS);
+/*
 public Native_DisplayRawPass(Handle:plugin, numParams)
 {
 	new NativeVotesPassType:passType = NativeVotesPassType:GetNativeCell(1);
@@ -1922,6 +1937,7 @@ public Native_DisplayRawPass(Handle:plugin, numParams)
 	
 	Game_DisplayRawVotePass(passType, winner, team);
 }
+*/
 
 // native NativeVotes_DisplayRawPassToOne(client, NativeVotesPassType:passType, const String:details[]="", team=NATIVEVOTES_ALL_TEAMS);
 public Native_DisplayRawPassToOne(Handle:plugin, numParams)
@@ -1934,18 +1950,25 @@ public Native_DisplayRawPassToOne(Handle:plugin, numParams)
 		ThrowNativeError(SP_ERROR_NATIVE, "Invalid vote pass type: %d", passType);
 	}
 
-	new len;
-	GetNativeStringLength(3, len);
-	new String:winner[len+1];
-	GetNativeString(3, winner, len+1);
-	new team = GetNativeCell(4);
-
+	new team = GetNativeCell(3);
+	
 	if (g_EngineVersion == Engine_TF2 && team == NATIVEVOTES_ALL_TEAMS)
 	{
 		team = NATIVEVOTES_TF2_ALL_TEAMS;
 	}
 	
-	Game_DisplayRawVotePass(passType, winner, team, client);
+	if (numParams >= 4)
+	{
+		new String:winner[TRANSLATION_LENGTH];
+		SetGlobalTransTarget(client);
+		FormatNativeString(0, 4, 5, sizeof(winner), _, winner);
+	
+		Game_DisplayRawVotePass(passType, team, client, winner);
+	}
+	else
+	{
+		Game_DisplayRawVotePass(passType, team, client);
+	}
 }
 
 // native NativeVotes_DisplayRawPassCustomToOne(client, team, const String:format[], any:...);

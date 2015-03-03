@@ -733,7 +733,7 @@ stock bool:NativeVotes_DisplayToAllNonSpectators(Handle:vote, time)
  * @param details			Normally the item that won the vote or format string. Also used for custom vote winners
  * @noreturn
  */
-native NativeVotes_DisplayPass(Handle:vote, const String:details[]="");
+native NativeVotes_DisplayPass(Handle:vote, const String:details[]="", any:...);
 
 /**
  * Display vote passed screen with custom text to a single user
@@ -791,7 +791,7 @@ stock NativeVotes_DisplayPassCustom(Handle:vote, const String:format[], any:...)
  * @param details			Normally the item that won the vote. Also used for custom vote winners
  * @noreturn
  */
-native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, const String:details[]="");
+native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, const String:details[]="", any:...);
 
 /**
  * Display vote passed screen when a vote isn't running
@@ -807,7 +807,20 @@ native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, cons
  * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
  * @noreturn
  */
-native NativeVotes_DisplayRawPass(NativeVotesPassType:passType, const String:details[]="", team=NATIVEVOTES_ALL_TEAMS);
+stock NativeVotes_DisplayRawPass(NativeVotesPassType:passType, team=NATIVEVOTES_ALL_TEAMS, const String:format[]="", any:...)
+{
+	decl String:buffer[192];
+	
+	for (new i = 1; i <= MaxClients; ++i)
+	{
+		if (IsClientInGame(i) && !IsFakeClient(i))
+		{
+			SetGlobalTransTarget(i);
+			VFormat(buffer, sizeof(buffer), format, 4);
+			NativeVotes_DisplayRawPassToOne(i, passType, team, "%s", buffer);
+		}
+	}	
+}
 
 /**
  * Display vote passed screen when a vote isn't running
@@ -824,7 +837,7 @@ native NativeVotes_DisplayRawPass(NativeVotesPassType:passType, const String:det
  * 							NATIVEVOTES_ALL_TEAMS, NATIVEVOTES_TEAM_1, or NATIVEVOTES_TEAM_2
  * @noreturn
  */
-native NativeVotes_DisplayRawPassToOne(client, NativeVotesPassType:passType, const String:details[]="", team=NATIVEVOTES_ALL_TEAMS);
+native NativeVotes_DisplayRawPassToOne(client, NativeVotesPassType:passType, team=NATIVEVOTES_ALL_TEAMS, const String:format[]="", any:...);
 
 /**
  * Display vote passed screen with custom text to a single user when a vote isn't running
@@ -1096,7 +1109,7 @@ public __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_DisplayPass");
 	MarkNativeAsOptional("NativeVotes_DisplayPassCustomToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayPassEx");
-	MarkNativeAsOptional("NativeVotes_DisplayRawPass");
+	//MarkNativeAsOptional("NativeVotes_DisplayRawPass");
 	MarkNativeAsOptional("NativeVotes_DisplayRawPassToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayRawPassCustomToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayFail");
