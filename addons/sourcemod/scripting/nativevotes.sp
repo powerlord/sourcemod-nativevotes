@@ -192,6 +192,36 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_RedrawVoteTitle", Native_RedrawVoteTitle);
 	CreateNative("NativeVotes_RedrawVoteItem", Native_RedrawVoteItem);
 	
+	// Transitional syntax support
+	CreateNative("NativeVote.NativeVote", Native_Create);
+	CreateNative("NativeVote.Close", Native_Close);
+	CreateNative("NativeVote.AddItem", Native_AddItem);
+	CreateNative("NativeVote.InsertItem", Native_InsertItem);
+	CreateNative("NativeVote.RemoveItem", Native_RemoveItem);
+	CreateNative("NativeVote.RemoveAllItems", Native_RemoveAllItems);
+	CreateNative("NativeVote.GetItem", Native_GetItem);
+	CreateNative("NativeVote.SetDetails", Native_SetDetails);
+	CreateNative("NativeVote.GetDetails", Native_GetDetails);
+	CreateNative("NativeVote.SetTitle", Native_SetTitle);
+	CreateNative("NativeVote.GetTitle", Native_GetTitle);
+	CreateNative("NativeVote.SetTarget", Native_SetTarget);
+	CreateNative("NativeVote.GetTarget", Native_GetTarget);
+	CreateNative("NativeVote.GetTargetSteam", Native_GetTargetSteam);
+	CreateNative("NativeVote.Display", Native_Display);
+	CreateNative("NativeVote.DisplayPass", Native_DisplayPass);
+	CreateNative("NativeVote.DisplayPassCustomToOne", Native_DisplayPassCustomToOne);
+	CreateNative("NativeVote.DisplayPassEx", Native_DisplayPassEx);
+	CreateNative("NativeVote.DisplayFail", Native_DisplayFail);
+	CreateNative("NativeVote.OptionFlags.set", Native_SetOptionFlags);
+	CreateNative("NativeVote.OptionFlags.get", Native_GetOptionFlags);
+	CreateNative("NativeVote.VoteResultCallback.set", Native_SetResultCallback);
+	CreateNative("NativeVote.ItemCount.get", Native_GetItemCount);
+	CreateNative("NativeVote.VoteType.get", Native_GetType);
+	CreateNative("NativeVote.Team.set", Native_SetTeam);
+	CreateNative("NativeVote.Team.get", Native_GetTeam);
+	CreateNative("NativeVote.Initiator.set", Native_SetInitiator);
+	CreateNative("NativeVote.Initiator.get", Native_GetInitiator);
+	
 	RegPluginLibrary("nativevotes");
 	
 	return APLRes_Success;
