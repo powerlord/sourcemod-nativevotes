@@ -535,39 +535,45 @@ bool:Game_DisplayVote(Handle:vote, clients[], num_clients)
 	return true;
 }
 
-Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason, client=0)
+Game_DisplayVoteFail(Handle:vote, NativeVotesFailType:reason)
 {
 	new team = Data_GetTeam(vote);
 	
-	Game_DisplayRawVoteFail(reason, team, client);
+	new total = 0;
+	new players[MaxClients];
+	
+	for (new i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientInGame(i) || IsFakeClient(i))
+			continue;
+		players[total++] = i;
+	}
+	
+	Game_DisplayRawVoteFail(players, total, reason, team);
 }
 
-Game_DisplayRawVoteFail(NativeVotesFailType:reason, team, client=0)
+Game_DisplayRawVoteFail(clients[], numClients, NativeVotesFailType:reason, team)
 {
 	switch(g_EngineVersion)
 	{
 		case Engine_Left4Dead:
 		{
-			if (!client)
-			{
-				L4D_VoteFail(team);
-			}
+			L4D_VoteFail(team);
 		}
 		
 		case Engine_Left4Dead2:
 		{
-			L4D2_VoteFail(team, client);
+			L4D2_VoteFail(clients, numClients, team);
 		}
 		
 		case Engine_CSGO, Engine_TF2:
 		{
-			TF2CSGO_VoteFail(reason, team, client);
+			TF2CSGO_VoteFail(clients, numClients, reason, team);
 		}
 	}
 	
 #if defined LOG
-	if (client == 0)
-		LogMessage("Vote Failed: \"%d\"", reason);
+	LogMessage("Vote Failed to %d client(s): \"%d\"", numClients, reason);
 #endif
 }
 
@@ -1658,17 +1664,9 @@ static L4D2_VotePass(const String:translation[], const String:details[], team, c
 	EndMessage();
 }
 
-static L4D2_VoteFail(team, client=0)
+static L4D2_VoteFail(clients[], numClients, team)
 {
-	new Handle:voteFailed;
-	if (!client)
-	{
-		voteFailed = StartMessageAll("VoteFail", USERMSG_RELIABLE);
-	}
-	else
-	{
-		voteFailed = StartMessageOne("VoteFail", client, USERMSG_RELIABLE);
-	}
+	new Handle:voteFailed = StartMessage("VoteFail", clients, numClients, USERMSG_RELIABLE);
 	
 	BfWriteByte(voteFailed, team);
 	EndMessage();
@@ -1969,17 +1967,9 @@ static TF2CSGO_VotePass(const String:translation[], const String:details[], team
 	EndMessage();
 }
 
-static TF2CSGO_VoteFail(NativeVotesFailType:reason, team, client=0)
+static TF2CSGO_VoteFail(clients[], numClients, NativeVotesFailType:reason, team)
 {
-	new Handle:voteFailed;
-	if (!client)
-	{
-		voteFailed = StartMessageAll("VoteFailed", USERMSG_RELIABLE);
-	}
-	else
-	{
-		voteFailed = StartMessageOne("VoteFailed", client, USERMSG_RELIABLE);
-	}
+	new Handle:voteFailed = StartMessage("VoteFailed", clients, numClients, USERMSG_RELIABLE);
 	
 	if(g_bUserBuf)
 	{

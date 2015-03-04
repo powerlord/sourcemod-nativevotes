@@ -184,7 +184,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVotes_DisplayRawPassCustomToOne", Native_DisplayRawPassCustomToOne);
 	CreateNative("NativeVotes_DisplayFail", Native_DisplayFail);
 	CreateNative("NativeVotes_DisplayRawFail", Native_DisplayRawFail);
-	CreateNative("NativeVotes_DisplayRawFailToOne", Native_DisplayRawFailToOne);
+	//CreateNative("NativeVotes_DisplayRawFailToOne", Native_DisplayRawFailToOne);
 	CreateNative("NativeVotes_AreVoteCommandsSupported", Native_AreVoteCommandsSupported);
 	CreateNative("NativeVotes_RegisterVoteCommand", Native_RegisterVoteCommand);
 	CreateNative("NativeVotes_UnregisterVoteCommand", Native_UnregisterVoteCommand);
@@ -2033,19 +2033,24 @@ public Native_DisplayFail(Handle:plugin, numParams)
 // native NativeVotes_DisplayRawFail(NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS);
 public Native_DisplayRawFail(Handle:plugin, numParams)
 {
-	new NativeVotesFailType:reason = NativeVotesFailType:GetNativeCell(1);
+	new size = GetNativeCell(2);
+	new clients[size];
+	GetNativeArray(1, clients, size);
 	
-	new team = GetNativeCell(2);
+	new NativeVotesFailType:reason = NativeVotesFailType:GetNativeCell(3);
+	
+	new team = GetNativeCell(4);
 
 	if (g_EngineVersion == Engine_TF2 && team == NATIVEVOTES_ALL_TEAMS)
 	{
 		team = NATIVEVOTES_TF2_ALL_TEAMS;
 	}
 	
-	Game_DisplayRawVoteFail(reason, team);
+	Game_DisplayRawVoteFail(clients, size, reason, team);
 }
 
 // native NativeVotes_DisplayRawFailToOne(client, NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS);
+/*
 public Native_DisplayRawFailToOne(Handle:plugin, numParams)
 {
 	new client = GetNativeCell(1);
@@ -2061,7 +2066,7 @@ public Native_DisplayRawFailToOne(Handle:plugin, numParams)
 	
 	Game_DisplayRawVoteFail(reason, team, client);
 }
-
+*/
 // native NativeVotes_GetTarget(Handle:vote);
 public Native_GetTarget(Handle:plugin,  numParams)
 {
