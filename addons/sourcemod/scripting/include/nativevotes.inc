@@ -249,7 +249,7 @@ native Handle:NativeVotes_Create(NativeVotes_Handler:handler, NativeVotesType:vo
  * @param vote				Vote handle
  * @noreturn
  */
-native Handle:NativeVotes_Close(Handle:vote);
+native NativeVotes_Close(Handle:vote);
 
 /**
  * Appends a new item to the end of a vote.  Only valid for Multiple Choice votes
