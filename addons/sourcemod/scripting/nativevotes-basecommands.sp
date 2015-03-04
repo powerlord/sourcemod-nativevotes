@@ -39,12 +39,12 @@
 #include <adminmenu>
 
 #define VERSION "1.0"
-
+#pragma newdecls required
 #pragma semicolon 1
 
-new Handle:hTopMenu;
+TopMenu hTopMenu;
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "NativeVotes Basic Commands",
 	author = "Powerlord and AlliedModders LLC",
@@ -53,7 +53,7 @@ public Plugin:myinfo =
 	url = "https://forums.alliedmods.net/showthread.php?t=208008"
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	LoadTranslations("core.phrases");
 	LoadTranslations("common.phrases");
@@ -62,7 +62,7 @@ public OnPluginStart()
 	AddCommandListener(Command_ReVote, "sm_revote");
 }
 
-bool:PerformCancelVote(client)
+bool PerformCancelVote(int client)
 {
 	if (!NativeVotes_IsVoteInProgress())
 	{
@@ -75,7 +75,7 @@ bool:PerformCancelVote(client)
 	return true;
 }
 
-public Action:Command_CancelVote(client, const String:command[], argc)
+public Action Command_CancelVote(int client, const char[] command, int argc)
 {
 	if (!CheckCommandAccess(client, "sm_cancelvote", ADMFLAG_VOTE))
 	{
@@ -99,12 +99,12 @@ public Action:Command_CancelVote(client, const String:command[], argc)
 	}
 }
 
-public AdminMenu_CancelVote(Handle:topmenu, 
-							  TopMenuAction:action,
-							  TopMenuObject:object_id,
-							  param,
-							  String:buffer[],
-							  maxlength)
+public void AdminMenu_CancelVote(Handle topmenu, 
+							  TopMenuAction action,
+							  TopMenuObject object_id,
+							  int param,
+							  char[] buffer,
+							  int maxlength)
 {
 	if (action == TopMenuAction_DisplayOption)
 	{
@@ -121,7 +121,7 @@ public AdminMenu_CancelVote(Handle:topmenu,
 	}
 }
 
-public Action:Command_ReVote(client, const String:command[], argc)
+public Action Command_ReVote(int client, const char[] command, int argc)
 {
 	if (client == 0)
 	{
@@ -158,7 +158,7 @@ public Action:Command_ReVote(client, const String:command[], argc)
 	return Plugin_Continue;
 }
 
-public OnAdminMenuReady(Handle:topmenu)
+public int OnAdminMenuReady(Handle topmenu)
 {
 	/* Block us from being called twice */
 	if (topmenu == hTopMenu)
@@ -167,9 +167,9 @@ public OnAdminMenuReady(Handle:topmenu)
 	}
 	
 	/* Save the Handle */
-	hTopMenu = topmenu;
+	hTopMenu = TopMenu.FromHandle(topmenu);
 	
-	new TopMenuObject:voting_commands = FindTopMenuCategory(hTopMenu, ADMINMENU_VOTINGCOMMANDS);
+	TopMenuObject voting_commands = FindTopMenuCategory(hTopMenu, ADMINMENU_VOTINGCOMMANDS);
 
 	if (voting_commands != INVALID_TOPMENUOBJECT)
 	{
@@ -183,10 +183,10 @@ public OnAdminMenuReady(Handle:topmenu)
 	}
 }
 
-public OnLibraryRemoved(const String:name[])
+public void OnLibraryRemoved(const char[] name)
 {
 	if (strcmp(name, "adminmenu") == 0)
 	{
-		hTopMenu = INVALID_HANDLE;
+		hTopMenu = null;
 	}
 }

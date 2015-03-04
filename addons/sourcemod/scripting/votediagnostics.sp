@@ -37,15 +37,17 @@
 
 #define LOGFILE "vote_diagnostics.txt"
 
-new EngineVersion:g_EngineVersion = Engine_Unknown;
+#pragma newdecls required
 
-new g_VoteController = -1;
+EngineVersion g_EngineVersion = Engine_Unknown;
+
+int g_VoteController = -1;
 
 #define MAX_ARG_SIZE 65
 
 #define DELAY 6.0
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "L4D,L4D2,TF2,CS:GO Vote Sniffer",
 	author = "Powerlord",
@@ -54,7 +56,7 @@ public Plugin:myinfo =
 	url = "http://www.sourcemod.net/"
 }
 
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	if (!Game_IsGameSupported())
 	{
@@ -80,9 +82,9 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	return APLRes_Success;
 }
 
-bool:CheckVoteController()
+bool CheckVoteController()
 {
-	new entity = -1;
+	int entity = -1;
 	if (g_VoteController != -1)
 	{
 		entity = EntRefToEntIndex(g_VoteController);
@@ -102,7 +104,7 @@ bool:CheckVoteController()
 	return true;
 }
 
-bool:Game_IsGameSupported()
+bool Game_IsGameSupported()
 {
 	g_EngineVersion = GetEngineVersion();
 	
@@ -117,7 +119,7 @@ bool:Game_IsGameSupported()
 	return false;
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	switch (g_EngineVersion)
 	{
@@ -177,7 +179,7 @@ public OnPluginStart()
 	//AddCommandListener(CommandVote, "Vote");
 	AddCommandListener(CommandCallVote, "callvote");
 	
-	new String:gameName[15];
+	char gameName[15];
 	GetGameFolderName(gameName, sizeof(gameName));
 	
 	LogToFile(LOGFILE, "Game: %s", gameName);
@@ -191,11 +193,11 @@ public OnPluginStart()
 		"potentialVotes"        "byte"
 }
 */
-public L4DL4D2_EventVoteChanged(Handle:event, const String:name[], bool:dontBroadcast)
+public void L4DL4D2_EventVoteChanged(Event event, const char[] name, bool dontBroadcast)
 {
-	new yesVotes = GetEventInt(event, "yesVotes");
-	new noVotes = GetEventInt(event, "noVotes");
-	new potentialVotes = GetEventInt(event, "potentialVotes");
+	int yesVotes = event.GetInt("yesVotes");
+	int noVotes = event.GetInt("noVotes");
+	int potentialVotes = event.GetInt("potentialVotes");
 	LogMessage("Vote Changed event: yesVotes: %d, noVotes: %d, potentialVotes: %d",
 		yesVotes, noVotes, potentialVotes);
 	
@@ -206,9 +208,9 @@ VoteRegistered Structure
 	- Byte      Choice voted for, 0 = No, 1 = Yes
 
 */  
-public Action:L4DL4D2_MessageVoteRegistered(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
+public Action L4DL4D2_MessageVoteRegistered(UserMsg msg_id, BfRead message, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new choice = BfReadByte(message);
+	int choice = BfReadByte(message);
 	
 	LogToFile(LOGFILE, "VoteRegistered Usermessage: choice: %d", choice);
 	return Plugin_Continue;
@@ -225,10 +227,10 @@ message CCSUsrMsg_CallVoteFailed
 	optional int32 time = 2;
 }
 */
-public Action:L4DL4D2_MessageCallVoteFailed(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
+public Action L4DL4D2_MessageCallVoteFailed(UserMsg msg_id, BfRead message, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new reason;
-	new time;
+	int reason;
+	int time;
 	
 	reason = BfReadByte(message);
 	
@@ -245,14 +247,14 @@ public Action:L4DL4D2_MessageCallVoteFailed(UserMsg:msg_id, Handle:message, cons
 		"initiator"             "long" // entity id of the player who initiated the vote
 }
 */
-public L4D_EventVoteStarted(Handle:event, const String:name[], bool:dontBroadcast)
+public void L4D_EventVoteStarted(Event event, const char[] name, bool dontBroadcast)
 {
-	decl String:issue[MAX_ARG_SIZE];
-	decl String:param1[MAX_ARG_SIZE];
-	GetEventString(event, "issue", issue, sizeof(issue));
-	GetEventString(event, "param1", param1, sizeof(param1));
-	new team = GetEventInt(event, "team");
-	new initiator = GetEventInt(event, "initiator");
+	char issue[MAX_ARG_SIZE];
+	char param1[MAX_ARG_SIZE];
+	event.GetString("issue", issue, sizeof(issue));
+	event.GetString("param1", param1, sizeof(param1));
+	int team = event.GetInt("team");
+	int initiator = event.GetInt("initiator");
 	LogToFile(LOGFILE, "Vote Start Event: issue: \"%s\", param1: \"%s\", team: %d, initiator: %d", issue, param1, team, initiator);
 	
 	if (CheckVoteController())
@@ -266,7 +268,7 @@ public L4D_EventVoteStarted(Handle:event, const String:name[], bool:dontBroadcas
 {
 }
 */
-public L4D_EventVoteEnded(Handle:event, const String:name[], bool:dontBroadcast)
+public void L4D_EventVoteEnded(Event event, const char[] name, bool dontBroadcast)
 {
 	LogToFile(LOGFILE, "Vote Ended Event");
 	
@@ -281,13 +283,13 @@ public L4D_EventVoteEnded(Handle:event, const String:name[], bool:dontBroadcast)
 		"team"                  "byte"
 }
 */
-public L4D_EventVotePassed(Handle:event, const String:name[], bool:dontBroadcast)
+public void L4D_EventVotePassed(Event event, const char[] name, bool dontBroadcast)
 {
-	decl String:details[MAX_ARG_SIZE];
-	decl String:param1[MAX_ARG_SIZE];
-	GetEventString(event, "details", details, sizeof(details));
-	GetEventString(event, "param1", param1, sizeof(param1));
-	new team = GetEventInt(event, "team");
+	char details[MAX_ARG_SIZE];
+	char param1[MAX_ARG_SIZE];
+	event.GetString("details", details, sizeof(details));
+	event.GetString("param1", param1, sizeof(param1));
+	int team = event.GetInt("team");
 	LogToFile(LOGFILE, "Vote Passed event: details: %s, param1: %s, team: %d", details, param1, team);
 }
 
@@ -297,9 +299,9 @@ public L4D_EventVotePassed(Handle:event, const String:name[], bool:dontBroadcast
 		"team"                  "byte"
 }
 */
-public L4D_EventVoteFailed(Handle:event, const String:name[], bool:dontBroadcast)
+public void L4D_EventVoteFailed(Event event, const char[] name, bool dontBroadcast)
 {
-	new team = GetEventInt(event, "team");
+	int team = event.GetInt("team");
 	LogToFile(LOGFILE, "Vote Failed event: team: %d", team);
 }
 
@@ -310,10 +312,10 @@ public L4D_EventVoteFailed(Handle:event, const String:name[], bool:dontBroadcast
 		"entityid"              "long"  // entity id of the voter
 }
 */
-public L4D_EventVoteYes(Handle:event, const String:name[], bool:dontBroadcast)
+public void L4D_EventVoteYes(Event event, const char[] name, bool dontBroadcast)
 {
-	new team = GetEventInt(event, "team");
-	new client = GetEventInt(event, "entityid");
+	int team = event.GetInt("team");
+	int client = event.GetInt("entityid");
 	LogToFile(LOGFILE, "Vote Cast Yes event: team: %d, client: %N", team, client);
 }
 
@@ -324,10 +326,10 @@ public L4D_EventVoteYes(Handle:event, const String:name[], bool:dontBroadcast)
 		"entityid"              "long"  // entity id of the voter
 }
 */
-public L4D_EventVoteNo(Handle:event, const String:name[], bool:dontBroadcast)
+public void L4D_EventVoteNo(Event event, const char[] name, bool dontBroadcast)
 {
-	new team = GetEventInt(event, "team");
-	new client = GetEventInt(event, "entityid");
+	int team = event.GetInt("team");
+	int client = event.GetInt("entityid");
 	LogToFile(LOGFILE, "Vote Cast No event: team: %d, client: %N", team, client);
 }
 
@@ -340,18 +342,18 @@ VoteStart Structure
 	- String    Initiator name
 
 */
-public Action:L4D2_MessageVoteStart(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
+public Action L4D2_MessageVoteStart(UserMsg msg_id, BfRead message, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new String:issue[MAX_ARG_SIZE];
-	new String:param1[MAX_ARG_SIZE];
-	new String:initiatorName[MAX_NAME_LENGTH];
+	char issue[MAX_ARG_SIZE];
+	char param1[MAX_ARG_SIZE];
+	char initiatorName[MAX_NAME_LENGTH];
 
-	new team = BfReadByte(message);
-	new initiator = BfReadByte(message);
+	int team = message.ReadByte();
+	int initiator = message.ReadByte();
 	
-	BfReadString(message, issue, MAX_ARG_SIZE);
-	BfReadString(message, param1, MAX_ARG_SIZE);
-	BfReadString(message, initiatorName, MAX_NAME_LENGTH);
+	message.ReadString(issue, MAX_ARG_SIZE);
+	message.ReadString(param1, MAX_ARG_SIZE);
+	message.ReadString(initiatorName, MAX_NAME_LENGTH);
 
 	LogToFile(LOGFILE, "VoteStart Usermessage: team: %d, initiator: %d, issue: %s, param1: %s, player count: %d, initiatorName: %s", team, initiator, issue, param1, playersNum, initiatorName);
 	if (CheckVoteController())
@@ -369,14 +371,14 @@ VotePass Structure
 	- String    Vote issue pass phrase argument
 
 */
-public Action:L4D2_MessageVotePass(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
+public Action L4D2_MessageVotePass(UserMsg msg_id, BfRead message, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new String:issue[MAX_ARG_SIZE];
-	new String:param1[MAX_ARG_SIZE];
-	new team = BfReadByte(message);
+	char issue[MAX_ARG_SIZE];
+	char param1[MAX_ARG_SIZE];
+	int team = message.ReadByte();
 	
-	BfReadString(message, issue, MAX_ARG_SIZE);
-	BfReadString(message, param1, MAX_ARG_SIZE);
+	message.ReadString(issue, MAX_ARG_SIZE);
+	message.ReadString(param1, MAX_ARG_SIZE);
 	
 	LogToFile(LOGFILE, "VotePass Usermessage: team: %d, issue: %s, param1: %s", team, issue, param1);
 
@@ -389,9 +391,9 @@ VoteFail Structure
 	- Byte      Team index or -1 for all
 
 */  
-public Action:L4D2_MessageVoteFail(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
+public Action L4D2_MessageVoteFail(UserMsg msg_id, BfRead message, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new team = BfReadByte(message);
+	int team = message.ReadByte();
 	
 	LogToFile(LOGFILE, "VoteFail Usermessage: team: %d", team);
 
@@ -408,11 +410,11 @@ public Action:L4D2_MessageVoteFail(UserMsg:msg_id, Handle:message, const players
 		"entityid"              "long"  // entity id of the voter
 }
 */
-public TF2CSGO_EventVoteCast(Handle:event, const String:name[], bool:dontBroadcast)
+public void TF2CSGO_EventVoteCast(Event event, const char[] name, bool dontBroadcast)
 {
-	new vote_option = GetEventInt(event, "vote_option");
-	new team = GetEventInt(event, "team");
-	new entityid = GetEventInt(event, "entityid");
+	int vote_option = event.GetInt("vote_option");
+	int team = event.GetInt("team");
+	int entityid = event.GetInt("entityid");
 	LogToFile(LOGFILE, "Vote Cast event: vote_option: %d, team: %d, client: %N", vote_option, team, entityid);
 }
 
