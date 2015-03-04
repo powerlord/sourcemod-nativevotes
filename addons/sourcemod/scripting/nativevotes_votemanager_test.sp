@@ -153,44 +153,44 @@ public Action CallKickVoteHandler(int client, NativeVotesOverride overrideType, 
 	
 	ReplyToCommand(client, "Calling Kick (%s) vote on %N", sKickType, targetClient);
 	
-	Handle vote = NativeVotes_Create(KickVoteHandler, voteType);
-	NativeVotes_SetInitiator(vote, client);
-	NativeVotes_SetTarget(vote, targetClient);
-	NativeVotes_DisplayToAll(vote, 20);
+	NativeVote vote = new NativeVote(KickVoteHandler, voteType);
+	vote.Initiator = client;
+	vote.SetTarget(targetClient);
+	vote.DisplayVoteToAll(20);
 	
 	SetCmdReplySource(old);
 	
 	return Plugin_Handled;
 }
 
-public int KickVoteHandler(Handle menu, MenuAction action, int param1, int param2)
+public int KickVoteHandler(NativeVote vote, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_End:
 		{
-			NativeVotes_Close(menu);
+			vote.Close();
 		}
 		
 		case MenuAction_VoteEnd:
 		{
-			int target = NativeVotes_GetTarget(menu);
+			int target = vote.GetTarget();
 			
 			if (param1 == NATIVEVOTES_VOTE_YES)
 			{
 				if (target == 0)
 				{
-					NativeVotes_DisplayFail(menu, NativeVotesFail_Generic);
+					vote.DisplayFail(NativeVotesFail_Generic);
 					PrintToChatAll("User disconnected before kick.");
 				}
 				char name[MAX_NAME_LENGTH+1];
 				GetClientName(target, name, sizeof(name));
-				NativeVotes_DisplayPass(menu, name);
+				vote.DisplayPass(name);
 				PrintToChatAll("Kick vote on %N passed.", target);
 			}
 			else
 			{
-				NativeVotes_DisplayFail(menu, NativeVotesFail_Loses);
+				vote.DisplayFail(NativeVotesFail_Loses);
 				PrintToChatAll("Kick vote failed.");
 			}
 		}
@@ -199,12 +199,12 @@ public int KickVoteHandler(Handle menu, MenuAction action, int param1, int param
 		{
 			if (param1 == VoteCancel_NoVotes)
 			{
-				NativeVotes_DisplayFail(menu, NativeVotesFail_NotEnoughVotes);
+				vote.DisplayFail(NativeVotesFail_NotEnoughVotes);
 				PrintToChatAll("Kick vote had no votes.");
 			}
 			else
 			{
-				NativeVotes_DisplayFail(menu, NativeVotesFail_Generic);
+				vote.DisplayFail(NativeVotesFail_Generic);
 				PrintToChatAll("Kick vote was cancelled.");
 			}
 		}

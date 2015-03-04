@@ -69,33 +69,33 @@ public Action Cmd_TestYesNo(int client, int args)
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
-	Handle vote = NativeVotes_Create(YesNoHandler, NativeVotesType_Custom_YesNo);
+	NativeVote vote = new NativeVote(YesNoHandler, NativeVotesType_Custom_YesNo);
 	
-	NativeVotes_SetInitiator(vote, client);
-	NativeVotes_SetDetails(vote, "Test Yes/No Vote");
-	NativeVotes_DisplayToAll(vote, 30);
+	vote.Initiator = client;
+	vote.SetDetails("Test Yes/No Vote");
+	vote.DisplayVoteToAll(30);
 	
 	return Plugin_Handled;
 }
 
-public int YesNoHandler(Handle vote, MenuAction action, int param1, int param2)
+public int YesNoHandler(NativeVote vote, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_End:
 		{
-			NativeVotes_Close(vote);
+			vote.Close();
 		}
 		
 		case MenuAction_VoteCancel:
 		{
 			if (param1 == VoteCancel_NoVotes)
 			{
-				NativeVotes_DisplayFail(vote, NativeVotesFail_NotEnoughVotes);
+				vote.DisplayFail(NativeVotesFail_NotEnoughVotes);
 			}
 			else
 			{
-				NativeVotes_DisplayFail(vote, NativeVotesFail_Generic);
+				vote.DisplayFail(NativeVotesFail_Generic);
 			}
 		}
 		
@@ -103,11 +103,11 @@ public int YesNoHandler(Handle vote, MenuAction action, int param1, int param2)
 		{
 			if (param1 == NATIVEVOTES_VOTE_NO)
 			{
-				NativeVotes_DisplayFail(vote, NativeVotesFail_Loses);
+				vote.DisplayFail(NativeVotesFail_Loses);
 			}
 			else
 			{
-				NativeVotes_DisplayPass(vote, "Test Yes/No Vote Passed!");
+				vote.DisplayPass("Test Yes/No Vote Passed!");
 				// Do something because it passed
 			}
 		}
@@ -128,39 +128,39 @@ public Action Cmd_TestMult(int client, int args)
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
-	Handle vote = NativeVotes_Create(MultHandler, NativeVotesType_Custom_Mult);
+	NativeVote vote = new NativeVote(MultHandler, NativeVotesType_Custom_Mult);
 	
-	NativeVotes_SetInitiator(vote, client);
-	NativeVotes_SetDetails(vote, "Test Mult Vote");
-	NativeVotes_AddItem(vote, "choice1", "Choice 1");
-	NativeVotes_AddItem(vote, "choice2", "Choice 2");
-	NativeVotes_AddItem(vote, "choice3", "Choice 3");
-	NativeVotes_AddItem(vote, "choice4", "Choice 4");
-	NativeVotes_AddItem(vote, "choice5", "Choice 5");
+	vote.Initiator = client;
+	vote.SetDetails("Test Mult Vote");
+	vote.AddItem("choice1", "Choice 1");
+	vote.AddItem("choice2", "Choice 2");
+	vote.AddItem("choice3", "Choice 3");
+	vote.AddItem("choice4", "Choice 4");
+	vote.AddItem("choice5", "Choice 5");
 	// 5 is currently the maximum number of choices in any game
-	NativeVotes_DisplayToAll(vote, 30);
+	vote.DisplayVoteToAll(30);
 	
 	return Plugin_Handled;
 }
 
-public int MultHandler(Handle vote, MenuAction action, int param1, int param2)
+public int MultHandler(NativeVote vote, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_End:
 		{
-			NativeVotes_Close(vote);
+			vote.Close();
 		}
 		
 		case MenuAction_VoteCancel:
 		{
 			if (param1 == VoteCancel_NoVotes)
 			{
-				NativeVotes_DisplayFail(vote, NativeVotesFail_NotEnoughVotes);
+				vote.DisplayFail(NativeVotesFail_NotEnoughVotes);
 			}
 			else
 			{
-				NativeVotes_DisplayFail(vote, NativeVotesFail_Generic);
+				vote.DisplayFail(NativeVotesFail_Generic);
 			}
 		}
 		
@@ -168,9 +168,9 @@ public int MultHandler(Handle vote, MenuAction action, int param1, int param2)
 		{
 			char info[64];
 			char display[64];
-			NativeVotes_GetItem(vote, param1, info, sizeof(info), display, sizeof(display));
+			vote.GetItem(param1, info, sizeof(info), display, sizeof(display));
 			
-			NativeVotes_DisplayPass(vote, display);
+			vote.DisplayPass(display);
 			
 			// Do something with info
 		}
@@ -191,22 +191,22 @@ public Action Cmd_TestYesNoCustom(int client, int args)
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
-	Handle vote = NativeVotes_Create(YesNoCustomHandler, NativeVotesType_Custom_YesNo, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display);
+	NativeVote vote = new NativeVote(YesNoCustomHandler, NativeVotesType_Custom_YesNo, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display);
 	
-	NativeVotes_SetInitiator(vote, client);
-	NativeVotes_SetDetails(vote, "Test Yes/No Vote");
-	NativeVotes_DisplayToAll(vote, 30);
+	vote.Initiator = client;
+	vote.SetDetails("Test Yes/No Vote");
+	vote.DisplayVoteToAll(30);
 	
 	return Plugin_Handled;
 }
 
-public int YesNoCustomHandler(Handle vote, MenuAction action, int param1, int param2)
+public int YesNoCustomHandler(NativeVote vote, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_End:
 		{
-			NativeVotes_Close(vote);
+			vote.Close();
 		}
 		
 		case MenuAction_Display:
@@ -222,11 +222,11 @@ public int YesNoCustomHandler(Handle vote, MenuAction action, int param1, int pa
 		{
 			if (param1 == VoteCancel_NoVotes)
 			{
-				NativeVotes_DisplayFail(vote, NativeVotesFail_NotEnoughVotes);
+				vote.DisplayFail(NativeVotesFail_NotEnoughVotes);
 			}
 			else
 			{
-				NativeVotes_DisplayFail(vote, NativeVotesFail_Generic);
+				vote.DisplayFail(NativeVotesFail_Generic);
 			}
 		}
 		
@@ -234,11 +234,11 @@ public int YesNoCustomHandler(Handle vote, MenuAction action, int param1, int pa
 		{
 			if (param1 == NATIVEVOTES_VOTE_NO)
 			{
-				NativeVotes_DisplayFail(vote, NativeVotesFail_Loses);
+				vote.DisplayFail(NativeVotesFail_Loses);
 			}
 			else
 			{
-				NativeVotes_DisplayPass(vote, "Test Custom Yes/No Vote Passed!");
+				vote.DisplayPass("Test Custom Yes/No Vote Passed!");
 				// Do something because it passed
 			}
 		}
@@ -261,28 +261,28 @@ public Action Cmd_TestMultCustom(int client, int args)
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
-	Handle vote = NativeVotes_Create(MultCustomHandler, NativeVotesType_Custom_Mult, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display|MenuAction_DisplayItem);
+	NativeVote vote = new NativeVote(MultCustomHandler, NativeVotesType_Custom_Mult, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display|MenuAction_DisplayItem);
 	
-	NativeVotes_SetInitiator(vote, client);
-	NativeVotes_SetDetails(vote, "Test Mult Vote");
-	NativeVotes_AddItem(vote, "choice1", "Choice 1");
-	NativeVotes_AddItem(vote, "choice2", "Choice 2");
-	NativeVotes_AddItem(vote, "choice3", "Choice 3");
-	NativeVotes_AddItem(vote, "choice4", "Choice 4");
-	NativeVotes_AddItem(vote, "choice5", "Choice 5");
+	vote.Initiator = client;
+	vote.SetDetails("Test Mult Vote");
+	vote.AddItem("choice1", "Choice 1");
+	vote.AddItem("choice2", "Choice 2");
+	vote.AddItem("choice3", "Choice 3");
+	vote.AddItem("choice4", "Choice 4");
+	vote.AddItem("choice5", "Choice 5");
 	// 5 is currently the maximum number of choices in any game
-	NativeVotes_DisplayToAll(vote, 30);
+	vote.DisplayVoteToAll(30);
 	
 	return Plugin_Handled;
 }
 
-public int MultCustomHandler(Handle vote, MenuAction action, int param1, int param2)
+public int MultCustomHandler(NativeVote vote, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_End:
 		{
-			NativeVotes_Close(vote);
+			vote.Close();
 		}
 		
 		case MenuAction_Display:
@@ -298,11 +298,11 @@ public int MultCustomHandler(Handle vote, MenuAction action, int param1, int par
 		{
 			if (param1 == VoteCancel_NoVotes)
 			{
-				NativeVotes_DisplayFail(vote, NativeVotesFail_NotEnoughVotes);
+				vote.DisplayFail(NativeVotesFail_NotEnoughVotes);
 			}
 			else
 			{
-				NativeVotes_DisplayFail(vote, NativeVotesFail_Generic);
+				vote.DisplayFail(NativeVotesFail_Generic);
 			}
 		}
 		
@@ -310,11 +310,11 @@ public int MultCustomHandler(Handle vote, MenuAction action, int param1, int par
 		{
 			char info[64];
 			char display[64];
-			NativeVotes_GetItem(vote, param1, info, sizeof(info), display, sizeof(display));
+			vote.GetItem(param1, info, sizeof(info), display, sizeof(display));
 			
 			// Do something with info
 			//NativeVotes_DisplayPassCustom(vote, "%t Mult passed", "Translation Phrase");
-			NativeVotes_DisplayPassCustom(vote, "%s passed", display);
+			vote.DisplayPassCustom("%s passed", display);
 		}
 		
 		case MenuAction_DisplayItem:
@@ -324,7 +324,7 @@ public int MultCustomHandler(Handle vote, MenuAction action, int param1, int par
 			
 			char buffer[64];
 			
-			NativeVotes_GetItem(vote, param2, info, sizeof(info), display, sizeof(display));
+			vote.GetItem(param2, info, sizeof(info), display, sizeof(display));
 			
 			// This is generally how you'd do translations, but normally with %T and a format phrase
 			bool bReplace = false;

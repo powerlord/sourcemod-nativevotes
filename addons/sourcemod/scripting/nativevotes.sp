@@ -207,7 +207,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("NativeVote.SetTarget", Native_SetTarget);
 	CreateNative("NativeVote.GetTarget", Native_GetTarget);
 	CreateNative("NativeVote.GetTargetSteam", Native_GetTargetSteam);
-	CreateNative("NativeVote.Display", Native_Display);
+	CreateNative("NativeVote.DisplayVote", Native_Display);
 	CreateNative("NativeVote.DisplayPass", Native_DisplayPass);
 	CreateNative("NativeVote.DisplayPassCustomToOne", Native_DisplayPassCustomToOne);
 	CreateNative("NativeVote.DisplayPassEx", Native_DisplayPassEx);

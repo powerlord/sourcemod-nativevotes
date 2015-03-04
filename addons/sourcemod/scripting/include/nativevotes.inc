@@ -340,7 +340,7 @@ methodmap NativeVote < Handle
 	// @return					True on success, false if a this vote already has a
 	// 							vote session in progress.
 	// @error					A vote is already in progress.
-	public native bool Display(int[] clients, int numClients, int time, int flags=0);
+	public native bool DisplayVote(int[] clients, int numClients, int time, int flags=0);
 	
 	// Sends a vote menu to all clients.  See NativeVotes_Display() for more information.
 	//
@@ -349,7 +349,7 @@ methodmap NativeVote < Handle
 	// @return					True on success, false if this menu already has a
 	// 							vote session in progress.
 	// @error					A vote is already in progress.
-	public bool DisplayToAll(int time, int flags=0)
+	public bool DisplayVoteToAll(int time, int flags=0)
 	{
 		int total = 0;
 		int[] players = new int[MaxClients];
@@ -360,7 +360,7 @@ methodmap NativeVote < Handle
 				continue;
 			players[total++] = i;
 		}
-		return this.Display(players, total, time, flags);
+		return this.DisplayVote(players, total, time, flags);
 	}
 	
 	// Display default vote passed screen for this vote type
@@ -511,7 +511,7 @@ native NativeVote NativeVotes_Create(NativeVotes_Handler handler, NativeVotesTyp
  * 
  * @param vote				Vote handle
  */
-native void NativeVotes_Close(NativeVote vote);
+native void NativeVotes_Close(Handle vote);
 
 /**
  * Appends a new item to the end of a vote.  Only valid for Multiple Choice votes
@@ -521,7 +521,7 @@ native void NativeVotes_Close(NativeVote vote);
  * @return					True on success, false on failure.
  * @error					Invalid Handle, item limit reached, or if the vote is not multiple choice.
  */
-native bool NativeVotes_AddItem(NativeVote vote, const char[] info, const char[] display);
+native bool NativeVotes_AddItem(Handle vote, const char[] info, const char[] display);
 
 /**
  * Inserts an item into the menu before a certain position; the new item will
@@ -533,7 +533,7 @@ native bool NativeVotes_AddItem(NativeVote vote, const char[] info, const char[]
  * @return					True on success, false on failure.
  * @error					Invalid Handle or vote position, or if the vote is not multiple choice.
  */
-native bool NativeVotes_InsertItem(NativeVote vote, int position, const char[] info, const char[] display);
+native bool NativeVotes_InsertItem(Handle vote, int position, const char[] info, const char[] display);
 
 /**
  * Removes an item from the menu.
@@ -543,7 +543,7 @@ native bool NativeVotes_InsertItem(NativeVote vote, int position, const char[] i
  * @return					True on success, false on failure.
  * @error					Invalid Handle or vote position,  or if the vote is not multiple choice.
  */
-native bool NativeVotes_RemoveItem(NativeVote vote, int position);
+native bool NativeVotes_RemoveItem(Handle vote, int position);
 
 /**
  * Removes all items from a vote.
@@ -551,7 +551,7 @@ native bool NativeVotes_RemoveItem(NativeVote vote, int position);
  * @param vote				Vote Handle.
  * @error					Invalid Handle or vote position, or if the vote is not multiple choice.
  */
-native void NativeVotes_RemoveAllItems(NativeVote vote);
+native void NativeVotes_RemoveAllItems(Handle vote);
 
 /**
  * Retrieves information about a vote item.
@@ -565,7 +565,7 @@ native void NativeVotes_RemoveAllItems(NativeVote vote);
  * @return					True on success, false if position is invalid.
  * @error					Invalid Handle
  */
-native bool NativeVotes_GetItem(NativeVote vote, 
+native bool NativeVotes_GetItem(Handle vote, 
 						int position,
 						char[] infoBuf, 
 						int infoBufLen,
@@ -579,7 +579,7 @@ native bool NativeVotes_GetItem(NativeVote vote,
  * @return					Number of items in the vote.
  * @error					Invalid Handle.
  */
-native int NativeVotes_GetItemCount(NativeVote vote);
+native int NativeVotes_GetItemCount(Handle vote);
 
 /**
  * Sets the vote's details for votes that support details
@@ -590,7 +590,7 @@ native int NativeVotes_GetItemCount(NativeVote vote);
  * @param ...				Message string arguments.
  * @error					Invalid Handle.
  */
-native void NativeVotes_SetDetails(NativeVote vote, const char[] fmt, any ...);
+native void NativeVotes_SetDetails(Handle vote, const char[] fmt, any ...);
 
 /**
  * Returns the text of a vote's details if set.
@@ -600,7 +600,7 @@ native void NativeVotes_SetDetails(NativeVote vote, const char[] fmt, any ...);
  * @param maxlength			Maximum length of the buffer.
  * @error					Invalid Handle.
  */
-native void NativeVotes_GetDetails(NativeVote vote, char[] buffer, int maxlength);
+native void NativeVotes_GetDetails(Handle vote, char[] buffer, int maxlength);
 
 /**
  * Sets a custom vote's default title/instruction message.
@@ -610,7 +610,7 @@ native void NativeVotes_GetDetails(NativeVote vote, char[] buffer, int maxlength
  * @param ...				Message string arguments.
  * @error					Invalid Handle.
  */
-native void NativeVotes_SetTitle(NativeVote vote, const char[] fmt, any ...);
+native void NativeVotes_SetTitle(Handle vote, const char[] fmt, any ...);
 
 /**
  * Return the text of a custom vote's title.
@@ -622,7 +622,7 @@ native void NativeVotes_SetTitle(NativeVote vote, const char[] fmt, any ...);
  * @param maxlength			Maximum length of the buffer.
  * @error					Invalid Handle.
  */
-native void NativeVotes_GetTitle(NativeVote vote, char[] buffer, int maxlength);
+native void NativeVotes_GetTitle(Handle vote, char[] buffer, int maxlength);
 
 /**
  * Sets the target userid for vote
@@ -635,7 +635,7 @@ native void NativeVotes_GetTitle(NativeVote vote, char[] buffer, int maxlength);
  * @param setDetails		If true, also sets vote details to client's name
  * @error					Invalid Handle.
  */
-native void NativeVotes_SetTarget(NativeVote vote, int client, bool setDetails=true);
+native void NativeVotes_SetTarget(Handle vote, int client, bool setDetails=true);
 
 /**
  * Returns the vote's target client index, 0 for client disconnected, or -1 for no target.
@@ -644,7 +644,7 @@ native void NativeVotes_SetTarget(NativeVote vote, int client, bool setDetails=t
  * @return					Client index of target player, 0 for client disconnected, or -1 for no target.
  * @error					Invalid Handle.
  */
-native int NativeVotes_GetTarget(NativeVote vote);
+native int NativeVotes_GetTarget(Handle vote);
 
 /**
  * Get the SteamID2 of a vote's target
@@ -656,7 +656,7 @@ native int NativeVotes_GetTarget(NativeVote vote);
  * @param maxlength			Maximum length of the buffer.
  * @error					Invalid Handle.
  */
-native void NativeVotes_GetTargetSteam(NativeVote vote, char[] buffer, int maxlength);
+native void NativeVotes_GetTargetSteam(Handle vote, char[] buffer, int maxlength);
 
 /**
  * Returns whether a vote is in progress.
@@ -683,7 +683,7 @@ native int NativeVotes_GetMaxItems();
  * @param flags				A new bitstring of MENUFLAG bits.
  * @error					Invalid Handle.
  */
-native void NativeVotes_SetOptionFlags(NativeVote vote, int flags);
+native void NativeVotes_SetOptionFlags(Handle vote, int flags);
 
 /**
  * Retrieves a vote's option flags.
@@ -694,7 +694,7 @@ native void NativeVotes_SetOptionFlags(NativeVote vote, int flags);
  * @return					A bitstring of MENUFLAG bits.
  * @error					Invalid Handle.
  */
-native int NativeVotes_GetOptionFlags(NativeVote vote);
+native int NativeVotes_GetOptionFlags(Handle vote);
 
 /**
  * Cancels the vote in progress.
@@ -790,7 +790,7 @@ stock void NativeVotes_FixResults(int num_clients,
  * @param callback			Callback function.
  * @error					Invalid Handle or callback.
  */
-native void NativeVotes_SetResultCallback(NativeVote vote, NativeVotes_VoteHandler callback);
+native void NativeVotes_SetResultCallback(Handle vote, NativeVotes_VoteHandler callback);
 
 /**
  * Returns the number of seconds you should "wait" before displaying
@@ -831,7 +831,7 @@ native bool NativeVotes_RedrawClientVote(int client, bool revotes=true);
  * @return					The built in vote type
  * @error					Invalid Handle
  */
-native NativeVotesType NativeVotes_GetType(NativeVote vote);
+native NativeVotesType NativeVotes_GetType(Handle vote);
 
 /**
  * Set the team this vote is for, or NATIVEVOTES_ALL_TEAMS for all teams.
@@ -842,7 +842,7 @@ native NativeVotesType NativeVotes_GetType(NativeVote vote);
  * @param team				Team number this vote is for
  * @error					Invalid Handle
  */
-native void NativeVotes_SetTeam(NativeVote vote, int team);
+native void NativeVotes_SetTeam(Handle vote, int team);
 
 /**
  * Retrieve the team this vote is for
@@ -851,7 +851,7 @@ native void NativeVotes_SetTeam(NativeVote vote, int team);
  * @return					Team index or NATIVEVOTES_ALL_TEAMS for all teams.
  * @error					Invalid Handle
  */
-native int NativeVotes_GetTeam(NativeVote vote);
+native int NativeVotes_GetTeam(Handle vote);
 
 /**
  * Set the client index of the player who initiated the vote.
@@ -863,7 +863,7 @@ native int NativeVotes_GetTeam(NativeVote vote);
  * @param client			Client who initiated the vote or NATIVEVOTES_SERVER_INDEX
  * @error					Invalid Handle
  */
-native void NativeVotes_SetInitiator(NativeVote vote, int client);
+native void NativeVotes_SetInitiator(Handle vote, int client);
 
 /**
  * Retrieve the client index of the player who initiated the vote or NATIVEVOTES_SERVER_INDEX if 
@@ -873,7 +873,7 @@ native void NativeVotes_SetInitiator(NativeVote vote, int client);
  * @return					Client index or NATIVEVOTES_SERVER_INDEX
  * @error					Invalid Handle
  */
-native int NativeVotes_GetInitiator(NativeVote vote);
+native int NativeVotes_GetInitiator(Handle vote);
 
 /**
  * Broadcasts a vote to a list of clients.  The most selected item will be 
@@ -891,7 +891,7 @@ native int NativeVotes_GetInitiator(NativeVote vote);
  * @return					True on success, false if a vote is already in progress.
  * @error					Invalid Handle, or a vote is already in progress.
  */
-native bool NativeVotes_Display(NativeVote vote, int[] clients, int numClients, int time, int flags=0);
+native bool NativeVotes_Display(Handle vote, int[] clients, int numClients, int time, int flags=0);
 
 /**
  * Sends a vote menu to all clients.  See NativeVotes_Display() for more information.
@@ -902,7 +902,7 @@ native bool NativeVotes_Display(NativeVote vote, int[] clients, int numClients, 
  *							in progress.
  * @error					Invalid Handle, or a vote is already in progress.
  */
-stock bool NativeVotes_DisplayToAll(NativeVote vote, int time)
+stock bool NativeVotes_DisplayToAll(Handle vote, int time)
 {
 	int total = 0;
 	int[] players = new int[MaxClients];
@@ -928,7 +928,7 @@ stock bool NativeVotes_DisplayToAll(NativeVote vote, int time)
  * @error					Invalid Handle, or a vote is already in progress.
  */
 #pragma deprecated This functionality should be done in client plugins instead
-stock bool NativeVotes_DisplayToTeam(NativeVote vote, int team, int time)
+stock bool NativeVotes_DisplayToTeam(Handle vote, int team, int time)
 {
 	NativeVotes_SetTeam(vote, team);
 
@@ -955,7 +955,7 @@ stock bool NativeVotes_DisplayToTeam(NativeVote vote, int team, int time)
  * @error					Invalid Handle, or a vote is already in progress.
  */
 #pragma deprecated This functionality should be done in client plugins instead
-stock bool NativeVotes_DisplayToAllNonSpectators(NativeVote vote, int time)
+stock bool NativeVotes_DisplayToAllNonSpectators(Handle vote, int time)
 {
 	int total;
 	int[] players = new int[MaxClients];
@@ -983,7 +983,7 @@ stock bool NativeVotes_DisplayToAllNonSpectators(NativeVote vote, int time)
  * @param fmt 				Message string format
  * @param ...				Message string arguments.
  */
-native void NativeVotes_DisplayPass(NativeVote vote, const char[] fmt="", any ...);
+native void NativeVotes_DisplayPass(Handle vote, const char[] fmt="", any ...);
 
 /**
  * Display vote passed screen with custom text to a single user
@@ -1002,7 +1002,7 @@ native void NativeVotes_DisplayPass(NativeVote vote, const char[] fmt="", any ..
  * @param fmt 				Message string format
  * @param ...				Message string arguments.
  */
-native void NativeVotes_DisplayPassCustomToOne(NativeVote vote, int client, const char[] fmt, any ...);
+native void NativeVotes_DisplayPassCustomToOne(Handle vote, int client, const char[] fmt, any ...);
 
 /**
  * Display vote passed screen with custom text
@@ -1017,7 +1017,7 @@ native void NativeVotes_DisplayPassCustomToOne(NativeVote vote, int client, cons
  * @param fmt 				Message string format
  * @param ...				Message string arguments.
  */
-stock void NativeVotes_DisplayPassCustom(NativeVote vote, const char[] fmt, any ...)
+stock void NativeVotes_DisplayPassCustom(Handle vote, const char[] fmt, any ...)
 {
 	char buffer[192];
 	
@@ -1048,7 +1048,7 @@ stock void NativeVotes_DisplayPassCustom(NativeVote vote, const char[] fmt, any 
  * @param fmt 				Message string format
  * @param ...				Message string arguments.
  */
-native void NativeVotes_DisplayPassEx(NativeVote vote, NativeVotesPassType passType, const char[] fmt="", any ...);
+native void NativeVotes_DisplayPassEx(Handle vote, NativeVotesPassType passType, const char[] fmt="", any ...);
 
 /**
  * Display vote passed screen to a single client when a vote isn't running
@@ -1204,7 +1204,7 @@ stock void NativeVotes_DisplayRawPassCustom(int[] clients, int numClients, int t
  * @param vote				Vote handle
  * @param reason			Vote failure reason from NativeVotesFailType enum
  */
-native void NativeVotes_DisplayFail(NativeVote vote, NativeVotesFailType reason=NativeVotesFail_Generic);
+native void NativeVotes_DisplayFail(Handle vote, NativeVotesFailType reason=NativeVotesFail_Generic);
 
 /**
  * Display vote failure screen.
