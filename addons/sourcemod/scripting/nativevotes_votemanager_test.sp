@@ -32,16 +32,17 @@
  * Version: $Id$
  */
 #include <sourcemod>
-#include <nativevotes> // Not optional
+
+#pragma newdecls required
+#include "include/nativevotes" // Not optional
 
 #pragma semicolon 1
 
-#define VERSION "1.1.0"
+#define VERSION "1.2.0"
 
-new Handle:g_Cvar_Enabled;
+ConVar g_Cvar_Enabled;
 
-
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name			= "NativeVotes VoteManager Test",
 	author			= "Powerlord",
 	description		= "Test the VoteManger functionality of NativeVotes",
@@ -49,16 +50,16 @@ public Plugin:myinfo = {
 	url				= "https://forums.alliedmods.net/showthread.php?t=208008"
 };
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	CreateConVar("nativevotes_votemanagertest_version", VERSION, "NativeVotes VoteManager Test version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
 	g_Cvar_Enabled = CreateConVar("nativevotes_votemanagertest_enable", "1", "Enable NativeVotes VoteManager Test?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 	HookConVarChange(g_Cvar_Enabled, EnabledChanged);
 }
 
-public OnAllPluginsLoaded()
+public void OnAllPluginsLoaded()
 {
-	if (GetConVarBool(g_Cvar_Enabled))
+	if (g_Cvar_Enabled.BoolValue)
 	{
 		NativeVotes_RegisterVoteCommand(NativeVotesOverride_Restart, CallVoteTestHandler);
 		NativeVotes_RegisterVoteCommand(NativeVotesOverride_Kick, CallKickVoteHandler);
@@ -66,16 +67,16 @@ public OnAllPluginsLoaded()
 	}
 }
 
-public OnPluginEnd()
+public void OnPluginEnd()
 {
-		NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Restart, CallVoteTestHandler);
-		NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Kick, CallKickVoteHandler);
-		NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Scramble, CallVoteAdminTestHandler, CallVoteAdminVisHandler);
+	NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Restart, CallVoteTestHandler);
+	NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Kick, CallKickVoteHandler);
+	NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Scramble, CallVoteAdminTestHandler, CallVoteAdminVisHandler);
 }
 
-public EnabledChanged(Handle:convar, const String:oldValue[], const String:newValue[])
+public void EnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	if (GetConVarBool(convar))
+	if (convar.BoolValue)
 	{
 		NativeVotes_RegisterVoteCommand(NativeVotesOverride_Restart, CallVoteTestHandler);
 		NativeVotes_RegisterVoteCommand(NativeVotesOverride_Kick, CallKickVoteHandler);
@@ -89,9 +90,9 @@ public EnabledChanged(Handle:convar, const String:oldValue[], const String:newVa
 	}
 }
 
-public Action:CallVoteTestHandler(client, NativeVotesOverride:overrideType, const String:voteArgument[], NativeVotesKickType:kickType, target)
+public Action CallVoteTestHandler(int client, NativeVotesOverride overrideType)
 {
-	new ReplySource:old = SetCmdReplySource(SM_REPLY_TO_CHAT);
+	ReplySource old = SetCmdReplySource(SM_REPLY_TO_CHAT);
 
 	ReplyToCommand(client, "Attempted to call Restart vote");
 	
@@ -100,7 +101,7 @@ public Action:CallVoteTestHandler(client, NativeVotesOverride:overrideType, cons
 	return Plugin_Handled;
 }
 
-public Action:CallVoteAdminVisHandler(client, NativeVotesOverride:overrideType)
+public Action CallVoteAdminVisHandler(int client, NativeVotesOverride overrideType)
 {
 	if (CheckCommandAccess(client, "adminvotetest", ADMFLAG_VOTE, true))
 	{
@@ -110,9 +111,9 @@ public Action:CallVoteAdminVisHandler(client, NativeVotesOverride:overrideType)
 	return Plugin_Handled;
 }
 
-public Action:CallVoteAdminTestHandler(client, NativeVotesOverride:overrideType, const String:voteArgument[], NativeVotesKickType:kickType, target)
+public Action CallVoteAdminTestHandler(int client, NativeVotesOverride overrideType)
 {
-	new ReplySource:old = SetCmdReplySource(SM_REPLY_TO_CHAT);
+	ReplySource old = SetCmdReplySource(SM_REPLY_TO_CHAT);
 
 	ReplyToCommand(client, "Attempted to call Admin-protected Scramble vote");
 	
@@ -121,14 +122,14 @@ public Action:CallVoteAdminTestHandler(client, NativeVotesOverride:overrideType,
 	return Plugin_Handled;
 }
 
-public Action:CallKickVoteHandler(client, NativeVotesOverride:overrideType, const String:voteArgument[], NativeVotesKickType:kickType, target)
+public Action CallKickVoteHandler(int client, NativeVotesOverride overrideType, const char[] voteArgument, NativeVotesKickType kickType, int target)
 {
-	new ReplySource:old = SetCmdReplySource(SM_REPLY_TO_CHAT);
+	ReplySource old = SetCmdReplySource(SM_REPLY_TO_CHAT);
 	
-	new targetClient = GetClientOfUserId(target);
+	int targetClient = GetClientOfUserId(target);
 	
-	decl String:sKickType[32];
-	new NativeVotesType:voteType = GetKickVoteTypeFromKickType(kickType, sKickType, sizeof(sKickType));
+	char sKickType[32];
+	NativeVotesType voteType = GetKickVoteTypeFromKickType(kickType, sKickType, sizeof(sKickType));
 	
 	if (voteType == NativeVotesType_None)
 	{
@@ -152,7 +153,7 @@ public Action:CallKickVoteHandler(client, NativeVotesOverride:overrideType, cons
 	
 	ReplyToCommand(client, "Calling Kick (%s) vote on %N", sKickType, targetClient);
 	
-	new Handle:vote = NativeVotes_Create(KickVoteHandler, voteType);
+	Handle vote = NativeVotes_Create(KickVoteHandler, voteType);
 	NativeVotes_SetInitiator(vote, client);
 	NativeVotes_SetTarget(vote, targetClient);
 	NativeVotes_DisplayToAll(vote, 20);
@@ -162,7 +163,7 @@ public Action:CallKickVoteHandler(client, NativeVotesOverride:overrideType, cons
 	return Plugin_Handled;
 }
 
-public KickVoteHandler(Handle:menu, MenuAction:action, param1, param2)
+public int KickVoteHandler(Handle menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -173,7 +174,7 @@ public KickVoteHandler(Handle:menu, MenuAction:action, param1, param2)
 		
 		case MenuAction_VoteEnd:
 		{
-			new target = NativeVotes_GetTarget(menu);
+			int target = NativeVotes_GetTarget(menu);
 			
 			if (param1 == NATIVEVOTES_VOTE_YES)
 			{
@@ -182,7 +183,7 @@ public KickVoteHandler(Handle:menu, MenuAction:action, param1, param2)
 					NativeVotes_DisplayFail(menu, NativeVotesFail_Generic);
 					PrintToChatAll("User disconnected before kick.");
 				}
-				decl String:name[MAX_NAME_LENGTH+1];
+				char name[MAX_NAME_LENGTH+1];
 				GetClientName(target, name, sizeof(name));
 				NativeVotes_DisplayPass(menu, name);
 				PrintToChatAll("Kick vote on %N passed.", target);
@@ -210,9 +211,9 @@ public KickVoteHandler(Handle:menu, MenuAction:action, param1, param2)
 	}
 }
 
-NativeVotesType:GetKickVoteTypeFromKickType(NativeVotesKickType:kickType, String:sKickType[], maxlength)
+NativeVotesType GetKickVoteTypeFromKickType(NativeVotesKickType kickType, char[] sKickType, int maxlength)
 {
-	new NativeVotesType:voteType;
+	NativeVotesType voteType;
 
 	switch (kickType)
 	{

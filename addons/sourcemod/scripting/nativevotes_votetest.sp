@@ -30,11 +30,13 @@
  */
 
 #include <sourcemod>
-#include <nativevotes>
 
-#define VERSION "1.0"
+#pragma newdecls required
+#include "include/nativevotes"
 
-public Plugin:myinfo = 
+#define VERSION "1.1"
+
+public Plugin myinfo = 
 {
 	name = "NativeVotes Vote Tester",
 	author = "Powerlord",
@@ -43,7 +45,7 @@ public Plugin:myinfo =
 	url = "https://forums.alliedmods.net/showthread.php?t=208008"
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	CreateConVar("nativevotestest_version", VERSION, "NativeVotes Vote Tester version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD);
 
@@ -53,7 +55,7 @@ public OnPluginStart()
 	RegAdminCmd("votemultcustom", Cmd_TestMultCustom, ADMFLAG_VOTE, "Test Multiple Choice vote with Custom Display text");
 }
 
-public Action:Cmd_TestYesNo(client, args)
+public Action Cmd_TestYesNo(int client, int args)
 {
 	if (!NativeVotes_IsVoteTypeSupported(NativeVotesType_Custom_YesNo))
 	{
@@ -63,11 +65,11 @@ public Action:Cmd_TestYesNo(client, args)
 	
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
-		new seconds = NativeVotes_CheckVoteDelay();
+		int seconds = NativeVotes_CheckVoteDelay();
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
-	new Handle:vote = NativeVotes_Create(YesNoHandler, NativeVotesType_Custom_YesNo);
+	Handle vote = NativeVotes_Create(YesNoHandler, NativeVotesType_Custom_YesNo);
 	
 	NativeVotes_SetInitiator(vote, client);
 	NativeVotes_SetDetails(vote, "Test Yes/No Vote");
@@ -76,7 +78,7 @@ public Action:Cmd_TestYesNo(client, args)
 	return Plugin_Handled;
 }
 
-public YesNoHandler(Handle:vote, MenuAction:action, param1, param2)
+public int YesNoHandler(Handle vote, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -112,7 +114,7 @@ public YesNoHandler(Handle:vote, MenuAction:action, param1, param2)
 	}
 }
 
-public Action:Cmd_TestMult(client, args)
+public Action Cmd_TestMult(int client, int args)
 {
 	if (!NativeVotes_IsVoteTypeSupported(NativeVotesType_Custom_Mult))
 	{
@@ -122,11 +124,11 @@ public Action:Cmd_TestMult(client, args)
 
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
-		new seconds = NativeVotes_CheckVoteDelay();
+		int seconds = NativeVotes_CheckVoteDelay();
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
-	new Handle:vote = NativeVotes_Create(MultHandler, NativeVotesType_Custom_Mult);
+	Handle vote = NativeVotes_Create(MultHandler, NativeVotesType_Custom_Mult);
 	
 	NativeVotes_SetInitiator(vote, client);
 	NativeVotes_SetDetails(vote, "Test Mult Vote");
@@ -141,7 +143,7 @@ public Action:Cmd_TestMult(client, args)
 	return Plugin_Handled;
 }
 
-public MultHandler(Handle:vote, MenuAction:action, param1, param2)
+public int MultHandler(Handle vote, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -164,8 +166,8 @@ public MultHandler(Handle:vote, MenuAction:action, param1, param2)
 		
 		case MenuAction_VoteEnd:
 		{
-			new String:info[64];
-			new String:display[64];
+			char info[64];
+			char display[64];
 			NativeVotes_GetItem(vote, param1, info, sizeof(info), display, sizeof(display));
 			
 			NativeVotes_DisplayPass(vote, display);
@@ -175,7 +177,7 @@ public MultHandler(Handle:vote, MenuAction:action, param1, param2)
 	}
 }
 
-public Action:Cmd_TestYesNoCustom(client, args)
+public Action Cmd_TestYesNoCustom(int client, int args)
 {
 	if (!NativeVotes_IsVoteTypeSupported(NativeVotesType_Custom_YesNo))
 	{
@@ -185,11 +187,11 @@ public Action:Cmd_TestYesNoCustom(client, args)
 
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
-		new seconds = NativeVotes_CheckVoteDelay();
+		int seconds = NativeVotes_CheckVoteDelay();
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
-	new Handle:vote = NativeVotes_Create(YesNoCustomHandler, NativeVotesType_Custom_YesNo, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display);
+	Handle vote = NativeVotes_Create(YesNoCustomHandler, NativeVotesType_Custom_YesNo, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display);
 	
 	NativeVotes_SetInitiator(vote, client);
 	NativeVotes_SetDetails(vote, "Test Yes/No Vote");
@@ -198,7 +200,7 @@ public Action:Cmd_TestYesNoCustom(client, args)
 	return Plugin_Handled;
 }
 
-public YesNoCustomHandler(Handle:vote, MenuAction:action, param1, param2)
+public int YesNoCustomHandler(Handle vote, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -209,11 +211,11 @@ public YesNoCustomHandler(Handle:vote, MenuAction:action, param1, param2)
 		
 		case MenuAction_Display:
 		{
-			new String:display[64];
+			char display[64];
 			Format(display, sizeof(display), "%N Test Yes/No Vote", param1);
 			PrintToChat(param1, "New Menu Title: %s", display);
 			NativeVotes_RedrawVoteTitle(display);
-			return _:Plugin_Changed;
+			return view_as<int>(Plugin_Changed);
 		}
 		
 		case MenuAction_VoteCancel:
@@ -245,7 +247,7 @@ public YesNoCustomHandler(Handle:vote, MenuAction:action, param1, param2)
 	return 0;
 }
 
-public Action:Cmd_TestMultCustom(client, args)
+public Action Cmd_TestMultCustom(int client, int args)
 {
 	if (!NativeVotes_IsVoteTypeSupported(NativeVotesType_Custom_Mult))
 	{
@@ -255,11 +257,11 @@ public Action:Cmd_TestMultCustom(client, args)
 
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
-		new seconds = NativeVotes_CheckVoteDelay();
+		int seconds = NativeVotes_CheckVoteDelay();
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
 	}
 	
-	new Handle:vote = NativeVotes_Create(MultCustomHandler, NativeVotesType_Custom_Mult, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display|MenuAction_DisplayItem);
+	Handle vote = NativeVotes_Create(MultCustomHandler, NativeVotesType_Custom_Mult, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display|MenuAction_DisplayItem);
 	
 	NativeVotes_SetInitiator(vote, client);
 	NativeVotes_SetDetails(vote, "Test Mult Vote");
@@ -274,7 +276,7 @@ public Action:Cmd_TestMultCustom(client, args)
 	return Plugin_Handled;
 }
 
-public MultCustomHandler(Handle:vote, MenuAction:action, param1, param2)
+public int MultCustomHandler(Handle vote, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -285,11 +287,11 @@ public MultCustomHandler(Handle:vote, MenuAction:action, param1, param2)
 		
 		case MenuAction_Display:
 		{
-			new String:display[64];
+			char display[64];
 			Format(display, sizeof(display), "%N Test Mult Vote", param1);
 			PrintToChat(param1, "New Menu Title: %s", display);
 			NativeVotes_RedrawVoteTitle(display);
-			return _:Plugin_Changed;
+			return view_as<int>(Plugin_Changed);
 		}
 		
 		case MenuAction_VoteCancel:
@@ -306,8 +308,8 @@ public MultCustomHandler(Handle:vote, MenuAction:action, param1, param2)
 		
 		case MenuAction_VoteEnd:
 		{
-			new String:info[64];
-			new String:display[64];
+			char info[64];
+			char display[64];
 			NativeVotes_GetItem(vote, param1, info, sizeof(info), display, sizeof(display));
 			
 			// Do something with info
@@ -317,15 +319,15 @@ public MultCustomHandler(Handle:vote, MenuAction:action, param1, param2)
 		
 		case MenuAction_DisplayItem:
 		{
-			new String:info[64];
-			new String:display[64];
+			char info[64];
+			char display[64];
 			
-			new String:buffer[64];
+			char buffer[64];
 			
 			NativeVotes_GetItem(vote, param2, info, sizeof(info), display, sizeof(display));
 			
 			// This is generally how you'd do translations, but normally with %T and a format phrase
-			new bool:bReplace = false;
+			bool bReplace = false;
 			if (StrEqual(info, "choice1"))
 			{
 				Format(buffer, sizeof(buffer), "%N %s", param1, display);
@@ -357,7 +359,7 @@ public MultCustomHandler(Handle:vote, MenuAction:action, param1, param2)
 			if (bReplace)
 			{
 				NativeVotes_RedrawVoteItem(buffer);
-				return _:Plugin_Changed;
+				return view_as<int>(Plugin_Changed);
 			}
 		}
 	}
