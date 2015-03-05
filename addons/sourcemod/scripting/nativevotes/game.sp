@@ -2682,13 +2682,13 @@ static stock bool:TF2_VoteTypeToVoteString(NativeVotesType:voteType, String:vote
 		
 		case NativeVotesType_AutoBalanceOn:
 		{
-			strcopy(voteString, maxlength, TF2_VOTE_STRING_AUTOBALANCE_ON);
+			strcopy(voteString, maxlength, TF2_VOTE_STRING_AUTOBALANCE);
 			valid = true;
 		}
 		
 		case NativeVotesType_AutoBalanceOff:
 		{
-			strcopy(voteString, maxlength, TF2_VOTE_STRING_AUTOBALANCE_OFF);
+			strcopy(voteString, maxlength, TF2_VOTE_STRING_AUTOBALANCE);
 			valid = true;
 		}
 		
@@ -2904,6 +2904,10 @@ static stock NativeVotesOverride:TF2_VoteStringToVoteOverride(const String:voteS
 		overrideType = NativeVotesOverride_ClassLimits;
 	}
 	
+#if defined LOG
+	LogMessage("Resolved \"%s\" to %d", voteString, overrideType);
+#endif
+
 	return overrideType;
 }
 
