@@ -290,13 +290,30 @@ public Action:Command_CallVote(client, const String:command[], argc)
 			{
 				if (GetForwardFunctionCount(g_CallVotes[i][CallVote_Forward]) > 0)
 				{
+#if defined LOG
+					LogMessage("Found overrides for vote type: %d", i);
+#endif
 					overridesPresent = true;
-					if (!FindVoteInArray(hVoteTypes, NativeVotesOverride:i))
+					new voteType[CallVoteListData];
+
+					new pos = FindVoteInArray(hVoteTypes, NativeVotesOverride:i);
+					if (pos > -1)
 					{
-						new voteType[CallVoteListData];
+						GetArrayArray(hVoteTypes, pos, voteType[0], sizeof(voteType));
+						voteType[CallVoteList_VoteEnabled] = true;
+#if defined LOG
+						LogMessage("Forcing vote type to visible: %d", i);
+#endif
+						SetArrayArray(hVoteTypes, pos, voteType[0], sizeof(voteType));
+					}
+					else
+					{
+#if defined LOG
+						LogMessage("Creating override for vote type: %d", i);
+#endif
 						voteType[CallVoteList_VoteType] = NativeVotesOverride:i;
 						voteType[CallVoteList_VoteEnabled] = true;
-						PushArrayArray(hVoteTypes, voteType[0]);
+						PushArrayArray(hVoteTypes, voteType[0], sizeof(voteType));
 					}
 				}
 			}
@@ -409,11 +426,11 @@ FindVoteInArray(Handle:array, NativeVotesOverride:value)
 		
 		if (voteData[CallVoteList_VoteType] == value)
 		{
-			return true;
+			return i;
 		}
 	}
 	
-	return false;
+	return -1;
 }
 
 public OnVoteDelayChange(Handle:convar, const String:oldValue[], const String:newValue[])
@@ -1266,6 +1283,9 @@ PerformVisChecks(client, Handle:hVoteTypes)
 		Call_Finish(hide);
 		if (hide >= Plugin_Handled)
 		{
+#if defined LOG
+			LogMessage("Hiding vote type %d", voteData[CallVoteList_VoteType]);
+#endif
 			if (Game_AreDisabledIssuesHidden())
 			{
 				// Since we hide disabled issues, remove it from the arraylist
