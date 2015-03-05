@@ -153,11 +153,11 @@ public void OnPluginStart()
 			HookEventEx("vote_cast", TF2CSGO_EventVoteCast);
 			HookEventEx("vote_options", TF2CSGO_EventVoteOptions);
 			
-			HookUserMessage(GetUserMessageId("VoteSetup"), TF2CSGO_MessageVoteSetup);
-			HookUserMessage(GetUserMessageId("VoteStart"), TF2CSGO_MessageVoteStart);
-			HookUserMessage(GetUserMessageId("VotePass"), TF2CSGO_MessageVotePass);
-			HookUserMessage(GetUserMessageId("VoteFailed"), TF2CSGO_MessageVoteFail);
-			HookUserMessage(GetUserMessageId("CallVoteFailed"), TF2CSGO_MessageCallVoteFailed);
+			HookUserMessage(GetUserMessageId("VoteSetup"), TF2_MessageVoteSetup);
+			HookUserMessage(GetUserMessageId("VoteStart"), TF2_MessageVoteStart);
+			HookUserMessage(GetUserMessageId("VotePass"), TF2_MessageVotePass);
+			HookUserMessage(GetUserMessageId("VoteFailed"), TF2_MessageVoteFail);
+			HookUserMessage(GetUserMessageId("CallVoteFailed"), TF2_MessageCallVoteFailed);
 		}
 		
 		case Engine_CSGO:
@@ -166,11 +166,11 @@ public void OnPluginStart()
 			HookEventEx("vote_options", TF2CSGO_EventVoteOptions);
 			//HookEventEx("", CSGO_EventMapVote);			
 			
-			HookUserMessage(GetUserMessageId("VoteSetup"), TF2CSGO_MessageVoteSetup);
-			HookUserMessage(GetUserMessageId("VoteStart"), TF2CSGO_MessageVoteStart);
-			HookUserMessage(GetUserMessageId("VotePass"), TF2CSGO_MessageVotePass);
-			HookUserMessage(GetUserMessageId("VoteFailed"), TF2CSGO_MessageVoteFail);
-			HookUserMessage(GetUserMessageId("CallVoteFailed"), TF2CSGO_MessageCallVoteFailed);
+			HookUserMessage(GetUserMessageId("VoteSetup"), CSGO_MessageVoteSetup);
+			HookUserMessage(GetUserMessageId("VoteStart"), CSGO_MessageVoteStart);
+			HookUserMessage(GetUserMessageId("VotePass"), CSGO_MessageVotePass);
+			HookUserMessage(GetUserMessageId("VoteFailed"), CSGO_MessageVoteFail);
+			HookUserMessage(GetUserMessageId("CallVoteFailed"), CSGO_MessageCallVoteFailed);
 			
 		}
 	}
@@ -429,66 +429,40 @@ public void TF2CSGO_EventVoteCast(Event event, const char[] name, bool dontBroad
 		"option5"               "string"
 }
 */
-public TF2CSGO_EventVoteOptions(Handle:event, const String:name[], bool:dontBroadcast)
+public void TF2CSGO_EventVoteOptions(Event event, const char[] name, bool dontBroadcast)
 {
-	decl String:option1[MAX_ARG_SIZE];
-	decl String:option2[MAX_ARG_SIZE];
-	decl String:option3[MAX_ARG_SIZE];
-	decl String:option4[MAX_ARG_SIZE];
-	decl String:option5[MAX_ARG_SIZE];
+	char option1[MAX_ARG_SIZE];
+	char option2[MAX_ARG_SIZE];
+	char option3[MAX_ARG_SIZE];
+	char option4[MAX_ARG_SIZE];
+	char option5[MAX_ARG_SIZE];
 	
-	new count = GetEventInt(event, "count");
-	GetEventString(event, "option1", option1, sizeof(option1));
-	GetEventString(event, "option2", option2, sizeof(option2));
-	GetEventString(event, "option3", option3, sizeof(option3));
-	GetEventString(event, "option4", option4, sizeof(option4));
-	GetEventString(event, "option5", option5, sizeof(option5));
+	int count = event.GetInt("count");
+	event.GetString("option1", option1, sizeof(option1));
+	event.GetString("option2", option2, sizeof(option2));
+	event.GetString("option3", option3, sizeof(option3));
+	event.GetString("option4", option4, sizeof(option4));
+	event.GetString("option5", option5, sizeof(option5));
 	LogToFile(LOGFILE, "Vote Options event: count: %d, option1: %s, option2: %s, option3: %s, option4: %s, option5: %s", 
 		count, option1, option2, option3, option4, option5);
 }
 
-/*
-VoteSetup
-	- Byte		Option count
-	* String 	(multiple strings, presumably the vote options. put "  (Disabled)" without the quotes after the option text to disable one of  the options?)
- 
+/* 
 message CCSUsrMsg_VoteSetup
 {
 	repeated string potential_issues = 1;
 }	 
 */
-public Action:TF2CSGO_MessageVoteSetup(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
+public Action CSGO_MessageVoteSetup(UserMsg msg_id, Protobuf message, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new String:options[2049];
-	new count;
-	
-	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
+	char options[2049];
+	int count = message.GetRepeatedFieldCount("potential_issues");
+	for(int i = 0; i < count; i++)
 	{
-		count = PbGetRepeatedFieldCount(message, "potential_issues");
-		for(new i = 0; i < count; i++)
-		{
-			decl String:option[MAX_ARG_SIZE];
-			PbReadString(message, "potential_issues", option, MAX_ARG_SIZE, i);
-			StrCat(options, sizeof(options), option);
-			StrCat(options, sizeof(options), " ");
-		}
-	}
-	else
-	{
-		count = BfReadByte(message);
-		for (new i = 0; i < count; i++)
-		{
-			new String:option[MAX_ARG_SIZE*2+1];
-			new String:potential_issue[MAX_ARG_SIZE];
-			new String:translation[MAX_ARG_SIZE];
-			BfReadString(message, potential_issue, MAX_ARG_SIZE);
-			BfReadString(message, translation, MAX_ARG_SIZE);
-			
-			new enabled = BfReadByte(message);
-			Format(option, sizeof(option), "(%s, %s, %d) ", potential_issue, translation, enabled);
-			
-			StrCat(options, sizeof(options), option);
-		}
+		char option[MAX_ARG_SIZE];
+		message.ReadString("potential_issues", option, MAX_ARG_SIZE, i);
+		StrCat(options, sizeof(options), option);
+		StrCat(options, sizeof(options), " ");
 	}
 
 	LogToFile(LOGFILE, "VoteSetup Usermessage: count: %d, options: %s", count, options);
@@ -497,13 +471,39 @@ public Action:TF2CSGO_MessageVoteSetup(UserMsg:msg_id, Handle:message, const pla
 }
 
 /*
-VoteStart Structure
-	- Byte      Team index or -1 for all
-	- Byte      Initiator client index or 99 for Server
-	- String    Vote issue phrase
-	- String    Vote issue phrase argument
-	- Bool      false for Yes/No, true for Multiple choice
+VoteSetup
+	- Byte		Option count
+	* issue		multiple issues matching the number in the first byte
 
+issue
+	- String		Vote name
+	- String		Vote translation string
+	- Byte		Whether a vote is enabled or not.
+*/
+public Action TF2_MessageVoteSetup(UserMsg msg_id, BfRead message, const int[] players, int playersNum, bool reliable, bool init)
+{
+	char options[2049];
+	int count = message.ReadByte();
+	for (int i = 0; i < count; i++)
+	{
+		char option[MAX_ARG_SIZE*2+1];
+		char potential_issue[MAX_ARG_SIZE];
+		char translation[MAX_ARG_SIZE];
+		message.ReadString(potential_issue, MAX_ARG_SIZE);
+		message.ReadString(translation, MAX_ARG_SIZE);
+		
+		int enabled = message.ReadByte();
+		Format(option, sizeof(option), "(%s, %s, %d) ", potential_issue, translation, enabled);
+		
+		StrCat(options, sizeof(options), option);
+	}
+
+	LogToFile(LOGFILE, "VoteSetup Usermessage: count: %d, options: %s", count, options);
+	
+	return Plugin_Continue;
+}
+
+/*
 message CCSUsrMsg_VoteStart
 {
 	optional int32 team = 1;
@@ -516,34 +516,23 @@ message CCSUsrMsg_VoteStart
 
 }
 */
-public Action:TF2CSGO_MessageVoteStart(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
+public Action CSGO_MessageVoteStart(UserMsg msg_id, Protobuf message, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new String:issue[MAX_ARG_SIZE];
-	new String:otherTeamIssue[MAX_ARG_SIZE];
-	new String:param1[MAX_ARG_SIZE];
-	new team;
-	new initiator;
-	new yesNo;
-	new voteType;
+	char issue[MAX_ARG_SIZE];
+	char otherTeamIssue[MAX_ARG_SIZE];
+	char param1[MAX_ARG_SIZE];
+	int team;
+	int initiator;
+	bool yesNo;
+	int voteType;
 	
-	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
-	{
-		team = PbReadInt(message, "team");
-		initiator = PbReadInt(message, "ent_idx");
-		PbReadString(message, "disp_str", issue, MAX_ARG_SIZE);
-		PbReadString(message, "details_str", param1, MAX_ARG_SIZE);
-		yesNo = PbReadBool(message, "is_yes_no_vote");
-		PbReadString(message, "other_team_str", otherTeamIssue, MAX_ARG_SIZE);
-		voteType = PbReadInt(message, "vote_type");
-	}
-	else
-	{
-		team = BfReadByte(message);
-		initiator = BfReadByte(message);
-		BfReadString(message, issue, MAX_ARG_SIZE);
-		BfReadString(message, param1, MAX_ARG_SIZE);
-		yesNo = BfReadBool(message);
-	}
+	team = message.ReadInt("team");
+	initiator = message.ReadInt("ent_idx");
+	message.ReadString("disp_str", issue, MAX_ARG_SIZE);
+	message.ReadString("details_str", param1, MAX_ARG_SIZE);
+	yesNo = message.ReadBool("is_yes_no_vote");
+	message.ReadString("other_team_str", otherTeamIssue, MAX_ARG_SIZE);
+	voteType = message.ReadInt("vote_type");
 
 	LogToFile(LOGFILE, "VoteStart Usermessage: team: %d, initiator: %d, issue: %s, otherTeamIssue: %s, param1: %s, yesNo: %d, player count: %d, voteType: %d", team, initiator, issue, otherTeamIssue, param1, yesNo, playersNum, voteType);
 	
@@ -553,11 +542,35 @@ public Action:TF2CSGO_MessageVoteStart(UserMsg:msg_id, Handle:message, const pla
 }
 
 /*
-VotePass Structure
+VoteStart Structure
 	- Byte      Team index or -1 for all
-	- String    Vote issue pass phrase
-	- String    Vote issue pass phrase argument
+	- Byte      Initiator client index or 99 for Server
+	- String    Vote issue phrase
+	- String    Vote issue phrase argument
+	- Bool      false for Yes/No, true for Multiple choice
+*/
+public Action TF2_MessageVoteStart(UserMsg msg_id, BfRead message, const int[] players, int playersNum, bool reliable, bool init)
+{
+	char issue[MAX_ARG_SIZE];
+	char param1[MAX_ARG_SIZE];
+	int team;
+	int initiator;
+	bool yesNo;
+	
+	team = message.ReadByte();
+	initiator = message.ReadByte();
+	message.ReadString(issue, MAX_ARG_SIZE);
+	message.ReadString(param1, MAX_ARG_SIZE);
+	yesNo = message.ReadBool();
 
+	LogToFile(LOGFILE, "VoteStart Usermessage: team: %d, initiator: %d, issue: %s, param1: %s, yesNo: %d, player count: %d", team, initiator, issue, param1, yesNo, playersNum);
+	
+	CreateTimer(0.0, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+
+	return Plugin_Continue;
+}
+
+/*
 message CCSUsrMsg_VotePass
 {
 	optional int32 team = 1;
@@ -566,28 +579,61 @@ message CCSUsrMsg_VotePass
 	optional string details_str = 4;
 }
 */
-public Action:TF2CSGO_MessageVotePass(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
+public Action CSGO_MessageVotePass(UserMsg msg_id, Protobuf message, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new String:issue[MAX_ARG_SIZE];
-	new String:param1[MAX_ARG_SIZE];
-	new team;
-	new voteType;
+	char issue[MAX_ARG_SIZE];
+	char param1[MAX_ARG_SIZE];
+	int team;
+	int voteType;
 
-	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
-	{
-		team = PbReadInt(message, "team");
-		PbReadString(message, "disp_str", issue, MAX_ARG_SIZE);
-		PbReadString(message, "details_str", param1, MAX_ARG_SIZE);
-		voteType = PbReadInt(message, "vote_type");
-	}
-	else
-	{
-		team = BfReadByte(message);
-		BfReadString(message, issue, MAX_ARG_SIZE);
-		BfReadString(message, param1, MAX_ARG_SIZE);
-	}
+	team = message.ReadInt("team");
+	message.ReadString("disp_str", issue, MAX_ARG_SIZE);
+	message.ReadString("details_str", param1, MAX_ARG_SIZE);
+	voteType = message.ReadInt("vote_type");
 	
 	LogToFile(LOGFILE, "VotePass Usermessage: team: %d, issue: %s, param1: %s, voteType: %d", team, issue, param1, voteType);
+	
+	CreateTimer(DELAY, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+
+	return Plugin_Continue;
+}
+
+/*
+VotePass Structure
+	- Byte      Team index or -1 for all
+	- String    Vote issue pass phrase
+	- String    Vote issue pass phrase argument
+*/
+public Action TF2_MessageVotePass(UserMsg msg_id, BfRead message, const int[] players, int playersNum, bool reliable, bool init)
+{
+	char issue[MAX_ARG_SIZE];
+	char param1[MAX_ARG_SIZE];
+	int team;
+
+	team = message.ReadByte();
+	message.ReadString(issue, MAX_ARG_SIZE);
+	message.ReadString(param1, MAX_ARG_SIZE);
+	
+	LogToFile(LOGFILE, "VotePass Usermessage: team: %d, issue: %s, param1: %s", team, issue, param1);
+	
+	CreateTimer(DELAY, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
+
+	return Plugin_Continue;
+}
+
+/*
+message CCSUsrMsg_VoteFailed
+{
+	optional int32 team = 1;
+	optional int32 reason = 2;	
+}
+*/  
+public Action CSGO_MessageVoteFail(UserMsg msg_id, Protobuf message, const int[] players, int playersNum, bool reliable, bool init)
+{
+	int team = message.ReadInt("team");
+	int reason = message.ReadInt("reason");
+	
+	LogToFile(LOGFILE, "VoteFail Usermessage: team: %d, reason: %d", team, reason);
 	
 	CreateTimer(DELAY, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
 
@@ -598,28 +644,11 @@ public Action:TF2CSGO_MessageVotePass(UserMsg:msg_id, Handle:message, const play
 VoteFailed Structure
 	- Byte      Team index or -1 for all
 	- Byte      Failure reason code (0, 3-4)
-
-message CCSUsrMsg_VoteFailed
+*/
+public Action TF2_MessageVoteFail(UserMsg msg_id, BfRead message, const int[] players, int playersNum, bool reliable, bool init)
 {
-	optional int32 team = 1;
-	optional int32 reason = 2;	
-}
-*/  
-public Action:TF2CSGO_MessageVoteFail(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
-{
-	new team;
-	new reason;
-	
-	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
-	{
-		team = PbReadInt(message, "team");
-		reason = PbReadInt(message, "reason");
-	}
-	else
-	{
-		team = BfReadByte(message);
-		reason = BfReadByte(message);
-	}
+	int team = message.ReadByte();
+	int reason = message.ReadByte();
 	
 	LogToFile(LOGFILE, "VoteFail Usermessage: team: %d, reason: %d", team, reason);
 	
@@ -628,19 +657,19 @@ public Action:TF2CSGO_MessageVoteFail(UserMsg:msg_id, Handle:message, const play
 	return Plugin_Continue;
 }
 
-public Action:TF2CSGO_LogControllerValues(Handle:timer)
+public Action TF2CSGO_LogControllerValues(Handle timer)
 {
 	if (!CheckVoteController())
 	{
 		return Plugin_Continue;
 	}
 	
-	new team = GetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote");
-	new activeIssue = GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex");
-	new potentialVotes = GetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes");
-	new bool:isYesNo = bool:GetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote");
-	new voteCounts[5];
-	for (new i = 0; i < 5; ++i)
+	int team = GetEntProp(g_VoteController, Prop_Send, "m_iOnlyTeamToVote");
+	int activeIssue = GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex");
+	int potentialVotes = GetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes");
+	bool isYesNo = view_as<bool>(GetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote"));
+	int voteCounts[5];
+	for (int i = 0; i < 5; ++i)
 	{
 		voteCounts[i] = GetEntProp(g_VoteController, Prop_Send, "m_nVoteOptionCount", _, i);
 	}
@@ -650,17 +679,17 @@ public Action:TF2CSGO_LogControllerValues(Handle:timer)
 	return Plugin_Continue;
 }
 
-public Action:L4DL4D2_LogControllerValues(Handle:timer)
+public Action L4DL4D2_LogControllerValues(Handle timer)
 {
 	if (!CheckVoteController())
 	{
 		return Plugin_Continue;
 	}
 	
-	new team = GetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote");
-	new activeIssue = GetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex");
-	new potentialVotes = GetEntProp(g_VoteController, Prop_Send, "potentialVotes");
-	new voteCounts[2];
+	int team = GetEntProp(g_VoteController, Prop_Send, "m_onlyTeamToVote");
+	int activeIssue = GetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex");
+	int potentialVotes = GetEntProp(g_VoteController, Prop_Send, "potentialVotes");
+	int voteCounts[2];
 	voteCounts[0] = GetEntProp(g_VoteController, Prop_Send, "m_votesYes");
 	voteCounts[1] = GetEntProp(g_VoteController, Prop_Send, "m_votesNo");
 	
@@ -670,31 +699,30 @@ public Action:L4DL4D2_LogControllerValues(Handle:timer)
 }
 
 /*
-CallVoteFailed
-    - Byte		Failure reason code (1-2, 5-15)
-    - Short		Time until new vote allowed for code 2
-
 message CCSUsrMsg_CallVoteFailed
 {
 	optional int32 reason = 1;
 	optional int32 time = 2;
 }
 */
-public Action:TF2CSGO_MessageCallVoteFailed(UserMsg:msg_id, Handle:message, const players[], playersNum, bool:reliable, bool:init)
+public Action CSGO_MessageCallVoteFailed(UserMsg msg_id, Protobuf message, const int[] players, int playersNum, bool reliable, bool init)
 {
-	new reason;
-	new time;
+	int reason = message.ReadInt("reason");
+	int time = message.ReadInt("time");
 	
-	if(GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available && GetUserMessageType() == UM_Protobuf)
-	{
-		reason = PbReadInt(message, "reason");
-		time = PbReadInt(message, "time");
-	}
-	else
-	{
-		reason = BfReadByte(message);
-		time = BfReadShort(message);
-	}
+	LogToFile(LOGFILE, "CallVoteFailed Usermessage: reason: %d, time: %d", reason, time);
+	return Plugin_Continue;
+}
+
+/*
+CallVoteFailed
+    - Byte		Failure reason code (1-2, 5-15)
+    - Short		Time until new vote allowed for code 2
+*/
+public Action TF2_MessageCallVoteFailed(UserMsg msg_id, BfRead message, const int[] players, int playersNum, bool reliable, bool init)
+{
+	int reason = message.ReadByte();
+	int time = message.ReadShort();
 	
 	LogToFile(LOGFILE, "CallVoteFailed Usermessage: reason: %d, time: %d", reason, time);
 	return Plugin_Continue;
@@ -716,19 +744,19 @@ public Action:TF2CSGO_MessageCallVoteFailed(UserMsg:msg_id, Handle:message, cons
 		"slot10"		"byte"
 	}
 */
-public CSGO_EventMapVote(Handle:event, const String:name[], bool:dontBroadcast)
+public void CSGO_EventMapVote(Event event, const char[] name, bool dontBroadcast)
 {
-	new count = GetEventInt(event, "count");
-	new slot1 = GetEventInt(event, "slot1");
-	new slot2 = GetEventInt(event, "slot2");
-	new slot3 = GetEventInt(event, "slot3");
-	new slot4 = GetEventInt(event, "slot4");
-	new slot5 = GetEventInt(event, "slot5");
-	new slot6 = GetEventInt(event, "slot6");
-	new slot7 = GetEventInt(event, "slot7");
-	new slot8 = GetEventInt(event, "slot8");
-	new slot9 = GetEventInt(event, "slot9");
-	new slot10 = GetEventInt(event, "slot10");
+	int count = event.GetInt("count");
+	int slot1 = event.GetInt("slot1");
+	int slot2 = event.GetInt("slot2");
+	int slot3 = event.GetInt("slot3");
+	int slot4 = event.GetInt("slot4");
+	int slot5 = event.GetInt("slot5");
+	int slot6 = event.GetInt("slot6");
+	int slot7 = event.GetInt("slot7");
+	int slot8 = event.GetInt("slot8");
+	int slot9 = event.GetInt("slot9");
+	int slot10 = event.GetInt("slot10");
 	
 	LogToFile(LOGFILE, "Endmatch_Mapvote_SelectingMap event: count: %d, slot1: %d, slot2: %d, slot3: %d, slot4: %d, slot5: %d, slot6: %d, slot7: %d, slot8: %d, slot9: %d, slot10: %d ",
 	count, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, slot9, slot10);
@@ -738,9 +766,9 @@ public CSGO_EventMapVote(Handle:event, const String:name[], bool:dontBroadcast)
 Vote command
     - String		option1 through option5 (for TF2/CS:GO); Yes or No (for L4D/L4D2)
  */
-public Action:CommandVote(client, const String:command[], argc)
+public Action CommandVote(int client, const char[] command, int argc)
 {
-	decl String:vote[MAX_ARG_SIZE];
+	char vote[MAX_ARG_SIZE];
 	GetCmdArg(1, vote, sizeof(vote));
 	
 	LogToFile(LOGFILE, "%N used vote command: %s %s", client, command, vote);
@@ -752,19 +780,11 @@ callvote command
 	- String		Vote type (Valid types are sent in the VoteSetup message)
 	- String		target (or type - target for Kick)
 */
-public Action:CommandCallVote(client, const String:command[], argc)
+public Action CommandCallVote(int client, const char[] command, int argc)
 {
-	decl String:args[255];
+	char args[255];
 	GetCmdArgString(args, sizeof(args));
 	
 	LogToFile(LOGFILE, "callvote command: client: %N, command: %s", client, args);
 	return Plugin_Continue;
-}
-
-public Action:Timer_TF2CSGO_VoteController(Handle:timer)
-{
-	if (CheckVoteController())
-	{
-		
-	}
 }
