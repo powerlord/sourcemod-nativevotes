@@ -220,7 +220,7 @@ enum NativeVotesOverride
 	NativeVotesOverride_ClassLimits,
 }
 
-methodmap NativeVote < Handle
+methodmap NativeVote < KeyValues
 {
 	// Creates a new, empty vote.
 	//

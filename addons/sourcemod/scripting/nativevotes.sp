@@ -38,9 +38,11 @@
 
 #pragma semicolon 1
 
+#pragma newdecls required
+
 #include "include/nativevotes.inc"
 
-new EngineVersion:g_EngineVersion = Engine_Unknown;
+EngineVersion g_EngineVersion = Engine_Unknown;
 
 #include "nativevotes/data-keyvalues.sp"
 
@@ -74,41 +76,41 @@ new EngineVersion:g_EngineVersion = Engine_Unknown;
 
 //----------------------------------------------------------------------------
 // Global Variables
-new g_NextVote = 0;
+int g_NextVote = 0;
 
 //----------------------------------------------------------------------------
 // CVars
-new Handle:g_Cvar_VoteHintbox;
-new Handle:g_Cvar_VoteChat;
-new Handle:g_Cvar_VoteConsole;
-new Handle:g_Cvar_VoteClientConsole;
-new Handle:g_Cvar_VoteDelay;
+ConVar g_Cvar_VoteHintbox;
+ConVar g_Cvar_VoteChat;
+ConVar g_Cvar_VoteConsole;
+ConVar g_Cvar_VoteClientConsole;
+ConVar g_Cvar_VoteDelay;
 
 //----------------------------------------------------------------------------
 // Used to track current vote data
 //new Handle:g_hVoteTimer;
-new Handle:g_hDisplayTimer;
+Handle g_hDisplayTimer;
 
-new g_Clients;
-new g_TotalClients;
-new g_Items;
-new Handle:g_hVotes;
-new Handle:g_hCurVote;
-new g_curDisplayClient = 0;
-new String:g_newMenuTitle[TRANSLATION_LENGTH];
-new g_curItemClient = 0;
-new String:g_newMenuItem[TRANSLATION_LENGTH];
+int g_Clients;
+int g_TotalClients;
+int g_Items;
+ArrayList g_hVotes;
+NativeVote g_hCurVote;
+int g_curDisplayClient = 0;
+char g_newMenuTitle[TRANSLATION_LENGTH];
+int g_curItemClient = 0;
+char g_newMenuItem[TRANSLATION_LENGTH];
 
-new bool:g_bStarted;
-new bool:g_bCancelled;
-new g_NumVotes;
-new g_VoteTime;
-new g_VoteFlags;
-new Float:g_fStartTime;
-new g_TimeLeft;
-new g_ClientVotes[MAXPLAYERS+1];
-new bool:g_bRevoting[MAXPLAYERS+1];
-new String:g_LeaderList[1024];
+bool g_bStarted;
+bool g_bCancelled;
+int g_NumVotes;
+int g_VoteTime;
+int g_VoteFlags;
+float g_fStartTime;
+int g_TimeLeft;
+int g_ClientVotes[MAXPLAYERS+1];
+bool g_bRevoting[MAXPLAYERS+1];
+char g_LeaderList[1024];
 
 enum CallVoteForwards
 {
@@ -122,11 +124,11 @@ enum CallVoteListData
 	bool:CallVoteList_VoteEnabled,
 }
 
-new g_CallVotes[NativeVotesOverride][CallVoteForwards];
+int g_CallVotes[NativeVotesOverride][CallVoteForwards];
 
 #include "nativevotes/game.sp"
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "NativeVotes",
 	author = "Powerlord",
@@ -135,9 +137,9 @@ public Plugin:myinfo =
 	url = "https://forums.alliedmods.net/showthread.php?t=208008"
 }
 
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	new String:engineName[64];
+	char engineName[64];
 	if (!Game_IsGameSupported(engineName, sizeof(engineName)))
 	{
 		Format(error, err_max, "Unsupported game: %s", engineName);
@@ -227,7 +229,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	return APLRes_Success;
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	LoadTranslations("core.phrases");
 	LoadTranslations("nativevotes.phrases.txt");
@@ -253,31 +255,31 @@ public OnPluginStart()
 		
 		// None is type 0, which has no overrides
 		// As of 2015-02-27, there are 9 votes for a total of 18 private forwards created here.
-		for (new i = 1; i < sizeof(g_CallVotes); i++)
+		for (int i = 1; i < sizeof(g_CallVotes); i++)
 		{
 			g_CallVotes[i][CallVote_Forward] = CreateForward(ET_Hook, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
 			g_CallVotes[i][CallVote_Vis] = CreateForward(ET_Hook, Param_Cell, Param_Cell);
 		}
 	}
 	
-	g_hVotes = CreateArray(_, Game_GetMaxItems());
+	g_hVotes = new ArrayList(1, Game_GetMaxItems());
 	
 	AutoExecConfig(true, "nativevotes");
 }
 
-public OnClientDisconnect_Post(client)
+public void OnClientDisconnect_Post(int client)
 {
 	if (!Internal_IsVoteInProgress() || !Internal_IsClientInVotePool(client))
 	{
 		return;
 	}
 
-	new item = g_ClientVotes[client];
+	int item = g_ClientVotes[client];
 	if (item >= VOTE_PENDING)
 	{
 		if (item > VOTE_PENDING)
 		{
-			SetArrayCell(g_hVotes, item, GetArrayCell(g_hVotes, item) - 1);
+			g_hVotes.Set(item, g_hVotes.Get(item) - 1);
 		}
 		
 		g_ClientVotes[client] = VOTE_NOT_VOTING;
@@ -296,27 +298,27 @@ public OnClientDisconnect_Post(client)
 	}
 }
 
-public Action:Command_CallVote(client, const String:command[], argc)
+public Action Command_CallVote(int client, const char[] command, int argc)
 {
-	if (Internal_IsVoteInProgress())
+	if (Internal_IsVoteInProgress() || Game_IsVoteInProgress())
 	{
 		return Plugin_Handled;
 	}
 	
-	new Action:result = Plugin_Continue;
+	Action result = Plugin_Continue;
 	
 	switch (argc)
 	{
 		// No args means that we need to return a CallVoteSetup usermessage
 		case 0:
 		{
-			new Handle:hVoteTypes = CreateArray(_:CallVoteListData); // Stores arrays of CallVoteListData
+			ArrayList hVoteTypes = new ArrayList(view_as<int>(CallVoteListData)); // Stores arrays of CallVoteListData
 			
 			Game_AddDefaultVotes(hVoteTypes);
 
 			// Add our overridden votes to the system
-			new bool:overridesPresent = false;
-			for (new i = 1; i < sizeof(g_CallVotes); i++)
+			bool overridesPresent = false;
+			for (int i = 1; i < sizeof(g_CallVotes); i++)
 			{
 				if (GetForwardFunctionCount(g_CallVotes[i][CallVote_Forward]) > 0)
 				{
@@ -324,26 +326,26 @@ public Action:Command_CallVote(client, const String:command[], argc)
 					LogMessage("Found overrides for vote type: %d", i);
 #endif
 					overridesPresent = true;
-					new voteType[CallVoteListData];
+					int voteType[CallVoteListData];
 
-					new pos = FindVoteInArray(hVoteTypes, NativeVotesOverride:i);
+					int pos = FindVoteInArray(hVoteTypes, view_as<NativeVotesOverride>(i));
 					if (pos > -1)
 					{
-						GetArrayArray(hVoteTypes, pos, voteType[0], sizeof(voteType));
+						hVoteTypes.GetArray(pos, voteType[0], sizeof(voteType));
 						voteType[CallVoteList_VoteEnabled] = true;
 #if defined LOG
 						LogMessage("Forcing vote type to visible: %d", i);
 #endif
-						SetArrayArray(hVoteTypes, pos, voteType[0], sizeof(voteType));
+						hVoteTypes.SetArray(pos, voteType[0], sizeof(voteType));
 					}
 					else
 					{
 #if defined LOG
 						LogMessage("Creating override for vote type: %d", i);
 #endif
-						voteType[CallVoteList_VoteType] = NativeVotesOverride:i;
+						voteType[CallVoteList_VoteType] = view_as<NativeVotesOverride>(i);
 						voteType[CallVoteList_VoteEnabled] = true;
-						PushArrayArray(hVoteTypes, voteType[0], sizeof(voteType));
+						hVoteTypes.PushArray(voteType[0], sizeof(voteType));
 					}
 				}
 			}
@@ -355,26 +357,26 @@ public Action:Command_CallVote(client, const String:command[], argc)
 				LogMessage("Overriding VoteSetup message");
 #endif
 				Game_DisplayVoteSetup(client, hVoteTypes);
-				CloseHandle(hVoteTypes);
+				delete hVoteTypes;
 				return Plugin_Handled;
 			}
 			else
 			{
-				CloseHandle(hVoteTypes);
+				delete hVoteTypes;
 				return Plugin_Continue;
 			}
 		}
 		
 		default:
 		{
-			decl String:voteCommand[VOTE_STRING_SIZE];
+			char voteCommand[VOTE_STRING_SIZE];
 			GetCmdArg(1, voteCommand, VOTE_STRING_SIZE);
 
 #if defined LOG
 			LogMessage("User is attempting to call %s", voteCommand);
 #endif
 			
-			new NativeVotesOverride:overrideType = Game_VoteStringToVoteOverride(voteCommand);
+			NativeVotesOverride overrideType = Game_VoteStringToVoteOverride(voteCommand);
 			
 			if (GetForwardFunctionCount(g_CallVotes[overrideType][CallVote_Forward]) == 0)
 			{
@@ -397,22 +399,22 @@ public Action:Command_CallVote(client, const String:command[], argc)
 				return result;
 			}
 			
-			new String:argument[64];
+			char argument[64];
 			
-			new NativeVotesType:voteType = Game_VoteStringToVoteType(voteCommand);
+			NativeVotesType voteType = Game_VoteStringToVoteType(voteCommand);
 			
-			new target = 0;
+			int target = 0;
 			
-			new NativeVotesKickType:kickType = NativeVotesKickType_None;
+			NativeVotesKickType kickType = NativeVotesKickType_None;
 			
 			if (voteType == NativeVotesType_Kick)
 			{
-				decl String:param1[20];
+				char param1[20];
 				GetCmdArg(2, param1, sizeof(param1));
 				
 				kickType = Game_GetKickType(param1, target);
 				
-				new targetClient = GetClientOfUserId(target);
+				int targetClient = GetClientOfUserId(target);
 				
 				if (targetClient < 1 || targetClient > MaxClients || !IsClientInGame(targetClient))
 				{
@@ -446,13 +448,13 @@ public Action:Command_CallVote(client, const String:command[], argc)
 
 }
 
-FindVoteInArray(Handle:array, NativeVotesOverride:value)
+int FindVoteInArray(ArrayList myArray, NativeVotesOverride value)
 {
-	new size = GetArraySize(array);
-	for (new i = 0; i < size; i++)
+	int size = myArray.Length;
+	for (int i = 0; i < size; i++)
 	{
-		new voteData[CallVoteListData];
-		GetArrayArray(array, i, voteData[0]);
+		int voteData[CallVoteListData];
+		myArray.GetArray(i, voteData[0]);
 		
 		if (voteData[CallVoteList_VoteType] == value)
 		{
@@ -463,10 +465,10 @@ FindVoteInArray(Handle:array, NativeVotesOverride:value)
 	return -1;
 }
 
-public OnVoteDelayChange(Handle:convar, const String:oldValue[], const String:newValue[])
+public void OnVoteDelayChange(ConVar convar, const char[] oldValue, const char[] newValue)
 {
 	/* See if the new vote delay isn't something we need to account for */
-	if (GetConVarInt(convar) < 1)
+	if (convar.IntValue < 1)
 	{
 		g_NextVote = 0;
 		return;
@@ -483,25 +485,25 @@ public OnVoteDelayChange(Handle:convar, const String:oldValue[], const String:ne
 	g_NextVote += StringToInt(newValue);
 }
 
-public OnMapEnd()
+public void OnMapEnd()
 {
-	if (g_hCurVote != INVALID_HANDLE)
+	if (g_hCurVote != null)
 	{
 		// Cancel the ongoing vote, but don't close the handle, as the other plugins may still re-use it
 		CancelVoting();
 		//OnVoteCancel(g_hCurVote, VoteCancel_Generic);
-		g_hCurVote = INVALID_HANDLE;
+		g_hCurVote = null;
 	}
 	
-	if (g_hDisplayTimer != INVALID_HANDLE)
+	if (g_hDisplayTimer != null)
 	{
-		g_hDisplayTimer = INVALID_HANDLE;
+		delete g_hDisplayTimer;
 	}
 
 //	g_hVoteTimer = INVALID_HANDLE;
 }
 
-public Action:Command_Vote(client, const String:command[], argc)
+public Action Command_Vote(int client, const char[] command, int argc)
 {
 	// If we're not running a vote, return the vote control back to the server
 	if (!Internal_IsVoteInProgress())
@@ -509,10 +511,10 @@ public Action:Command_Vote(client, const String:command[], argc)
 		return Plugin_Continue;
 	}
 	
-	decl String:option[32];
+	char option[32];
 	GetCmdArg(1, option, sizeof(option));
 	
-	new item = Game_ParseVote(option);
+	int item = Game_ParseVote(option);
 	
 	if (item == NATIVEVOTES_VOTE_INVALID)
 	{
@@ -524,7 +526,7 @@ public Action:Command_Vote(client, const String:command[], argc)
 	return Plugin_Handled;
 }
 
-OnVoteSelect(Handle:vote, client, item)
+void OnVoteSelect(NativeVote vote, int client, int item)
 {
 	if (Internal_IsVoteInProgress() && g_ClientVotes[client] == VOTE_PENDING)
 	{
@@ -534,27 +536,27 @@ OnVoteSelect(Handle:vote, client, item)
 			Game_ClientSelectedItem(vote, client, item);
 			
 			g_ClientVotes[client] = item;
-			SetArrayCell(g_hVotes, item, GetArrayCell(g_hVotes, item) + 1);
+			g_hVotes.Set(item, g_hVotes.Get(item) + 1);
 			g_NumVotes++;
 			
 			Game_UpdateVoteCounts(g_hVotes, g_TotalClients);
 			
-			if (GetConVarBool(g_Cvar_VoteChat) || GetConVarBool(g_Cvar_VoteConsole) || GetConVarBool(g_Cvar_VoteClientConsole))
+			if (g_Cvar_VoteChat.BoolValue || g_Cvar_VoteConsole.BoolValue || g_Cvar_VoteClientConsole.BoolValue)
 			{
-				decl String:choice[128];
-				decl String:name[MAX_NAME_LENGTH];
+				char choice[128];
+				char name[MAX_NAME_LENGTH+1];
 				Data_GetItemDisplay(vote, item, choice, sizeof(choice));
 				
 				GetClientName(client, name, MAX_NAME_LENGTH);
 				
-				if (GetConVarBool(g_Cvar_VoteConsole))
+				if (g_Cvar_VoteConsole.BoolValue)
 				{
 					PrintToServer("[%s] %T", LOGTAG, "Voted For", LANG_SERVER, name, choice);
 				}
 				
-				if (GetConVarBool(g_Cvar_VoteChat) || GetConVarBool(g_Cvar_VoteClientConsole))
+				if (g_Cvar_VoteChat.BoolValue || g_Cvar_VoteClientConsole.BoolValue)
 				{
-					decl String:phrase[30];
+					char phrase[30];
 					
 					if (g_bRevoting[client])
 					{
@@ -565,14 +567,14 @@ OnVoteSelect(Handle:vote, client, item)
 						strcopy(phrase, sizeof(phrase), "Voted For");
 					}
 					
-					if (GetConVarBool(g_Cvar_VoteChat))
+					if (g_Cvar_VoteChat.BoolValue)
 					{
 						PrintToChatAll("[%s] %t", LOGTAG, phrase, name, choice);
 					}
 					
-					if (GetConVarBool(g_Cvar_VoteClientConsole))
+					if (g_Cvar_VoteClientConsole.BoolValue)
 					{
-						for (new i = 1; i <= MaxClients; i++)
+						for (int i = 1; i <= MaxClients; i++)
 						{
 							if (IsClientInGame(i) && !IsFakeClient(i))
 							{
@@ -593,9 +595,9 @@ OnVoteSelect(Handle:vote, client, item)
 }
 
 //MenuAction_Select
-OnSelect(Handle:vote, client, item)
+void OnSelect(NativeVote vote, int client, int item)
 {
-	new MenuAction:actions = Data_GetActions(vote);
+	MenuAction actions = Data_GetActions(vote);
 	if (actions & MenuAction_Select)
 	{
 		DoAction(vote, MenuAction_Select, client, item);
@@ -603,24 +605,24 @@ OnSelect(Handle:vote, client, item)
 }
 
 //MenuAction_End
-OnEnd(Handle:vote, item)
+void OnEnd(NativeVote vote, int item)
 {
 	// Always called
 	DoAction(vote, MenuAction_End, item, 0);
 }
 
 
-stock OnVoteEnd(Handle:vote, item)
+stock void OnVoteEnd(NativeVote vote, int item)
 {
 	// Always called
 	DoAction(vote, MenuAction_VoteEnd, item, 0);
 }
 
-OnVoteStart(Handle:vote)
+void OnVoteStart(NativeVote vote)
 {
 	// Fire both Start and VoteStart in the other plugin.
 	
-	new MenuAction:actions = Data_GetActions(vote);
+	MenuAction actions = Data_GetActions(vote);
 	if (actions & MenuAction_Start)
 	{
 		DoAction(vote, MenuAction_Start, 0, 0);
@@ -630,17 +632,17 @@ OnVoteStart(Handle:vote)
 	DoAction(vote, MenuAction_VoteStart, 0, 0);
 }
 
-OnVoteCancel(Handle:vote, reason)
+void OnVoteCancel(NativeVote vote, int reason)
 {
 	// Always called
 	DoAction(vote, MenuAction_VoteCancel, reason, 0);
 }
 
-DoAction(Handle:vote, MenuAction:action, param1, param2, Action:def_res = Plugin_Continue)
+Action DoAction(NativeVote vote, MenuAction action, int param1, int param2, Action def_res = Plugin_Continue)
 {
-	new Action:res = def_res;
+	Action res = def_res;
 
-	new Handle:handler = Data_GetHandler(vote);
+	Handle handler = Data_GetHandler(vote);
 #if defined LOG
 	LogMessage("Calling Menu forward for vote: %d, handler: %d, action: %d, param1: %d, param2: %d", vote, handler, action, param1, param2);
 #endif
@@ -650,18 +652,18 @@ DoAction(Handle:vote, MenuAction:action, param1, param2, Action:def_res = Plugin
 	Call_PushCell(param1);
 	Call_PushCell(param2);
 	Call_Finish(res);
-	return _:res;
+	return res;
 }
 
-OnVoteResults(Handle:vote, const votes[][], num_votes, item_count, const client_list[][], num_clients)
+void OnVoteResults(NativeVote vote, const int[][] votes, int num_votes, int item_count, const int[][] client_list, int num_clients)
 {
-	new Handle:resultsHandler = Data_GetResultCallback(vote);
+	Handle resultsHandler = Data_GetResultCallback(vote);
 	
-	if (resultsHandler == INVALID_HANDLE || !GetForwardFunctionCount(resultsHandler))
+	if (resultsHandler == null || !GetForwardFunctionCount(resultsHandler))
 	{
 		/* Call MenuAction_VoteEnd instead.  See if there are any extra winners. */
-		new num_items = 1;
-		for (new i = 1; i < num_votes; i++)
+		int num_items = 1;
+		for (int i = 1; i < num_votes; i++)
 		{
 			if (votes[i][VOTEINFO_ITEM_VOTES] != votes[0][VOTEINFO_ITEM_VOTES])
 			{
@@ -671,7 +673,7 @@ OnVoteResults(Handle:vote, const votes[][], num_votes, item_count, const client_
 		}
 		
 		/* See if we need to pick a random winner. */
-		new winning_item;
+		int winning_item;
 		if (num_items > 1)
 		{
 			/* Yes, we do */
@@ -684,7 +686,7 @@ OnVoteResults(Handle:vote, const votes[][], num_votes, item_count, const client_
 			winning_item = votes[0][VOTEINFO_ITEM_INDEX];
 		}
 		
-		new winning_votes = votes[0][VOTEINFO_ITEM_VOTES];
+		int winning_votes = votes[0][VOTEINFO_ITEM_VOTES];
 		
 		DoAction(vote, MenuAction_VoteEnd, winning_item, (num_votes << 16) | (winning_votes & 0xFFFF));
 	}
@@ -692,20 +694,20 @@ OnVoteResults(Handle:vote, const votes[][], num_votes, item_count, const client_
 	{
 		// This code is quite different than its C++ version, as we're reversing the logic previously done
 		
-		new client_indexes[num_clients];
-		new client_items[num_clients];
-		new vote_items[item_count];
-		new vote_votes[item_count];
+		int[] client_indexes = new int[num_clients];
+		int[] client_items = new int[num_clients];
+		int[] vote_items = new int[item_count];
+		int[] vote_votes = new int[item_count];
 		
 		/* First array */
-		for (new i = 0; i < item_count; i++)
+		for (int i = 0; i < item_count; i++)
 		{
 			vote_items[i] = votes[i][VOTEINFO_ITEM_INDEX];
 			vote_votes[i] = votes[i][VOTEINFO_ITEM_VOTES];
 		}
 		
 		/* Second array */
-		for (new i = 0; i < num_clients; i++)
+		for (int i = 0; i < num_clients; i++)
 		{
 			client_indexes[i] = client_list[i][VOTEINFO_CLIENT_INDEX];
 			client_items[i] = client_list[i][VOTEINFO_CLIENT_ITEM];
@@ -809,53 +811,53 @@ bool:SendResultCallback(Handle:vote, num_votes, num_items, const votes[][])
 }
 */
 
-DrawHintProgress()
+void DrawHintProgress()
 {
-	if (!GetConVarBool(g_Cvar_VoteHintbox))
+	if (!g_Cvar_VoteHintbox.BoolValue)
 	{
 		return;
 	}
 	
-	new Float:timeRemaining = (g_fStartTime + g_VoteTime) - GetGameTime();
+	float timeRemaining = (g_fStartTime + g_VoteTime) - GetGameTime();
 	
 	if (timeRemaining < 0.0)
 	{
 		timeRemaining = 0.0;
 	}
 	
-	new iTimeRemaining = RoundFloat(timeRemaining);
+	int iTimeRemaining = RoundFloat(timeRemaining);
 
 	PrintHintTextToAll("%t%s", "Vote Count", g_NumVotes, g_TotalClients, iTimeRemaining, g_LeaderList);
 }
 
-BuildVoteLeaders()
+void BuildVoteLeaders()
 {
-	if (g_NumVotes == 0 || !GetConVarBool(g_Cvar_VoteHintbox))
+	if (g_NumVotes == 0 || !g_Cvar_VoteHintbox.BoolValue)
 	{
 		return;
 	}
 	
 	// Since we can't have structs, we get "struct" with this instead
 	
-	new slots = Game_GetMaxItems();
-	new votes[slots][2];
+	int slots = Game_GetMaxItems();
+	int[][] votes = new int[slots][2];
 	
-	new num_items = Internal_GetResults(votes);
+	int num_items = Internal_GetResults(votes);
 	
 	/* Take the top 3 (if applicable) and draw them */
 	g_LeaderList[0] = '\0';
 	
-	for (new i = 0; i < num_items && i < 3; i++)
+	for (int i = 0; i < num_items && i < 3; i++)
 	{
-		new cur_item = votes[i][VOTEINFO_ITEM_INDEX];
-		decl String:choice[256];
+		int cur_item = votes[i][VOTEINFO_ITEM_INDEX];
+		char choice[256];
 		Data_GetItemDisplay(g_hCurVote, cur_item, choice, sizeof(choice));
 		Format(g_LeaderList, sizeof(g_LeaderList), "%s\n%i. %s: (%i)", g_LeaderList, i+1, choice, votes[i][VOTEINFO_ITEM_VOTES]);
 	}
 	
 }
 
-public SortVoteItems(a[], b[], const array[][], Handle:hndl)
+public int SortVoteItems(int[] a, int[] b, const int[][] array, Handle hndl)
 {
 	if (b[VOTEINFO_ITEM_VOTES] == a[VOTEINFO_ITEM_VOTES])
 	{
@@ -871,7 +873,7 @@ public SortVoteItems(a[], b[], const array[][], Handle:hndl)
 	}
 }
 
-DecrementPlayerCount()
+void DecrementPlayerCount()
 {
 	g_Clients--;
 	
@@ -884,9 +886,9 @@ DecrementPlayerCount()
 }
 
 
-EndVoting()
+void EndVoting()
 {
-	new voteDelay = GetConVarInt(g_Cvar_VoteDelay);
+	int voteDelay = g_Cvar_VoteDelay.IntValue;
 	if (voteDelay < 1)
 	{
 		g_NextVote = 0;
@@ -896,10 +898,9 @@ EndVoting()
 		g_NextVote = GetTime() + voteDelay;
 	}
 	
-	if (g_hDisplayTimer != INVALID_HANDLE)
+	if (g_hDisplayTimer != null)
 	{
-		KillTimer(g_hDisplayTimer);
-		g_hDisplayTimer = INVALID_HANDLE;
+		delete g_hDisplayTimer;
 	}
 	
 	if (g_bCancelled)
@@ -908,34 +909,34 @@ EndVoting()
 		 * Reset just in case someone tries to redraw, which means
 		 * we need to save our states.
 		 */
-		new Handle:vote = g_hCurVote;
+		NativeVote vote = g_hCurVote;
 		Internal_Reset(true);
 		OnVoteCancel(vote, VoteCancel_Generic);
 		OnEnd(vote, MenuEnd_VotingCancelled);
 		return;
 	}
 	
-	new slots = Game_GetMaxItems();
-	new votes[slots][2];
-	new num_votes;
-	new num_items = Internal_GetResults(votes, num_votes);
+	int slots = Game_GetMaxItems();
+	int[][] votes = new int[slots][2];
+	int num_votes;
+	int num_items = Internal_GetResults(votes, num_votes);
 	
 	if (!num_votes)
 	{
-		new Handle:vote = g_hCurVote;
+		NativeVote vote = g_hCurVote;
 		Internal_Reset();
 		OnVoteCancel(vote, VoteCancel_NoVotes);
 		OnEnd(vote, MenuEnd_VotingCancelled);
 		return;
 	}
 	
-	new client_list[MaxClients][2];
-	new num_clients = Internal_GetClients(client_list);
+	int[][] client_list = new int[MaxClients][2];
+	int num_clients = Internal_GetClients(client_list);
 	
 	/* Save states, then clear what we've saved.
 	 * This makes us re-entrant, which is always the safe way to go.
 	 */
-	new Handle:vote = g_hCurVote;
+	NativeVote vote = g_hCurVote;
 	Internal_Reset();
 	
 	/* Send vote info */
@@ -943,7 +944,7 @@ EndVoting()
 	OnEnd(vote, MenuEnd_VotingDone);
 }
 
-bool:StartVote(Handle:vote, num_clients, clients[], max_time, flags)
+bool StartVote(NativeVote vote, int num_clients, int[] clients, int max_time, int flags)
 {
 	if (!InitializeVoting(vote, max_time, flags))
 	{
@@ -953,7 +954,7 @@ bool:StartVote(Handle:vote, num_clients, clients[], max_time, flags)
 	/* Due to hibernating servers, we no longer use GameTime, but instead standard timestamps.
 	 */
 
-	new voteDelay = GetConVarInt(g_Cvar_VoteDelay);
+	int voteDelay = g_Cvar_VoteDelay.IntValue;
 	if (voteDelay < 1)
 	{
 		g_NextVote = 0;
@@ -971,9 +972,9 @@ bool:StartVote(Handle:vote, num_clients, clients[], max_time, flags)
 	g_VoteTime = max_time;
 	g_TimeLeft = max_time;
 	
-	new clientCount = 0;
+	int clientCount = 0;
 	
-	for (new i = 0; i < num_clients; ++i)
+	for (int i = 0; i < num_clients; ++i)
 	{
 		if (clients[i] < 1 || clients[i] > MaxClients)
 		{
@@ -997,12 +998,12 @@ bool:StartVote(Handle:vote, num_clients, clients[], max_time, flags)
 	return true;
 }
 
-bool:DoClientVote(Handle:vote, clients[], num_clients)
+bool DoClientVote(NativeVote vote, int[] clients, int num_clients)
 {
-	new totalPlayers = 0;
-	new realClients[MaxClients+1];
+	int totalPlayers = 0;
+	int[] realClients = new int[MaxClients+1];
 	
-	for (new i = 0; i < num_clients; ++i)
+	for (int i = 0; i < num_clients; ++i)
 	{
 		if (clients[i] < 1 || clients[i] > MaxClients || !IsClientInGame(clients[i]) || IsFakeClient(clients[i]))
 		{
@@ -1023,7 +1024,7 @@ bool:DoClientVote(Handle:vote, clients[], num_clients)
 	}
 }
 
-bool:InitializeVoting(Handle:vote, time, flags)
+bool InitializeVoting(NativeVote vote, int time, int flags)
 {
 	if (Internal_IsVoteInProgress())
 	{
@@ -1033,7 +1034,7 @@ bool:InitializeVoting(Handle:vote, time, flags)
 	Internal_Reset();
 	
 	/* Mark all clients as not voting */
-	for (new i = 1; i <= MaxClients; ++i)
+	for (int i = 1; i <= MaxClients; ++i)
 	{
 		g_ClientVotes[i] = VOTE_NOT_VOTING;
 		g_bRevoting[i] = false;
@@ -1042,9 +1043,9 @@ bool:InitializeVoting(Handle:vote, time, flags)
 	g_Items = Data_GetItemCount(vote);
 	
 	// Clear all items
-	for (new i = 0; i < GetArraySize(g_hVotes); ++i)
+	for (int i = 0; i < g_hVotes.Length; ++i)
 	{
-		SetArrayCell(g_hVotes, i, 0);
+		g_hVotes.Set(i, 0);
 	}
 	
 	g_hCurVote = vote;
@@ -1054,9 +1055,9 @@ bool:InitializeVoting(Handle:vote, time, flags)
 	return true;
 }
 
-StartVoting()
+void StartVoting()
 {
-	if (g_hCurVote == INVALID_HANDLE)
+	if (g_hCurVote == null)
 	{
 		return;
 	}
@@ -1079,13 +1080,13 @@ StartVoting()
 	}
 	
 	// Kick targets automatically vote no if they're in the pool
-	new NativeVotesType:voteType = Data_GetType(g_hCurVote);
+	NativeVotesType voteType = Data_GetType(g_hCurVote);
 	
 	switch (voteType)
 	{
 		case NativeVotesType_Kick, NativeVotesType_KickCheating, NativeVotesType_KickIdle, NativeVotesType_KickScamming:
 		{
-			new target = Data_GetTarget(g_hCurVote);
+			int target = Data_GetTarget(g_hCurVote);
 			
 			if (target > 0 && target <= MaxClients && IsClientConnected(target) && Internal_IsClientInVotePool(target))
 			{
@@ -1097,7 +1098,7 @@ StartVoting()
 	// Initiators always vote yes when they're in the pool.
 	if (voteType != NativeVotesType_Custom_Mult && voteType != NativeVotesType_NextLevelMult)
 	{
-		new initiator = Data_GetInitiator(g_hCurVote);
+		int initiator = Data_GetInitiator(g_hCurVote);
 		
 		if (initiator > 0 && initiator <= MaxClients && IsClientConnected(initiator) && Internal_IsClientInVotePool(initiator))
 		{
@@ -1106,14 +1107,14 @@ StartVoting()
 	}
 }
 
-public Action:DisplayTimer(Handle:timer, any:data)
+public Action DisplayTimer(Handle timer)
 {
 	DrawHintProgress();
 	if (--g_TimeLeft == 0)
 	{
-		if (g_hDisplayTimer != INVALID_HANDLE)
+		if (g_hDisplayTimer != null)
 		{
-			g_hDisplayTimer = INVALID_HANDLE;
+			g_hDisplayTimer = null;
 			EndVoting();
 		}
 		return Plugin_Stop;
@@ -1122,7 +1123,7 @@ public Action:DisplayTimer(Handle:timer, any:data)
 	return Plugin_Continue;
 }
 
-Internal_GetResults(votes[][], &num_votes=0)
+int Internal_GetResults(int[][] votes, int &num_votes=0)
 {
 	if (!Internal_IsVoteInProgress())
 	{
@@ -1130,13 +1131,13 @@ Internal_GetResults(votes[][], &num_votes=0)
 	}
 	
 	// Since we can't have structs, we get "struct" with this instead
-	new num_items;
+	int num_items;
 	
 	num_votes = 0;
 	
-	for (new i = 0; i < g_Items; i++)
+	for (int i = 0; i < g_Items; i++)
 	{
-		new voteCount = GetArrayCell(g_hVotes, i);
+		int voteCount = g_hVotes.Get(i);
 		if (voteCount > 0)
 		{
 			votes[num_items][VOTEINFO_ITEM_INDEX] = i;
@@ -1152,7 +1153,7 @@ Internal_GetResults(votes[][], &num_votes=0)
 	return num_items;
 }
 
-Internal_GetClients(client_vote[][])
+int Internal_GetClients(int[][] client_vote)
 {
 	if (!Internal_IsVoteInProgress())
 	{
@@ -1160,9 +1161,9 @@ Internal_GetClients(client_vote[][])
 	}
 	
 	/* Build the client list */
-	new num_clients;
+	int num_clients;
 	
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (g_ClientVotes[i] >= VOTE_PENDING)
 		{
@@ -1175,31 +1176,30 @@ Internal_GetClients(client_vote[][])
 	return num_clients;
 }
 
-Internal_IsCancelling()
+bool Internal_IsCancelling()
 {
 	return g_bCancelled;
 }
 
-stock Internal_GetCurrentVote()
+stock NativeVote Internal_GetCurrentVote()
 {
 	return g_hCurVote;
 }
 
-Internal_Reset(bool:cancel=false)
+void Internal_Reset(bool cancel=false)
 {
 	g_Clients = 0;
 	g_Items = 0;
 	g_bStarted = false;
-	g_hCurVote = INVALID_HANDLE;
+	g_hCurVote = null;
 	g_NumVotes = 0;
 	g_bCancelled = false;
 	g_LeaderList[0] = '\0';
 	g_TotalClients = 0;
 	
-	if (g_hDisplayTimer != INVALID_HANDLE)
+	if (g_hDisplayTimer != null)
 	{
-		KillTimer(g_hDisplayTimer);
-		g_hDisplayTimer = INVALID_HANDLE;
+		delete g_hDisplayTimer;
 	}
 	
 	if (!cancel)
@@ -1208,18 +1208,16 @@ Internal_Reset(bool:cancel=false)
 	}
 }
 
-bool:Internal_IsVoteInProgress()
+bool Internal_IsVoteInProgress()
 {
-	new bool:isActive = (g_hCurVote != INVALID_HANDLE);
-	
-	return (isActive || Game_IsVoteInProgress());
+	return (g_hCurVote != INVALID_HANDLE);
 }
 
-bool:Internal_IsClientInVotePool(client)
+bool Internal_IsClientInVotePool(int client)
 {
 	if (client < 1
 		|| client > MaxClients
-		|| g_hCurVote == INVALID_HANDLE)
+		|| g_hCurVote == null)
 	{
 		return false;
 	}
@@ -1227,7 +1225,7 @@ bool:Internal_IsClientInVotePool(client)
 	return (g_ClientVotes[client] > VOTE_NOT_VOTING);
 }
 
-bool:Internal_RedrawToClient(client, bool:revotes)
+bool Internal_RedrawToClient(int client, bool revotes)
 {
 	if (!Internal_IsVoteInProgress() || !Internal_IsClientInVotePool(client))
 	{
@@ -1255,24 +1253,24 @@ bool:Internal_RedrawToClient(client, bool:revotes)
 	// No, display a vote pass screen because that's nicer and we can customize it.
 	// Note: This isn't inside the earlier if because some players have had issues where the display
 	//   doesn't always appear the first time.
-	new String:revotePhrase[128];
+	char revotePhrase[128];
 	Format(revotePhrase, sizeof(revotePhrase), "%T", "NativeVotes Revote", client);
 	Game_DisplayVotePassCustom(g_hCurVote, revotePhrase, client);
 	
-	new Handle:data;
+	DataPack data;
 	
 	CreateDataTimer(VOTE_DELAY_TIME, RedrawTimer, data, TIMER_FLAG_NO_MAPCHANGE);
-	WritePackCell(data, client);
-	WritePackCell(data, _:g_hCurVote);
+	data.WriteCell(client);
+	data.WriteCell(view_as<int>(g_hCurVote));
 	
 	return true;
 }
 
-public Action:RedrawTimer(Handle:timer, Handle:data)
+public Action RedrawTimer(Handle timer, DataPack data)
 {
 	ResetPack(data);
-	new client = ReadPackCell(data);
-	new Handle:vote = Handle:ReadPackCell(data);
+	int client = data.ReadCell();
+	NativeVote vote = view_as<NativeVote>(data.ReadCell());
 	
 	if (Internal_IsVoteInProgress() && !Internal_IsCancelling())
 	{
@@ -1282,7 +1280,7 @@ public Action:RedrawTimer(Handle:timer, Handle:data)
 	return Plugin_Stop;
 }
 
-CancelVoting()
+void CancelVoting()
 {
 	if (g_bCancelled || g_hCurVote == INVALID_HANDLE)
 	{
@@ -1294,15 +1292,15 @@ CancelVoting()
 	EndVoting();
 }
 
-PerformVisChecks(client, Handle:hVoteTypes)
+void PerformVisChecks(int client, ArrayList hVoteTypes)
 {
 	// Iterate backwards so we can safely remove items
-	for (new i = GetArraySize(hVoteTypes) - 1; i >= 0; i--)
+	for (int i = hVoteTypes.Length - 1; i >= 0; i--)
 	{
-		new voteData[CallVoteListData];
-		GetArrayArray(hVoteTypes, i, voteData[0]);
+		int voteData[CallVoteListData];
+		hVoteTypes.GetArray(i, voteData[0]);
 		
-		new Action:hide = Plugin_Continue;
+		Action hide = Plugin_Continue;
 		
 #if defined LOG
 		LogMessage("Checking visibility forward for %d: %d", voteData[CallVoteList_VoteType], g_CallVotes[voteData[CallVoteList_VoteType]][CallVote_Vis]);
@@ -1334,34 +1332,34 @@ PerformVisChecks(client, Handle:hVoteTypes)
 // Natives
 
 // native bool:NativeVotes_IsVoteTypeSupported(NativeVotesType:voteType);
-public Native_IsVoteTypeSupported(Handle:plugin, numParams)
+public int Native_IsVoteTypeSupported(Handle plugin, int numParams)
 {
-	new NativeVotesType:type = GetNativeCell(1);
+	NativeVotesType type = GetNativeCell(1);
 	
 	return Game_CheckVoteType(type);
 }
 
 // native Handle:NativeVotes_Create(MenuHandler:handler, NativeVotesType:voteType,
 //	MenuAction:actions=NATIVEVOTES_ACTIONS_DEFAULT);
-public Native_Create(Handle:plugin, numParams)
+public int Native_Create(Handle plugin, int numParams)
 {
-	new MenuHandler:handler = GetNativeCell(1);
-	new NativeVotesType:voteType = GetNativeCell(2);
-	new MenuAction:actions = GetNativeCell(3);
+	Function handler = GetNativeFunction(1);
+	NativeVotesType voteType = GetNativeCell(2);
+	MenuAction actions = GetNativeCell(3);
 	
 	if (handler == INVALID_FUNCTION)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Menuhandler is invalid");
 	}
 	
-	new Handle:vote;
+	NativeVote vote;
 	if (Game_CheckVoteType(voteType))
 	{
 		vote = Data_CreateVote(voteType, actions);
 	}
 	else
 	{
-		return _:INVALID_HANDLE;
+		return view_as<int>(INVALID_HANDLE);
 	}
 	
 	if (voteType != NativeVotesType_NextLevelMult && voteType != NativeVotesType_Custom_Mult)
@@ -1370,26 +1368,27 @@ public Native_Create(Handle:plugin, numParams)
 		Data_AddItem(vote, "no", "No");
 	}
 	
-	new Handle:menuForward = Data_GetHandler(vote);
+	Handle menuForward = Data_GetHandler(vote);
 	
 	AddToForward(menuForward, plugin, handler);
 	
-	return _:vote;
+	return view_as<int>(vote);
 }
 
 // native Handle:NativeVotes_Close(Handle:vote);
-public Native_Close(Handle:plugin, numParams)
+public int Native_Close(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
+	NativeVote vote = GetNativeCell(1);
 	
-	if (vote == INVALID_HANDLE)
+	if (vote == null)
 	{
 		return;
 	}
 	
 	if (g_hCurVote == vote)
 	{
-		g_hCurVote = INVALID_HANDLE;
+		CancelVoting();
+		g_hCurVote = null;
 
 /*		
 		if (g_hVoteTimer != INVALID_HANDLE)
@@ -1413,26 +1412,26 @@ public Native_Close(Handle:plugin, numParams)
 }
 
 // native bool:NativeVotes_Display(Handle:vote, clients[], numClients, time, flags=0);
-public Native_Display(Handle:plugin, numParams)
+public int Native_Display(Handle plugin, int numParams)
 {
 	if (Internal_IsVoteInProgress())
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "A vote is already in progress");
 	}
 	
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return false;
 	}
 	
-	new count = GetNativeCell(3);
-	new clients[count];
+	int count = GetNativeCell(3);
+	int[] clients = new int[count];
 	GetNativeArray(2, clients, count);
 	
 	// Note: Only one flag exists: VOTEFLAG_NO_REVOTES
-	new flags = 0;
+	int flags = 0;
 	
 	if (numParams >= 5)
 	{
@@ -1449,24 +1448,24 @@ public Native_Display(Handle:plugin, numParams)
 }
 
 // native bool:NativeVotes_AddItem(Handle:vote, const String:info[], const String:display[]);
-public Native_AddItem(Handle:plugin, numParams)
+public int Native_AddItem(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return false;
 	}
 
-	new NativeVotesType:voteType = Data_GetType(vote);
+	NativeVotesType voteType = Data_GetType(vote);
 	
 	if (voteType != NativeVotesType_NextLevelMult && voteType != NativeVotesType_Custom_Mult)
 	{
 		return false;
 	}
 
-	decl String:info[256];
-	decl String:display[256];
+	char info[256];
+	char display[256];
 	GetNativeString(2, info, sizeof(info));
 	GetNativeString(3, display, sizeof(display));
 	
@@ -1474,23 +1473,23 @@ public Native_AddItem(Handle:plugin, numParams)
 }
 
 // native bool:NativeVotes_InsertItem(Handle:vote, position, const String:info[], const String:display[]);
-public Native_InsertItem(Handle:plugin, numParams)
+public int Native_InsertItem(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return false;
 	}
 
-	new NativeVotesType:voteType = Data_GetType(vote);
+	NativeVotesType voteType = Data_GetType(vote);
 	
 	if (voteType != NativeVotesType_NextLevelMult && voteType != NativeVotesType_Custom_Mult)
 	{
 		return false;
 	}
 
-	new position = GetNativeCell(2);
+	int position = GetNativeCell(2);
 	
 	if (position < 0)
 	{
@@ -1498,8 +1497,8 @@ public Native_InsertItem(Handle:plugin, numParams)
 		return false;
 	}
 	
-	decl String:info[256];
-	decl String:display[256];
+	char info[256];
+	char display[256];
 	GetNativeString(3, info, sizeof(info));
 	GetNativeString(4, display, sizeof(display));
 	
@@ -1508,32 +1507,32 @@ public Native_InsertItem(Handle:plugin, numParams)
 }
 
 // native bool:NativeVotes_RemoveItem(Handle:vote, position);
-public Native_RemoveItem(Handle:plugin, numParams)
+public int Native_RemoveItem(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return false;
 	}
 	
-	new NativeVotesType:voteType = Data_GetType(vote);
+	NativeVotesType voteType = Data_GetType(vote);
 	
 	if (voteType != NativeVotesType_NextLevelMult && voteType != NativeVotesType_Custom_Mult)
 	{
 		return false;
 	}
 
-	new position = GetNativeCell(2);
+	int position = GetNativeCell(2);
 	
 	return Data_RemoveItem(vote, position);
 }
 
 // native NativeVotes_RemoveAllItems(Handle:vote);
-public Native_RemoveAllItems(Handle:plugin, numParams)
+public int Native_RemoveAllItems(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
@@ -1548,28 +1547,28 @@ public Native_RemoveAllItems(Handle:plugin, numParams)
 //						infoBufLen,
 //						String:dispBuf[]="",
 //						dispBufLen=0);
-public Native_GetItem(Handle:plugin, numParams)
+public int Native_GetItem(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new position = GetNativeCell(2);
+	int position = GetNativeCell(2);
 	
-	new infoLength = GetNativeCell(4);
-	new String:info[infoLength];
+	int infoLength = GetNativeCell(4);
+	char[] info = new char[infoLength];
 	Data_GetItemInfo(vote, position, info, infoLength);
 	SetNativeString(3, info, infoLength);
 	
 	if (numParams >= 6)
 	{
-		new displayLength = GetNativeCell(6);
+		int displayLength = GetNativeCell(6);
 		if (displayLength > 0)
 		{
-			new String:display[displayLength];
+			char[] display = new char[displayLength];
 			Data_GetItemDisplay(vote, position, display, displayLength);
 			SetNativeString(5, display, displayLength);
 		}
@@ -1577,10 +1576,10 @@ public Native_GetItem(Handle:plugin, numParams)
 }
 
 // native NativeVotes_GetItemCount(Handle:vote);
-public Native_GetItemCount(Handle:plugin, numParams)
+public int Native_GetItemCount(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return 0;
@@ -1590,18 +1589,18 @@ public Native_GetItemCount(Handle:plugin, numParams)
 }
 
 // native NativeVotes_GetDetails(Handle:vote, String:buffer[], maxlength);
-public Native_GetDetails(Handle:plugin, numParams)
+public int Native_GetDetails(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new len = GetNativeCell(3);
+	int len = GetNativeCell(3);
 
-	decl String:details[len];
+	char[] details = new char[len];
 	
 	Data_GetDetails(vote, details, len);
 	
@@ -1609,16 +1608,16 @@ public Native_GetDetails(Handle:plugin, numParams)
 }
 
 // native NativeVotes_SetDetails(Handle:vote, String:fmt[], any:...);
-public Native_SetDetails(Handle:plugin, numParams)
+public int Native_SetDetails(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new String:details[MAX_VOTE_DETAILS_LENGTH];
+	char details[MAX_VOTE_DETAILS_LENGTH];
 
 	//SetGlobalTransTarget(LANG_SERVER);
 	FormatNativeString(0, 2, 3, sizeof(details), _, details);
@@ -1627,18 +1626,18 @@ public Native_SetDetails(Handle:plugin, numParams)
 }
 
 // native NativeVotes_GetDetails(Handle:vote, String:buffer[], maxlength);
-public Native_GetTitle(Handle:plugin, numParams)
+public int Native_GetTitle(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new len = GetNativeCell(3);
+	int len = GetNativeCell(3);
 
-	decl String:title[len];
+	char[] title = new char[len];
 	
 	Data_GetTitle(vote, title, len);
 	
@@ -1646,16 +1645,16 @@ public Native_GetTitle(Handle:plugin, numParams)
 }
 
 // native NativeVotes_SetTitle(Handle:vote, String:fmt[], any:...);
-public Native_SetTitle(Handle:plugin, numParams)
+public int Native_SetTitle(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new String:details[MAX_VOTE_DETAILS_LENGTH];
+	char details[MAX_VOTE_DETAILS_LENGTH];
 	
 	//SetGlobalTransTarget(LANG_SERVER);
 	FormatNativeString(0, 2, 3, sizeof(details), _, details);
@@ -1664,22 +1663,22 @@ public Native_SetTitle(Handle:plugin, numParams)
 }
 
 // native bool:NativeVotes_IsVoteInProgress();
-public Native_IsVoteInProgress(Handle:plugin, numParams)
+public int Native_IsVoteInProgress(Handle plugin, int numParams)
 {
-	return Internal_IsVoteInProgress();
+	return Internal_IsVoteInProgress() || Game_IsVoteInProgress();
 }
 
 // native NativeVotes_GetMaxItems();
-public Native_GetMaxItems(Handle:plugin, numParams)
+public int Native_GetMaxItems(Handle plugin, int numParams)
 {
 	return Game_GetMaxItems();
 }
 
 // native NativeVotes_GetOptionFlags(Handle:vote);
-public Native_GetOptionFlags(Handle:plugin, numParams)
+public int Native_GetOptionFlags(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return 0;
@@ -1689,22 +1688,22 @@ public Native_GetOptionFlags(Handle:plugin, numParams)
 }
 
 // native NativeVotes_SetOptionFlags(Handle:vote, flags);
-public Native_SetOptionFlags(Handle:plugin, numParams)
+public int Native_SetOptionFlags(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new flags = GetNativeCell(2);
+	int flags = GetNativeCell(2);
 	
 	Data_SetFlags(vote, flags);
 }
 
 // native NativeVotes_Cancel();
-public Native_Cancel(Handle:plugin, numParams)
+public int Native_Cancel(Handle plugin, int numParams)
 {
 	if (!Internal_IsVoteInProgress())
 	{
@@ -1716,16 +1715,16 @@ public Native_Cancel(Handle:plugin, numParams)
 }
 
 // native NativeVotes_SetResultCallback(Handle:vote, NativeVotes_VoteHandler:callback);
-public Native_SetResultCallback(Handle:plugin, numParams)
+public int Native_SetResultCallback(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new NativeVotes_VoteHandler:handler = GetNativeCell(2);
+	Function handler = GetNativeFunction(2);
 	
 	if (handler == INVALID_FUNCTION)
 	{
@@ -1733,7 +1732,7 @@ public Native_SetResultCallback(Handle:plugin, numParams)
 		return;
 	}
 	
-	new Handle:voteResults = Data_GetResultCallback(vote);
+	Handle voteResults = Data_GetResultCallback(vote);
 	
 	RemoveAllFromForward(voteResults, plugin);
 	if (!AddToForward(voteResults, plugin, handler))
@@ -1743,9 +1742,9 @@ public Native_SetResultCallback(Handle:plugin, numParams)
 }
 
 // native NativeVotes_CheckVoteDelay();
-public Native_CheckVoteDelay(Handle:plugin, numParams)
+public int Native_CheckVoteDelay(Handle plugin, int numParams)
 {
-	new curTime = GetTime();
+	int curTime = GetTime();
 	if (g_NextVote <= curTime)
 	{
 		return 0;
@@ -1755,9 +1754,9 @@ public Native_CheckVoteDelay(Handle:plugin, numParams)
 }
 
 // native bool:NativeVotes_IsClientInVotePool(client);
-public Native_IsClientInVotePool(Handle:plugin, numParams)
+public int Native_IsClientInVotePool(Handle plugin, int numParams)
 {
-	new client = GetNativeCell(1);
+	int client = GetNativeCell(1);
 	
 	if (client <= 0 || client > MaxClients)
 	{
@@ -1775,9 +1774,9 @@ public Native_IsClientInVotePool(Handle:plugin, numParams)
 }
 
 // native bool:NativeVotes_RedrawClientVote(client, bool:revotes=true);
-public Native_RedrawClientVote(Handle:plugin, numParams)
+public int Native_RedrawClientVote(Handle plugin, int numParams)
 {
-	new client = GetNativeCell(1);
+	int client = GetNativeCell(1);
 	
 	if (client < 1 || client > MaxClients || !IsClientConnected(client))
 	{
@@ -1797,8 +1796,8 @@ public Native_RedrawClientVote(Handle:plugin, numParams)
 		return false;
 	}
 	
-	new bool:revote = true;
-	if (numParams >= 2 && !bool:GetNativeCell(2))
+	bool revote = true;
+	if (numParams >= 2 && !GetNativeCell(2))
 	{
 		revote = false;
 	}
@@ -1807,23 +1806,23 @@ public Native_RedrawClientVote(Handle:plugin, numParams)
 }
 
 // native NativeVotesType:NativeVotes_GetType(Handle:vote);
-public Native_GetType(Handle:plugin, numParams)
+public int Native_GetType(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return 0;
 	}
 	
-	return _:Data_GetType(vote);
+	return view_as<int>(Data_GetType(vote));
 }
 
 // native NativeVotes_GetTeam(Handle:vote);
-public Native_GetTeam(Handle:plugin, numParams)
+public int Native_GetTeam(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return NATIVEVOTES_ALL_TEAMS;
@@ -1834,16 +1833,16 @@ public Native_GetTeam(Handle:plugin, numParams)
 }
 
 // native NativeVotes_SetTeam(Handle:vote, team);
-public Native_SetTeam(Handle:plugin, numParams)
+public int Native_SetTeam(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new team = GetNativeCell(2);
+	int team = GetNativeCell(2);
 	
 	// Teams are numbered starting with 0
 	// Currently 4 is the maximum (Unassigned, Spectator, Team 1, Team 2)
@@ -1862,10 +1861,10 @@ public Native_SetTeam(Handle:plugin, numParams)
 }
 
 // native NativeVotes_GetInitiator(Handle:vote);
-public Native_GetInitiator(Handle:plugin, numParams)
+public int Native_GetInitiator(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return NATIVEVOTES_SERVER_INDEX;
@@ -1875,24 +1874,24 @@ public Native_GetInitiator(Handle:plugin, numParams)
 }
 
 // native NativeVotes_SetInitiator(Handle:vote, client);
-public Native_SetInitiator(Handle:plugin, numParams)
+public int Native_SetInitiator(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new initiator = GetNativeCell(2);
+	int initiator = GetNativeCell(2);
 	Data_SetInitiator(vote, initiator);
 }
 
 // native NativeVotes_DisplayPass(Handle:vote, const String:details[]="");
-public Native_DisplayPass(Handle:plugin, numParams)
+public int Native_DisplayPass(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
@@ -1900,7 +1899,7 @@ public Native_DisplayPass(Handle:plugin, numParams)
 
 	if (numParams >= 2)
 	{
-		new String:winner[TRANSLATION_LENGTH];
+		char winner[TRANSLATION_LENGTH];
 		FormatNativeString(0, 2, 3, sizeof(winner), _, winner);
 		
 		Game_DisplayVotePass(vote, winner);
@@ -1913,18 +1912,18 @@ public Native_DisplayPass(Handle:plugin, numParams)
 }
 
 // native NativeVotes_DisplayPassCustomToOne(Handle:vote, client, const String:format[], any:...);
-public Native_DisplayPassCustomToOne(Handle:plugin, numParams)
+public int Native_DisplayPassCustomToOne(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 
-	new client = GetNativeCell(2);
+	int client = GetNativeCell(2);
 	
-	new String:translation[TRANSLATION_LENGTH];
+	char translation[TRANSLATION_LENGTH];
 	
 	SetGlobalTransTarget(client);
 	FormatNativeString(0, 3, 4, TRANSLATION_LENGTH, _, translation);
@@ -1933,16 +1932,16 @@ public Native_DisplayPassCustomToOne(Handle:plugin, numParams)
 }
 
 // native NativeVotes_DisplayPassEx(Handle:vote, NativeVotesPassType:passType, const String:details[]="");
-public Native_DisplayPassEx(Handle:plugin, numParams)
+public int Native_DisplayPassEx(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new NativeVotesPassType:passType = NativeVotesPassType:GetNativeCell(2);
+	NativeVotesPassType passType = view_as<NativeVotesPassType>(GetNativeCell(2));
 	
 	if (!Game_CheckVotePassType(passType))
 	{
@@ -1951,7 +1950,7 @@ public Native_DisplayPassEx(Handle:plugin, numParams)
 	
 	if (numParams >= 3)
 	{
-		new String:winner[TRANSLATION_LENGTH];
+		char winner[TRANSLATION_LENGTH];
 		//SetGlobalTransTarget(LANG_SERVER);
 		FormatNativeString(0, 3, 4, sizeof(winner), _, winner);
 		
@@ -1990,17 +1989,17 @@ public Native_DisplayRawPass(Handle:plugin, numParams)
 */
 
 // native NativeVotes_DisplayRawPassToOne(client, NativeVotesPassType:passType, const String:details[]="", team=NATIVEVOTES_ALL_TEAMS);
-public Native_DisplayRawPassToOne(Handle:plugin, numParams)
+public int Native_DisplayRawPassToOne(Handle plugin, int numParams)
 {
-	new client = GetNativeCell(1);
-	new NativeVotesPassType:passType = NativeVotesPassType:GetNativeCell(2);
+	int  client = GetNativeCell(1);
+	NativeVotesPassType passType = view_as<NativeVotesPassType>(GetNativeCell(2));
 	
 	if (!Game_CheckVotePassType(passType))
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Invalid vote pass type: %d", passType);
 	}
 
-	new team = GetNativeCell(3);
+	int team = GetNativeCell(3);
 	
 	if (g_EngineVersion == Engine_TF2 && team == NATIVEVOTES_ALL_TEAMS)
 	{
@@ -2009,7 +2008,7 @@ public Native_DisplayRawPassToOne(Handle:plugin, numParams)
 	
 	if (numParams >= 4)
 	{
-		new String:winner[TRANSLATION_LENGTH];
+		char winner[TRANSLATION_LENGTH];
 		SetGlobalTransTarget(client);
 		FormatNativeString(0, 4, 5, sizeof(winner), _, winner);
 	
@@ -2022,12 +2021,12 @@ public Native_DisplayRawPassToOne(Handle:plugin, numParams)
 }
 
 // native NativeVotes_DisplayRawPassCustomToOne(client, team, const String:format[], any:...);
-public Native_DisplayRawPassCustomToOne(Handle:plugin, numParams)
+public int Native_DisplayRawPassCustomToOne(Handle plugin, int numParams)
 {
-	new client = GetNativeCell(1);
-	new team = GetNativeCell(2);
+	int client = GetNativeCell(1);
+	int team = GetNativeCell(2);
 	
-	new String:translation[TRANSLATION_LENGTH];
+	char translation[TRANSLATION_LENGTH];
 	
 	SetGlobalTransTarget(client);
 	FormatNativeString(0, 3, 4, TRANSLATION_LENGTH, _, translation);
@@ -2036,30 +2035,30 @@ public Native_DisplayRawPassCustomToOne(Handle:plugin, numParams)
 }
 
 // native NativeVotes_DisplayFail(Handle:vote, NativeVotesFailType:reason=NativeVotesFail_Generic);
-public Native_DisplayFail(Handle:plugin, numParams)
+public int Native_DisplayFail(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new NativeVotesFailType:reason = NativeVotesFailType:GetNativeCell(2);
+	NativeVotesFailType reason = view_as<NativeVotesFailType>(GetNativeCell(2));
 
 	Game_DisplayVoteFail(vote, reason);
 }
 
 // native NativeVotes_DisplayRawFail(NativeVotesFailType:reason=NativeVotesFail_Generic, team=NATIVEVOTES_ALL_TEAMS);
-public Native_DisplayRawFail(Handle:plugin, numParams)
+public int Native_DisplayRawFail(Handle plugin, int numParams)
 {
-	new size = GetNativeCell(2);
-	new clients[size];
+	int size = GetNativeCell(2);
+	int[] clients = new int[size];
 	GetNativeArray(1, clients, size);
 	
-	new NativeVotesFailType:reason = NativeVotesFailType:GetNativeCell(3);
+	NativeVotesFailType reason = view_as<NativeVotesFailType>(GetNativeCell(3));
 	
-	new team = GetNativeCell(4);
+	int team = GetNativeCell(4);
 
 	if (g_EngineVersion == Engine_TF2 && team == NATIVEVOTES_ALL_TEAMS)
 	{
@@ -2088,16 +2087,16 @@ public Native_DisplayRawFailToOne(Handle:plugin, numParams)
 }
 */
 // native NativeVotes_GetTarget(Handle:vote);
-public Native_GetTarget(Handle:plugin,  numParams)
+public int Native_GetTarget(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return 0;
 	}
 	
-	new target = Data_GetTarget(vote);
+	int target = Data_GetTarget(vote);
 	
 	if (target == 0)
 	{
@@ -2109,33 +2108,33 @@ public Native_GetTarget(Handle:plugin,  numParams)
 }
 
 // native NativeVotes_GetTargetSteam(Handle:vote, String:buffer[], maxlength);
-public Native_GetTargetSteam(Handle:plugin, numParams)
+public int Native_GetTargetSteam(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new size = GetNativeCell(3);
-	decl String:steamId[size];
+	int size = GetNativeCell(3);
+	char[] steamId = new char[size];
 	GetNativeString(2, steamId, size);
 	
 	Data_GetTargetSteam(vote, steamId, size);
 }
 
 // native NativeVotes_SetTarget(Handle:vote, client, bool:setDetails=true);
-public Native_SetTarget(Handle:plugin,  numParams)
+public int Native_SetTarget(Handle plugin, int numParams)
 {
-	new Handle:vote = GetNativeCell(1);
-	if (vote == INVALID_HANDLE)
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
 		return;
 	}
 	
-	new client = GetNativeCell(2);
+	int client = GetNativeCell(2);
 	
 	if (client < 1 || client > MaxClients || !IsClientConnected(client))
 	{
@@ -2143,8 +2142,8 @@ public Native_SetTarget(Handle:plugin,  numParams)
 		return;
 	}
 	
-	new userid;
-	decl String:steamId[20];
+	int userid;
+	char steamId[20];
 	
 	if (client <= 0)
 	{
@@ -2163,10 +2162,10 @@ public Native_SetTarget(Handle:plugin,  numParams)
 	Data_SetTarget(vote, userid);
 	Data_SetTargetSteam(vote, steamId);
 
-	new bool:changeDetails = GetNativeCell(3);
+	bool changeDetails = GetNativeCell(3);
 	if (changeDetails)
 	{
-		decl String:name[MAX_NAME_LENGTH];
+		char name[MAX_NAME_LENGTH+1];
 		if (client > 0)
 		{
 			GetClientName(client, name, MAX_NAME_LENGTH);
@@ -2180,19 +2179,21 @@ public Native_SetTarget(Handle:plugin,  numParams)
 }
 
 // native bool:NativeVotes_AreVoteCommandsSupported();
-public Native_AreVoteCommandsSupported(Handle:plugin, numParams)
+public int Native_AreVoteCommandsSupported(Handle plugin, int numParams)
 {
 	return Game_AreVoteCommandsSupported();
 }
 
 // native NativeVotes_RegisterVoteCommand(NativeVotesOverride:overrideType, NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
-public Native_RegisterVoteCommand(Handle:plugin, numParams)
+public int Native_RegisterVoteCommand(Handle plugin, int numParams)
 {
-	new NativeVotesOverride:overrideType = GetNativeCell(1);
-	new Function:callVoteHandler = GetNativeFunction(2);
-	new Function:visHandler = GetNativeFunction(3);
-	
-	if (_:overrideType > sizeof(g_CallVotes))
+	NativeVotesOverride overrideType = GetNativeCell(1);
+	Function callVoteHandler = GetNativeFunction(2);
+	Function visHandler = GetNativeFunction(3);
+
+	// This tosses an error so use the simplified version
+	//	if (view_as<int>(overrideType) > sizeof(g_CallVotes))
+	if (overrideType > NativeVotesOverride)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Override Type %d is not supported by this version of NativeVotes", overrideType);
 		return;
@@ -2213,13 +2214,13 @@ public Native_RegisterVoteCommand(Handle:plugin, numParams)
 }
 
 // native NativeVotes_UnregisterVoteCommand(NativeVotesOverride:overrideType, NativeVotes_CallVoteHandler:callHandler, NativeVotes_CallVoteVisCheck:visHandler=INVALID_FUNCTION);
-public Native_UnregisterVoteCommand(Handle:plugin, numParams)
+public int Native_UnregisterVoteCommand(Handle plugin, int numParams)
 {
-	new NativeVotesOverride:overrideType = GetNativeCell(1);
-	new Function:callVoteHandler = GetNativeFunction(2);
-	new Function:visHandler = GetNativeFunction(3);
+	NativeVotesOverride overrideType = GetNativeCell(1);
+	Function callVoteHandler = GetNativeFunction(2);
+	Function visHandler = GetNativeFunction(3);
 
-	if (_:overrideType > sizeof(g_CallVotes))
+	if (overrideType > NativeVotesOverride)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Override Type %d is not supported by this version of NativeVotes", overrideType);
 		return;
@@ -2240,9 +2241,9 @@ public Native_UnregisterVoteCommand(Handle:plugin, numParams)
 }
 
 // native NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFailType:reason, time=0);
-public Native_DisplayCallVoteFail(Handle:plugin, numParams)
+public int Native_DisplayCallVoteFail(Handle plugin, int numParams)
 {
-	new client = GetNativeCell(1);
+	int client = GetNativeCell(1);
 	
 	if (client < 1 || client > MaxClients || !IsClientConnected(client))
 	{
@@ -2250,34 +2251,34 @@ public Native_DisplayCallVoteFail(Handle:plugin, numParams)
 		return;
 	}
 	
-	new NativeVotesCallFailType:reason = NativeVotesCallFailType:GetNativeCell(2);
+	NativeVotesCallFailType reason = GetNativeCell(2);
 	
-	new time = GetNativeCell(3);
+	int time = GetNativeCell(3);
 	
 	Game_DisplayCallVoteFail(client, reason, time);
 }
 
 // native Action:NativeVotes_RedrawVoteTitle(const String:text[]);
-public Native_RedrawVoteTitle(Handle:plugin, numParams)
+public int Native_RedrawVoteTitle(Handle plugin, int numParams)
 {
 	if (!g_curDisplayClient)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "You can only call this once from a MenuAction_Display callback");
 	}
 	
-	new NativeVotesType:voteType = Data_GetType(g_hCurVote);
+	NativeVotesType voteType = Data_GetType(g_hCurVote);
 	
 	if (voteType != NativeVotesType_Custom_Mult && voteType != NativeVotesType_Custom_YesNo)
 	{
-		return _:Plugin_Continue;
+		return view_as<int>(Plugin_Continue);
 	}
 	
 	GetNativeString(1, g_newMenuTitle, TRANSLATION_LENGTH);
-	return _:Plugin_Changed;
+	return view_as<int>(Plugin_Changed);
 }
 
 // native Action:NativeVotes_RedrawVoteItem(const String:text[]);
-public Native_RedrawVoteItem(Handle:plugin, numParams)
+public int Native_RedrawVoteItem(Handle plugin, int numParams)
 {
 	if (!g_curItemClient)
 	{
@@ -2286,9 +2287,9 @@ public Native_RedrawVoteItem(Handle:plugin, numParams)
 	
 	if (Game_GetMaxItems() == L4DL4D2_COUNT)
 	{
-		return _:Plugin_Continue;
+		return view_as<int>(Plugin_Continue);
 	}
 	
 	GetNativeString(1, g_newMenuItem, TRANSLATION_LENGTH);
-	return _:Plugin_Changed;
+	return view_as<int>(Plugin_Changed);
 }
