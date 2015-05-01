@@ -52,7 +52,7 @@ public Plugin myinfo =
 	name = "L4D,L4D2,TF2,CS:GO Vote Sniffer",
 	author = "Powerlord",
 	description = "Sniff voting commands, events, and usermessages",
-	version = "1.2.4",
+	version = "1.2.5",
 	url = "http://www.sourcemod.net/"
 }
 
@@ -73,7 +73,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 				CreateTimer(30.0, L4DL4D2_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
 			}
 			
-			case Engine_CSGO, Engine_TF2:
+			case Engine_CSGO, Engine_TF2, Engine_SDK2013, Engine_Insurgency:
 			{
 				CreateTimer(30.0, TF2CSGO_LogControllerValues, _, TIMER_FLAG_NO_MAPCHANGE);
 			}
@@ -110,7 +110,7 @@ bool Game_IsGameSupported()
 	
 	switch (g_EngineVersion)
 	{
-		case Engine_Left4Dead, Engine_Left4Dead2, Engine_CSGO, Engine_TF2:
+		case Engine_Left4Dead, Engine_Left4Dead2, Engine_CSGO, Engine_TF2, Engine_SDK2013, Engine_Insurgency:
 		{
 			return true;
 		}
@@ -148,38 +148,34 @@ public void OnPluginStart()
 			HookUserMessage(GetUserMessageId("CallVoteFailed"), L4DL4D2_MessageCallVoteFailed);
 		}
 		
-		case Engine_TF2:
+		case Engine_CSGO, Engine_TF2, Engine_SDK2013, Engine_Insurgency:
 		{
 			HookEventEx("vote_cast", TF2CSGO_EventVoteCast);
 			HookEventEx("vote_options", TF2CSGO_EventVoteOptions);
 			
-			HookUserMessage(GetUserMessageId("VoteSetup"), TF2_MessageVoteSetup);
-			HookUserMessage(GetUserMessageId("VoteStart"), TF2_MessageVoteStart);
-			HookUserMessage(GetUserMessageId("VotePass"), TF2_MessageVotePass);
-			HookUserMessage(GetUserMessageId("VoteFailed"), TF2_MessageVoteFail);
-			HookUserMessage(GetUserMessageId("CallVoteFailed"), TF2_MessageCallVoteFailed);
-		}
-		
-		case Engine_CSGO:
-		{
-			HookEventEx("vote_cast", TF2CSGO_EventVoteCast);
-			HookEventEx("vote_options", TF2CSGO_EventVoteOptions);
-			//HookEventEx("", CSGO_EventMapVote);			
-			
-			HookUserMessage(GetUserMessageId("VoteSetup"), CSGO_MessageVoteSetup);
-			HookUserMessage(GetUserMessageId("VoteStart"), CSGO_MessageVoteStart);
-			HookUserMessage(GetUserMessageId("VotePass"), CSGO_MessageVotePass);
-			HookUserMessage(GetUserMessageId("VoteFailed"), CSGO_MessageVoteFail);
-			HookUserMessage(GetUserMessageId("CallVoteFailed"), CSGO_MessageCallVoteFailed);
-			
+			if (GetUserMessageType() == UM_Protobuf)
+			{
+				HookUserMessage(GetUserMessageId("VoteSetup"), CSGO_MessageVoteSetup);
+				HookUserMessage(GetUserMessageId("VoteStart"), CSGO_MessageVoteStart);
+				HookUserMessage(GetUserMessageId("VotePass"), CSGO_MessageVotePass);
+				HookUserMessage(GetUserMessageId("VoteFailed"), CSGO_MessageVoteFail);
+				HookUserMessage(GetUserMessageId("CallVoteFailed"), CSGO_MessageCallVoteFailed);
+			}
+			else
+			{
+				HookUserMessage(GetUserMessageId("VoteSetup"), TF2_MessageVoteSetup);
+				HookUserMessage(GetUserMessageId("VoteStart"), TF2_MessageVoteStart);
+				HookUserMessage(GetUserMessageId("VotePass"), TF2_MessageVotePass);
+				HookUserMessage(GetUserMessageId("VoteFailed"), TF2_MessageVoteFail);
+				HookUserMessage(GetUserMessageId("CallVoteFailed"), TF2_MessageCallVoteFailed);
+			}
 		}
 	}
 	
 	AddCommandListener(CommandVote, "vote");
-	//AddCommandListener(CommandVote, "Vote");
 	AddCommandListener(CommandCallVote, "callvote");
 	
-	char gameName[15];
+	char gameName[64];
 	GetGameFolderName(gameName, sizeof(gameName));
 	
 	LogToFile(LOGFILE, "Game: %s", gameName);
@@ -729,6 +725,8 @@ public Action TF2_MessageCallVoteFailed(UserMsg msg_id, BfRead message, const in
 }
 
 /*
+	This is likely a client-side event as it never produced any values.
+	
 	"endmatch_mapvote_selecting_map"
 	{
 		"count"			"byte"	// Number of "ties"
@@ -744,6 +742,7 @@ public Action TF2_MessageCallVoteFailed(UserMsg msg_id, BfRead message, const in
 		"slot10"		"byte"
 	}
 */
+/*
 public void CSGO_EventMapVote(Event event, const char[] name, bool dontBroadcast)
 {
 	int count = event.GetInt("count");
@@ -761,6 +760,7 @@ public void CSGO_EventMapVote(Event event, const char[] name, bool dontBroadcast
 	LogToFile(LOGFILE, "Endmatch_Mapvote_SelectingMap event: count: %d, slot1: %d, slot2: %d, slot3: %d, slot4: %d, slot5: %d, slot6: %d, slot7: %d, slot8: %d, slot9: %d, slot10: %d ",
 	count, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, slot9, slot10);
 }
+*/
 
 /*
 Vote command
