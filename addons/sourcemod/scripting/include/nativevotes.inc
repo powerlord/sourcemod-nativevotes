@@ -2,7 +2,7 @@
  * vim: set ts=4 :
  * =============================================================================
  * NativeVotes
- * Copyright (C) 2011-2014 Ross Bemrose (Powerlord).  All rights reserved.
+ * Copyright (C) 2011-2015 Ross Bemrose (Powerlord).  All rights reserved.
  * =============================================================================
  *
  * This program is free software; you can redistribute it and/or modify it under

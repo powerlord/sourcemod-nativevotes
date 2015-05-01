@@ -5,7 +5,7 @@
  * NativeVotes is a voting API plugin for L4D, L4D2, TF2, and CS:GO.
  * Based on the SourceMod voting API
  * 
- * NativeVotes (C) 2011-2014 Ross Bemrose (Powerlord). All rights reserved.
+ * NativeVotes (C) 2011-2015 Ross Bemrose (Powerlord). All rights reserved.
  * SourceMod (C)2004-2008 AlliedModders LLC.  All rights reserved.
  * =============================================================================
  *
