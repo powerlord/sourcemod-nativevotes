@@ -158,7 +158,7 @@ public Action Command_ReVote(int client, const char[] command, int argc)
 	return Plugin_Continue;
 }
 
-public int OnAdminMenuReady(Handle topmenu)
+public void OnAdminMenuReady(Handle topmenu)
 {
 	/* Block us from being called twice */
 	if (topmenu == hTopMenu)
