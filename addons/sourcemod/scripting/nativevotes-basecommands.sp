@@ -38,7 +38,7 @@
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
 
-#define VERSION "1.0"
+#define VERSION "1.1"
 #pragma newdecls required
 #pragma semicolon 1
 
@@ -158,8 +158,10 @@ public Action Command_ReVote(int client, const char[] command, int argc)
 	return Plugin_Continue;
 }
 
-public void OnAdminMenuReady(Handle topmenu)
+public void OnAdminMenuReady(Handle aTopMenu)
 {
+	TopMenu topmenu = TopMenu.FromHandle(aTopMenu);
+	
 	/* Block us from being called twice */
 	if (topmenu == hTopMenu)
 	{
@@ -167,19 +169,13 @@ public void OnAdminMenuReady(Handle topmenu)
 	}
 	
 	/* Save the Handle */
-	hTopMenu = TopMenu.FromHandle(topmenu);
+	hTopMenu = topmenu;
 	
-	TopMenuObject voting_commands = FindTopMenuCategory(hTopMenu, ADMINMENU_VOTINGCOMMANDS);
+	TopMenuObject voting_commands = hTopMenu.FindCategory(ADMINMENU_VOTINGCOMMANDS);
 
 	if (voting_commands != INVALID_TOPMENUOBJECT)
 	{
-		AddToTopMenu(hTopMenu,
-			"sm_cancelvote",
-			TopMenuObject_Item,
-			AdminMenu_CancelVote,
-			voting_commands,
-			"sm_cancelvote",
-			ADMFLAG_VOTE);
+		hTopMenu.AddItem("sm_cancelvote", AdminMenu_CancelVote, voting_commands, "sm_cancelvote", ADMFLAG_VOTE);
 	}
 }
 
