@@ -399,7 +399,7 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 				return result;
 			}
 			
-			char argument[64];
+			char argument[MAX_VOTE_DETAILS_LENGTH];
 			
 			NativeVotesType voteType = Game_VoteStringToVoteType(voteCommand);
 			
