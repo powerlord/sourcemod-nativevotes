@@ -313,7 +313,7 @@ public void OnClientDisconnect(int client)
 	g_NominateList.GetString(index, oldmap, sizeof(oldmap));
 	Call_StartForward(g_NominationsResetForward);
 	Call_PushString(oldmap);
-	Call_PushCell(GetArrayCell(g_NominateOwners, index));
+	Call_PushCell(g_NominateOwners.Get(index));
 	Call_Finish();
 	
 	g_NominateOwners.Erase(index);
@@ -425,7 +425,7 @@ public void Event_TeamPlayWinPanel(Event event, const char[] name, bool dontBroa
 	int bluescore = event.GetInt("blue_score");
 	int redscore = event.GetInt("red_score");
 		
-	if(event.GetInt("round_complete") == 1 || StrEqual(name, "arena_win_panel"))
+	if (event.GetInt("round_complete") == 1 || StrEqual(name, "arena_win_panel"))
 	{
 		g_TotalRounds++;
 		
@@ -652,6 +652,7 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 		char friendlyName[PLATFORM_MAX_PATH];
 		for (int i=0; i<nominationsToAdd; i++)
 		{
+			
 			g_NominateList.GetString(i, map, sizeof(map));
 			GetFriendlyMapName(map, friendlyName, sizeof(friendlyName), false);
 			if (g_NativeVotes)
@@ -668,7 +669,7 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 			/* Notify Nominations that this map is now free */
 			Call_StartForward(g_NominationsResetForward);
 			Call_PushString(map);
-			Call_PushCell(GetArrayCell(g_NominateOwners, i));
+			Call_PushCell(g_NominateOwners.Get(i));
 			Call_Finish();
 		}
 		
@@ -681,7 +682,7 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 			/* Notify Nominations that this map is now free */
 			Call_StartForward(g_NominationsResetForward);
 			Call_PushString(map);
-			Call_PushCell(GetArrayCell(g_NominateOwners, i));
+			Call_PushCell(g_NominateOwners.Get(i));
 			Call_Finish();			
 		}
 		
@@ -730,7 +731,7 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 			if (IsMapValid(map))
 			{
 				char friendlyName[PLATFORM_MAX_PATH];
-				GetFriendlyMapName(map, friendlyName, sizeof(friendlyName), false);
+				GetFriendlyMapName(map, friendlyName, sizeof(friendlyName));
 				if (g_NativeVotes)
 				{
 					g_VoteNative.AddItem(map, friendlyName);
@@ -874,7 +875,7 @@ public void Handler_VoteFinishedGenericShared(const char[] map,
 			}
 		}
 		
-		if (g_Cvar_Fraglimit != INVALID_HANDLE)
+		if (g_Cvar_Fraglimit)
 		{
 			int fraglimit = g_Cvar_Fraglimit.IntValue;
 			if (fraglimit)
@@ -1268,12 +1269,11 @@ void CreateNextVote()
 	
 	for (int i = 0; i < g_MapList.Length; i++)
 	{
-		char tempMap[PLATFORM_MAX_PATH];
-		char resolvedMap[PLATFORM_MAX_PATH];
-		
-		g_MapList.GetString(i, tempMap, sizeof(tempMap));
-		ResolveFuzzyMapName(tempMap, resolvedMap, sizeof(resolvedMap));
-		tempMaps.PushString(resolvedMap);
+		g_MapList.GetString(i, map, sizeof(map));
+		if (FindMap(map, sizeof(map)) != FindMap_NotFound)
+		{
+			tempMaps.PushString(map);
+		}
 	}
 	
 	GetCurrentMap(map, sizeof(map));
@@ -1374,7 +1374,7 @@ NominateResult InternalNominateMap(char[] map, bool force, int owner)
 		g_NominateList.GetString(0, oldmap, sizeof(oldmap));
 		Call_StartForward(g_NominationsResetForward);
 		Call_PushString(oldmap);
-		Call_PushCell(GetArrayCell(g_NominateOwners, 0));
+		Call_PushCell(g_NominateOwners.Get(0));
 		Call_Finish();
 		
 		g_NominateList.Erase(0);
@@ -1386,7 +1386,7 @@ NominateResult InternalNominateMap(char[] map, bool force, int owner)
 
 /* Add natives to allow nominate and initiate vote to be call */
 
-/* native  bool:NominateMap(const String:map[], bool:force, &NominateError:error); */
+/* native NominateResult NominateMap(const char[] map, bool force, int owner); */
 public int Native_NominateMap(Handle plugin, int numParams)
 {
 	int len;
@@ -1414,7 +1414,7 @@ bool InternalRemoveNominationByMap(char[] map)
 		{
 			Call_StartForward(g_NominationsResetForward);
 			Call_PushString(oldmap);
-			Call_PushCell(GetArrayCell(g_NominateOwners, i));
+			Call_PushCell(g_NominateOwners.Get(i));
 			Call_Finish();
 
 			g_NominateList.Erase(i);
@@ -1427,7 +1427,7 @@ bool InternalRemoveNominationByMap(char[] map)
 	return false;
 }
 
-/* native  bool:RemoveNominationByMap(const String:map[]); */
+/* native bool RemoveNominationByMap(const char[] map); */
 public int Native_RemoveNominationByMap(Handle plugin, int numParams)
 {
 	int len;
@@ -1441,7 +1441,7 @@ public int Native_RemoveNominationByMap(Handle plugin, int numParams)
 	char[] map = new char[len+1];
 	GetNativeString(1, map, len+1);
 	
-	return view_as<int>(InternalRemoveNominationByMap(map));
+	return InternalRemoveNominationByMap(map);
 }
 
 bool InternalRemoveNominationByOwner(int owner)
@@ -1467,13 +1467,13 @@ bool InternalRemoveNominationByOwner(int owner)
 	return false;
 }
 
-/* native  bool:RemoveNominationByOwner(owner); */
+/* native bool RemoveNominationByOwner(int owner); */
 public int Native_RemoveNominationByOwner(Handle plugin, int numParams)
 {	
-	return view_as<int>(InternalRemoveNominationByOwner(GetNativeCell(1)));
+	return InternalRemoveNominationByOwner(GetNativeCell(1));
 }
 
-/* native InitiateMapChooserVote(); */
+/* native void InitiateMapChooserVote(MapChange when, ArrayList inputarray=null); */
 public int Native_InitiateVote(Handle plugin, int numParams)
 {
 	MapChange when = view_as<MapChange>(GetNativeCell(1));
