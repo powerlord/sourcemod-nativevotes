@@ -749,6 +749,9 @@ typedef NativeVotes_VoteHandler = function void (NativeVote vote,
  * new client_info[num_clients][2];
  * new item_info[num_items][2];
  * 
+ * NOTE: This should only be used to execute shared logic or logic that knows that the resulting
+ * vote data is from NativeVotes.
+ *
  * @param num_clients		Number of clients who could vote.
  * @param client_indexes	Array of client indexes. Parallel with client_votes.
  * @param client_votes		Array of client votes. Parallel with client_indexes.
@@ -759,7 +762,6 @@ typedef NativeVotes_VoteHandler = function void (NativeVote vote,
  * @param item_info			Array of items, sorted by count.  Use VOTEINFO_ITEM
  *							defines.
  */
-#pragma deprecated NativeVotes_VoteHandler has an incompatible signature with VoteHandler now
 stock void NativeVotes_FixResults(int num_clients,
 							const int[] client_indexes,
 							const int[] client_votes,
