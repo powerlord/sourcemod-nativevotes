@@ -649,19 +649,19 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 		/* Smaller of the two - It should be impossible for nominations to exceed the size though (cvar changed mid-map?) */
 		int nominationsToAdd = nominateCount >= voteSize ? voteSize : nominateCount;
 		
-		char friendlyName[PLATFORM_MAX_PATH];
+		char baseName[PLATFORM_MAX_PATH];
 		for (int i=0; i<nominationsToAdd; i++)
 		{
 			
 			g_NominateList.GetString(i, map, sizeof(map));
-			GetFriendlyMapName(map, friendlyName, sizeof(friendlyName), false);
+			GetWorkshopMapBaseName(map, baseName, sizeof(baseName));
 			if (g_NativeVotes)
 			{
-				g_VoteNative.AddItem(map, friendlyName);
+				g_VoteNative.AddItem(map, baseName);
 			}
 			else
 			{
-				g_VoteMenu.AddItem(map, friendlyName);
+				g_VoteMenu.AddItem(map, baseName);
 			}
 			
 			RemoveStringFromArray(g_NextMapList, map);
@@ -704,14 +704,14 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 			count++;
 			
 			/* Insert the map and increment our count */
-			GetFriendlyMapName(map, friendlyName, sizeof(friendlyName));
+			GetWorkshopMapBaseName(map, baseName, sizeof(baseName));
 			if (g_NativeVotes)
 			{
-				g_VoteNative.AddItem(map, friendlyName);
+				g_VoteNative.AddItem(map, baseName);
 			}
 			else
 			{
-				g_VoteMenu.AddItem(map, friendlyName);
+				g_VoteMenu.AddItem(map, baseName);
 			}
 			i++;
 		}
@@ -730,15 +730,15 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 			
 			if (IsMapValid(map))
 			{
-				char friendlyName[PLATFORM_MAX_PATH];
-				GetFriendlyMapName(map, friendlyName, sizeof(friendlyName));
+				char baseName[PLATFORM_MAX_PATH];
+				GetWorkshopMapBaseName(map, baseName, sizeof(baseName));
 				if (g_NativeVotes)
 				{
-					g_VoteNative.AddItem(map, friendlyName);
+					g_VoteNative.AddItem(map, baseName);
 				}
 				else
 				{
-					g_VoteMenu.AddItem(map, friendlyName);
+					g_VoteMenu.AddItem(map, baseName);
 				}
 			}	
 		}
