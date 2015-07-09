@@ -331,13 +331,16 @@ public Action Command_SetNextmap(int client, int args)
 	char map[PLATFORM_MAX_PATH];
 	GetCmdArg(1, map, sizeof(map));
 
-	if (!IsMapValid(map))
+	if (FindMap(map, sizeof(map)) == FindMap_NotFound)
 	{
 		ReplyToCommand(client, "[SM] %t", "Map was not found", map);
 		return Plugin_Handled;
 	}
 
-	ShowActivity(client, "%t", "Changed Next Map", map);
+	char displayName[PLATFORM_MAX_PATH];
+	GetMapDisplayName(map, displayName, sizeof(displayName));
+	
+	ShowActivity(client, "%t", "Changed Next Map", displayName);
 	LogAction(client, -1, "\"%L\" changed nextmap to \"%s\"", client, map);
 
 	SetNextMap(map);
@@ -649,19 +652,20 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 		/* Smaller of the two - It should be impossible for nominations to exceed the size though (cvar changed mid-map?) */
 		int nominationsToAdd = nominateCount >= voteSize ? voteSize : nominateCount;
 		
-		char baseName[PLATFORM_MAX_PATH];
+		char displayName[PLATFORM_MAX_PATH];
 		for (int i=0; i<nominationsToAdd; i++)
 		{
 			
 			g_NominateList.GetString(i, map, sizeof(map));
-			GetWorkshopMapBaseName(map, baseName, sizeof(baseName));
+			GetMapDisplayName(map, displayName, sizeof(displayName));
+			
 			if (g_NativeVotes)
 			{
-				g_VoteNative.AddItem(map, baseName);
+				g_VoteNative.AddItem(map, displayName);
 			}
 			else
 			{
-				g_VoteMenu.AddItem(map, baseName);
+				g_VoteMenu.AddItem(map, displayName);
 			}
 			
 			RemoveStringFromArray(g_NextMapList, map);
@@ -704,14 +708,14 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 			count++;
 			
 			/* Insert the map and increment our count */
-			GetWorkshopMapBaseName(map, baseName, sizeof(baseName));
+			GetMapDisplayName(map, displayName, sizeof(displayName));
 			if (g_NativeVotes)
 			{
-				g_VoteNative.AddItem(map, baseName);
+				g_VoteNative.AddItem(map, displayName);
 			}
 			else
 			{
-				g_VoteMenu.AddItem(map, baseName);
+				g_VoteMenu.AddItem(map, displayName);
 			}
 			i++;
 		}
@@ -730,15 +734,15 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 			
 			if (IsMapValid(map))
 			{
-				char baseName[PLATFORM_MAX_PATH];
-				GetWorkshopMapBaseName(map, baseName, sizeof(baseName));
+				char displayName[PLATFORM_MAX_PATH];
+				GetMapDisplayName(map, displayName, sizeof(displayName));
 				if (g_NativeVotes)
 				{
-					g_VoteNative.AddItem(map, baseName);
+					g_VoteNative.AddItem(map, displayName);
 				}
 				else
 				{
-					g_VoteMenu.AddItem(map, baseName);
+					g_VoteMenu.AddItem(map, displayName);
 				}
 			}	
 		}
@@ -815,10 +819,10 @@ public void Handler_NV_VoteFinishedGeneric(NativeVote menu,
 	NativeVotes_FixResults(num_clients, client_indexes, client_votes, num_items, item_indexes, item_votes, client_info, item_info);
 	
 	char map[PLATFORM_MAX_PATH];
-	char friendlyName[PLATFORM_MAX_PATH];
-	menu.GetItem(item_indexes[0], map, sizeof(map), friendlyName, sizeof(friendlyName));
+	char displayName[PLATFORM_MAX_PATH];
+	menu.GetItem(item_indexes[0], map, sizeof(map), displayName, sizeof(displayName));
 	
-	Handler_VoteFinishedGenericShared(map, friendlyName, num_votes, num_clients, client_info, num_items, item_info, true);
+	Handler_VoteFinishedGenericShared(map, displayName, num_votes, num_clients, client_info, num_items, item_info, true);
 }
 
 public void Handler_VoteFinishedGeneric(Menu menu,
@@ -829,14 +833,14 @@ public void Handler_VoteFinishedGeneric(Menu menu,
 						   const int[][] item_info)
 {
 	char map[PLATFORM_MAX_PATH];
-	char friendlyName[PLATFORM_MAX_PATH];
-	menu.GetItem(item_info[0][VOTEINFO_ITEM_INDEX], map, sizeof(map), _, friendlyName, sizeof(friendlyName));
+	char displayName[PLATFORM_MAX_PATH];
+	menu.GetItem(item_info[0][VOTEINFO_ITEM_INDEX], map, sizeof(map), _, displayName, sizeof(displayName));
 	
-	Handler_VoteFinishedGenericShared(map, friendlyName, num_votes, num_clients, client_info, num_items, item_info, false);
+	Handler_VoteFinishedGenericShared(map, displayName, num_votes, num_clients, client_info, num_items, item_info, false);
 }
 
 public void Handler_VoteFinishedGenericShared(const char[] map,
-						   const char[] friendlyName,
+						   const char[] displayName,
 						   int num_votes,
 						   int num_clients,
 						   const int[][] client_info,
@@ -939,7 +943,7 @@ public void Handler_VoteFinishedGenericShared(const char[] map,
 			g_VoteNative.DisplayPass(map);
 		}
 		
-		PrintToChatAll("[SM] %t", "Nextmap Voting Finished", map, RoundToFloor(float(item_info[0][VOTEINFO_ITEM_VOTES])/float(num_votes)*100), num_votes);
+		PrintToChatAll("[SM] %t", "Nextmap Voting Finished", displayName, RoundToFloor(float(item_info[0][VOTEINFO_ITEM_VOTES])/float(num_votes)*100), num_votes);
 		LogAction(-1, -1, "Voting for next map has finished. Nextmap: %s.", map);
 	}	
 }
