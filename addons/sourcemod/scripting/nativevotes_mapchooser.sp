@@ -215,7 +215,18 @@ public void OnAllPluginsLoaded()
 {
 	if (FindPluginByFile("mapchooser.smx") != null)
 	{
-		SetFailState("This plugin replaces mapchooser.  You cannot run both at once.");
+		LogMessage("Unloading mapchooser to prevent conflicts...");
+		ServerCommand("sm plugins unload mapchooser");
+		
+		char oldPath[PLATFORM_MAX_PATH];
+		char newPath[PLATFORM_MAX_PATH];
+		
+		BuildPath(Path_SM, oldPath, sizeof(oldPath), "plugins/mapchooser.smx");
+		BuildPath(Path_SM, newPath, sizeof(newPath), "plugins/disabled/mapchooser.smx");
+		if (RenameFile(newPath, oldPath))
+		{
+			LogMessage("Moving mapchooser to disabled.");
+		}
 	}
 	
 	g_NativeVotes = LibraryExists(LIBRARY) && NativeVotes_IsVoteTypeSupported(NativeVotesType_NextLevelMult);
