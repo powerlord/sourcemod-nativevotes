@@ -44,7 +44,7 @@
 
 #pragma newdecls required
 
-#define VERSION "1.6.0"
+#define VERSION "1.8.0"
 
 public Plugin myinfo =
 {
@@ -252,7 +252,8 @@ public void OnConfigsExecuted()
 		}
 	}
 	
-	CreateNextVote();
+	g_NextMapList.Clear();
+	
 	SetupTimeleftTimer();
 	
 	g_TotalRounds = 0;
@@ -336,7 +337,7 @@ public Action Command_SetNextmap(int client, int args)
 		ReplyToCommand(client, "[SM] %t", "Map was not found", map);
 		return Plugin_Handled;
 	}
-
+	
 	char displayName[PLATFORM_MAX_PATH];
 	GetMapDisplayName(map, displayName, sizeof(displayName));
 	
@@ -651,6 +652,11 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 		
 		/* Smaller of the two - It should be impossible for nominations to exceed the size though (cvar changed mid-map?) */
 		int nominationsToAdd = nominateCount >= voteSize ? voteSize : nominateCount;
+		
+		if (g_NextMapList.Length == 0)
+		{
+			CreateNextVote();
+		}
 		
 		char displayName[PLATFORM_MAX_PATH];
 		for (int i=0; i<nominationsToAdd; i++)
@@ -1266,8 +1272,6 @@ bool RemoveStringFromArray(ArrayList array, char[] str)
 
 void CreateNextVote()
 {
-	g_NextMapList.Clear();
-	
 	char map[PLATFORM_MAX_PATH];
 	ArrayList tempMaps = new ArrayList(ByteCountToCells(PLATFORM_MAX_PATH));
 	
