@@ -957,7 +957,7 @@ public void Handler_VoteFinishedGenericShared(const char[] map,
 		
 		if (isNativeVotes)
 		{
-			g_VoteNative.DisplayPass(map);
+			g_VoteNative.DisplayPass(displayName);
 		}
 		
 		PrintToChatAll("[SM] %t", "Nextmap Voting Finished", displayName, RoundToFloor(float(item_info[0][VOTEINFO_ITEM_VOTES])/float(num_votes)*100), num_votes);
@@ -1204,6 +1204,7 @@ public int Handler_NV_MapVoteMenu(NativeVote menu, MenuAction action, int param1
 			{
 				int count = menu.ItemCount;
 				char map[PLATFORM_MAX_PATH];
+				char displayName[PLATFORM_MAX_PATH];
 				menu.GetItem(0, map, sizeof(map));
 				
 				// Make sure the first map in the menu isn't one of the special items.
@@ -1212,18 +1213,18 @@ public int Handler_NV_MapVoteMenu(NativeVote menu, MenuAction action, int param1
 				{
 					// Get a random map from the list.
 					int item = GetRandomInt(0, count - 1);
-					menu.GetItem(item, map, sizeof(map));
+					menu.GetItem(item, map, sizeof(map), displayName, sizeof(displayName));
 					
 					// Make sure it's not one of the special items.
 					while (strcmp(map, VOTE_EXTEND, false) == 0 || strcmp(map, VOTE_DONTCHANGE, false) == 0)
 					{
 						item = GetRandomInt(0, count - 1);
-						menu.GetItem(item, map, sizeof(map));
+						menu.GetItem(item, map, sizeof(map), displayName, sizeof(displayName));
 					}
 					
 					SetNextMap(map);
 					g_MapVoteCompleted = true;
-					menu.DisplayPass(map);
+					menu.DisplayPass(displayName);
 				}
 			}
 			else if (param1 == VoteCancel_NoVotes)
