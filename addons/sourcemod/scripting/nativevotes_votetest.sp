@@ -67,6 +67,7 @@ public Action Cmd_TestYesNo(int client, int args)
 	{
 		int seconds = NativeVotes_CheckVoteDelay();
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
+		return Plugin_Handled;
 	}
 	
 	NativeVote vote = new NativeVote(YesNoHandler, NativeVotesType_Custom_YesNo);
@@ -126,6 +127,7 @@ public Action Cmd_TestMult(int client, int args)
 	{
 		int seconds = NativeVotes_CheckVoteDelay();
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
+		return Plugin_Handled;
 	}
 	
 	NativeVote vote = new NativeVote(MultHandler, NativeVotesType_Custom_Mult);
@@ -189,6 +191,7 @@ public Action Cmd_TestYesNoCustom(int client, int args)
 	{
 		int seconds = NativeVotes_CheckVoteDelay();
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
+		return Plugin_Handled;
 	}
 	
 	NativeVote vote = new NativeVote(YesNoCustomHandler, NativeVotesType_Custom_YesNo, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display);
@@ -259,6 +262,7 @@ public Action Cmd_TestMultCustom(int client, int args)
 	{
 		int seconds = NativeVotes_CheckVoteDelay();
 		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
+		return Plugin_Handled;
 	}
 	
 	NativeVote vote = new NativeVote(MultCustomHandler, NativeVotesType_Custom_Mult, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display|MenuAction_DisplayItem);
