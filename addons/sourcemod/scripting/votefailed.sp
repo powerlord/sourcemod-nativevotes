@@ -33,14 +33,15 @@
  */
 #include <sourcemod>
 #pragma semicolon 1
+#pragma newdecls required
 
 #define VERSION "1.0.0"
 
-new g_bUserBuf = false;
+bool g_bUserBuf;
 
-new Handle:g_Cvar_Enabled;
+ConVar g_Cvar_Enabled;
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name			= "Vote Failed / Call Vote Failed displayer",
 	author			= "Powerlord",
 	description		= "Used to display specific vote failed and call vote failed messages to a user",
@@ -48,21 +49,21 @@ public Plugin:myinfo = {
 	url				= "https://forums.alliedmods.net/showthread.php?t=208008"
 };
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
 
-	CreateConVar("votefailed_version", VERSION, "Vote Failed version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
-	g_Cvar_Enabled = CreateConVar("votefailed_enable", "1", "Enable Vote Failed?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
+	CreateConVar("votefailed_version", VERSION, "Vote Failed version", FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
+	g_Cvar_Enabled = CreateConVar("votefailed_enable", "1", "Enable Vote Failed?", FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 	g_bUserBuf = (GetUserMessageType() == UM_Protobuf);
 	
 	RegAdminCmd("votefail", Cmd_VoteFailed, ADMFLAG_GENERIC, "Show Call Vote Fail dialog to user");
 	RegAdminCmd("callvotefail", Cmd_CallVoteFailed, ADMFLAG_GENERIC, "Show Call Vote Fail dialog to user");
 }
 
-public Action:Cmd_VoteFailed(client, args)
+public Action Cmd_VoteFailed(int client, int args)
 {
-	if (!GetConVarBool(g_Cvar_Enabled))
+	if (!g_Cvar_Enabled.BoolValue)
 	{
 		return Plugin_Continue;
 	}
@@ -79,31 +80,31 @@ public Action:Cmd_VoteFailed(client, args)
 		return Plugin_Handled;
 	}
 	
-	decl String:sReason[5];
+	char sReason[5];
 	GetCmdArg(1, sReason, sizeof(sReason));
 	
-	new reason = StringToInt(sReason);
+	int reason = StringToInt(sReason);
 	
-	new Handle:voteFailed = StartMessageOne("VoteFailed", client, USERMSG_RELIABLE);
+	Handle voteFailed = StartMessageOne("VoteFailed", client, USERMSG_RELIABLE);
 	
 	if(g_bUserBuf)
 	{
-		PbSetInt(voteFailed, "team", -1);
-		PbSetInt(voteFailed, "reason", _:reason);
+		PbSetInt(voteFailed, "team", 0);
+		PbSetInt(voteFailed, "reason", reason);
 	}
 	else
 	{
-		BfWriteByte(voteFailed, -1);
-		BfWriteByte(voteFailed, _:reason);
+		BfWriteByte(voteFailed, 0);
+		BfWriteByte(voteFailed, reason);
 	}
 	EndMessage();
 
 	return Plugin_Handled;
 }
 
-public Action:Cmd_CallVoteFailed(client, args)
+public Action Cmd_CallVoteFailed(int client, int args)
 {
-	if (!GetConVarBool(g_Cvar_Enabled))
+	if (!g_Cvar_Enabled.BoolValue)
 	{
 		return Plugin_Continue;
 	}
@@ -120,28 +121,28 @@ public Action:Cmd_CallVoteFailed(client, args)
 		return Plugin_Handled;
 	}
 	
-	decl String:sReason[5];
+	char sReason[5];
 	GetCmdArg(1, sReason, sizeof(sReason));
 	
-	new reason = StringToInt(sReason);
-	new time = 0;
+	int reason = StringToInt(sReason);
+	int time = 0;
 	
 	if (args > 1)
 	{
-		decl String:sTime[10];
+		char sTime[10];
 		GetCmdArg(2, sTime, sizeof(sTime));
 		time = StringToInt(sTime);
 	}
 	
-	new Handle:callVoteFail = StartMessageOne("CallVoteFailed", client, USERMSG_RELIABLE);
+	Handle callVoteFail = StartMessageOne("CallVoteFailed", client, USERMSG_RELIABLE);
 	if(g_bUserBuf)
 	{
-		PbSetInt(callVoteFail, "reason", _:reason);
+		PbSetInt(callVoteFail, "reason", reason);
 		PbSetInt(callVoteFail, "time", time);
 	}
 	else
 	{
-		BfWriteByte(callVoteFail, _:reason);
+		BfWriteByte(callVoteFail, reason);
 		BfWriteShort(callVoteFail, time);
 	}
 	EndMessage();
