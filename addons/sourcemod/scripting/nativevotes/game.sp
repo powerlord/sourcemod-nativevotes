@@ -180,6 +180,31 @@
 // While not a vote string, it works just as well.
 #define TF2_VOTE_CUSTOM					"#TF_playerid_noteam"
 
+// TF2 (and SDK2013?) VoteFail / CallVoteFail reasons
+enum
+{
+	VOTE_FAILED_GENERIC,
+	VOTE_FAILED_TRANSITIONING_PLAYERS,
+	VOTE_FAILED_RATE_EXCEEDED,
+	VOTE_FAILED_YES_MUST_EXCEED_NO,
+	VOTE_FAILED_QUORUM_FAILURE,
+	VOTE_FAILED_ISSUE_DISABLED,
+	VOTE_FAILED_MAP_NOT_FOUND,
+	VOTE_FAILED_MAP_NAME_REQUIRED,
+	VOTE_FAILED_FAILED_RECENTLY,
+	VOTE_FAILED_TEAM_CANT_CALL,
+	VOTE_FAILED_WAITINGFORPLAYERS,
+	VOTE_FAILED_PLAYERNOTFOUND,
+	VOTE_FAILED_CANNOT_KICK_ADMIN,
+	VOTE_FAILED_SCRAMBLE_IN_PROGRESS,
+	VOTE_FAILED_SPECTATOR,
+	VOTE_FAILED_NEXTLEVEL_SET,
+	VOTE_FAILED_MAP_NOT_VALID,
+	VOTE_FAILED_CANNOT_KICK_FOR_TIME,
+	VOTE_FAILED_CANNOT_KICK_DURING_ROUND,
+	VOTE_FAILED_MODIFICATION_ALREADY_ACTIVE,
+}
+
 //----------------------------------------------------------------------------
 // CSGO
 // User vote to kick user.
@@ -227,6 +252,32 @@
 
 // While not a vote string, it works just as well.
 #define CSGO_VOTE_CUSTOM					"#SFUI_Scoreboard_NormalPlayer"
+
+// CSGO VoteFail / CallVoteFail reasons
+enum
+{
+	VOTE_FAILED_GENERIC,
+	VOTE_FAILED_TRANSITIONING_PLAYERS,
+	VOTE_FAILED_RATE_EXCEEDED,
+	VOTE_FAILED_YES_MUST_EXCEED_NO,
+	VOTE_FAILED_QUORUM_FAILURE,
+	VOTE_FAILED_ISSUE_DISABLED,
+	VOTE_FAILED_MAP_NOT_FOUND,
+	VOTE_FAILED_MAP_NAME_REQUIRED,
+	VOTE_FAILED_FAILED_RECENTLY,
+	VOTE_FAILED_TEAM_CANT_CALL,
+	VOTE_FAILED_WAITINGFORPLAYERS,
+	VOTE_FAILED_PLAYERNOTFOUND,
+	VOTE_FAILED_CANNOT_KICK_ADMIN,
+	VOTE_FAILED_SCRAMBLE_IN_PROGRESS = 14,
+	VOTE_FAILED_SPECTATOR,
+	VOTE_FAILED_NEXTLEVEL_SET,
+	VOTE_FAILED_MAP_NOT_VALID,
+	VOTE_FAILED_CANNOT_KICK_FOR_TIME,
+	VOTE_FAILED_CANNOT_KICK_DURING_ROUND,
+	VOTE_FAILED_MODIFICATION_ALREADY_ACTIVE,
+}
+
 
 //----------------------------------------------------------------------------
 // Generic functions
@@ -1016,6 +1067,139 @@ bool Game_AreDisabledIssuesHidden()
 	}
 	
 	return true;
+}
+
+stock int Game_VoteCallFailTypeToInt(NativeVotesCallFailType failType)
+{
+	switch (g_EngineVersion)
+	{
+		case Engine_Left4Dead, Engine_Left4Dead2:
+		{
+			switch (failType)
+			{
+				case NativeVotesCallFail_Generic:
+				{
+					return VOTE_FAILED_GENERIC;
+				}
+				
+				case NativeVotesCallFail_Loading:
+				{
+					return VOTE_FAILED_TRANSITIONING_PLAYERS;
+				}
+				
+				case NativeVotesCallFail_Recent:
+				{
+					return VOTE_FAILED_FAILED_RECENTLY;
+				}
+			}
+		}
+		
+		case Engine_TF2:
+		{
+			switch (failType)
+			{
+				case NativeVotesCallFail_Generic:
+				{
+					return VOTE_FAILED_GENERIC;
+				}
+				
+				case NativeVotesCallFail_Loading:
+				{
+					return VOTE_FAILED_TRANSITIONING_PLAYERS;
+				}
+				
+				case NativeVotesCallFail_Recent:
+				{
+					return VOTE_FAILED_FAILED_RECENTLY;
+				}
+				
+				case NativeVotesCallFail_Disabled:
+				{
+					return VOTE_FAILED_ISSUE_DISABLED;
+				}
+				
+				case NativeVotesCallFail_MapNotFound:
+				{
+					return VOTE_FAILED_MAP_NOT_FOUND;
+				}
+				
+				case NativeVotesCallFail_SpecifyMap:
+				{
+					return VOTE_FAILED_MAP_NAME_REQUIRED;
+				}
+				
+				case NativeVotesCallFail_Failed:
+				{
+					return VOTE_FAILED_FAILED_RECENTLY;
+				}
+				
+				case NativeVotesCallFail_WrongTeam:
+				{
+					return VOTE_FAILED_TEAM_CANT_CALL;
+				}
+				
+				case NativeVotesCallFail_Waiting:
+				{
+					return VOTE_FAILED_WAITINGFORPLAYERS;
+				}
+				
+				case NativeVotesCallFail_PlayerNotFound:
+				{
+					return VOTE_FAILED_PLAYERNOTFOUND;
+				}
+				
+				case NativeVotesCallFail_CantKickAdmin:
+				{
+					return VOTE_FAILED_CANNOT_KICK_ADMIN;
+				}
+				
+				case NativeVotesCallFail_ScramblePending:
+				{
+					return VOTE_FAILED_SCRAMBLE_IN_PROGRESS;
+				}
+				
+				case NativeVotesCallFail_Spectators:
+				{
+					return VOTE_FAILED_SPECTATOR;
+				}
+				
+				case NativeVotesCallFail_LevelSet:
+				{
+					return VOTE_FAILED_NEXTLEVEL_SET;
+				}
+				
+				case NativeVotesCallFail_MapNotValid:
+				{
+					return VOTE_FAILED_MAP_NOT_VALID;
+				}
+				
+				case NativeVotesCallFail_KickTime:
+				{
+					return VOTE_FAILED_CANNOT_KICK_FOR_TIME;
+				}
+				
+				case NativeVotesCallFail_KickDuringRound:
+				{
+					return VOTE_FAILED_CANNOT_KICK_DURING_ROUND;
+				}
+				
+				case NativeVotesCallFail_AlreadyActive:
+				{
+					return VOTE_FAILED_MODIFICATION_ALREADY_ACTIVE;
+				}
+			}
+		}
+		
+		case Engine_CSGO:
+		{
+			switch (failType)
+			{
+				//TODO: POPULATE AND FIX
+			}				
+		}
+	}
+	
+	return VOTE_FAILED_GENERIC;
 }
 
 // All games shared functions

@@ -164,29 +164,47 @@ enum NativeVotesFailType
  * 2-14 match for TF2 and CS:GO
  * 15 is different for TF2 and CS:GO as they were added after the vote system was copied.
  * 16+ are exclusive to TF2.
+ * 
+ * UPDATE: Starting in 2015, this list is no longer a direct one-to-one with the values the game uses.
+ * This is because CS:GO changed a bunch of their values.
+ * Plugins that use NativeVotesCallFail_Warmup WILL need to be recompiled as it has been assigned a new number
  */
 enum NativeVotesCallFailType
 {
-	NativeVotesCallFail_Generic = 0,				/**< Generic fail. */
-	NativeVotesCallFail_Loading = 1,				/**< L4D/L4D2: Players are still loading. */
-	NativeVotesCallFail_Recent = 2,				/**< TF2/CS:GO: You can't call another vote yet: Argument is seconds until you can call another vote. */
-	NativeVotesCallFail_Disabled = 5,			/**< TF2/CS:GO: Server has disabled that issue. */
-	NativeVotesCallFail_MapNotFound = 6,			/**< TF2/CS:GO: Server does not have that map. */
-	NativeVotesCallFail_SpecifyMap = 7,			/**< TF2/CS:GO: You must specify a map. */
-	NativeVotesCallFail_Failed = 8,				/**< TF2/CS:GO: This vote failed recently: Argument is seconds until this vote can be called again. */
-	NativeVotesCallFail_WrongTeam = 9,			/**< TF2/CS:GO: Team can't call this vote. */
-	NativeVotesCallFail_Waiting = 10,			/**< TF2/CS:GO: Vote can't be called during Waiting For Players. */
-	NativeVotesCallFail_PlayerNotFound = 11,		/**< TF2/CS:GO: Player to kick can't be found. Buggy in TF2. */
+	NativeVotesCallFail_Generic = 0,			/**< Generic fail. */
+	NativeVotesCallFail_Loading = 1,			/**< L4D/L4D2: Players are still loading. */
+	NativeVotesCallFail_Recent = 2,				/**< TF2/CSGO: You can't call another vote yet: Argument is seconds until you can call another vote. */
+	NativeVotesCallFail_Disabled = 5,			/**< TF2/CSGO: Server has disabled that issue. */
+	NativeVotesCallFail_MapNotFound = 6,		/**< TF2/CSGO: Server does not have that map. */
+	NativeVotesCallFail_SpecifyMap = 7,			/**< TF2/CSGO: You must specify a map. */
+	NativeVotesCallFail_Failed = 8,				/**< TF2/CSGO: This vote failed recently. Argument is seconds until this vote can be called again. */
+	NativeVotesCallFail_WrongTeam = 9,			/**< TF2/CSGO: Team can't call this vote. */
+	NativeVotesCallFail_Waiting = 10,			/**< TF2/CSGO: Vote can't be called during Waiting For Players/Warmup. */
+	NativeVotesCallFail_Warmup = 10,			/**< CSGO: Vote can't be called during Warmup. Same as Waiting For Players for compat reasons */
+	NativeVotesCallFail_PlayerNotFound = 11,	/**< TF2/CSGO: Player to kick can't be found. Buggy in TF2. */
 	NativeVotesCallFail_Unknown = 11,
-	NativeVotesCallFail_CantKickAdmin = 12,		/**< TF2/CS:GO: Can't kick server admin. */
-	NativeVotesCallFail_ScramblePending = 13,	/**< TF2/CS:GO: Team Scramble is pending. */
-	NativeVotesCallFail_Spectators = 14,			/**< TF2/CS:GO: Spectators aren't allowed to call votes. */
+	NativeVotesCallFail_CantKickAdmin = 12,		/**< TF2/CSGO: Can't kick server admin. */
+	NativeVotesCallFail_ScramblePending = 13,	/**< TF2/CSGO: Team Scramble is pending. */
+	NativeVotesCallFail_Spectators = 14,		/**< TF2/CSGO: Spectators aren't allowed to call votes. */
 	NativeVotesCallFail_LevelSet = 15,			/**< TF2: Next level already set. */
-	NativeVotesCallFail_Warmup = 15,				/**< CSGO: Vote can't be called during Warmup */
 	NativeVotesCallFail_MapNotValid = 16,		/**< TF2: Map is not in MapCycle. */
 	NativeVotesCallFail_KickTime = 17,			/**< TF2: Cannot kick at this time: Argument is seconds until you can call another kick vote. */
 	NativeVotesCallFail_KickDuringRound = 18,	/**< TF2: Cannot kick during a round. */
-	NativeVotesCallFail_AlreadyActive = 19		/**< TF2: Cannot call vote because modification (Eternaween) is already active (may not work) */
+	NativeVotesCallFail_AlreadyActive = 19,		/**< TF2: Cannot call vote because modification (Eternaween) is already active (may not work) */
+	NativeVotesCallFail_KickFailed = 20,		/**< CSGO: Kick vote failed recently. Argument is seconds until this vote can be called again. */
+	NativeVotesCallFail_MapFailed = 21,			/**< CSGO: Map vote failed recently. Argument is seconds until this vote can be called again. */
+	NativeVotesCallFail_SwapFailed = 22,		/**< CSGO: Swap Teams vote failed recently. Argument is seconds until this vote can be called again. */
+	NativeVotesCallFail_ScrambleFailed = 23,	/**< CSGO: Scramble vote failed recently. Argument is seconds until this vote can be called again. */
+	NativeVotesCallFail_RestartFailed = 24,		/**< CSGO: Restart vote failed recently. Argument is seconds until this vote can be called again. */
+	NativeVotesCallFail_SwapPending = 25,		/**< CSGO: Team Swap is pending. */
+	NativeVotesCallFail_Unknown2 = 26,			/**< CSGO: Unknown */
+	NativeVotesCallFail_CantSurrender = 27,		/**< CSGO: Can't surrender until a teammate abandons the match. */
+	NativeVotesCallFail_Unknown3 = 28,			/**< CSGO: Unknown */
+	NativeVotesCallFail_MatchPaused = 29,		/**< CSGO: Match is already paused. */
+	NativeVotesCallFail_NotPaused = 30,			/**< CSGO: Match is not paused. */
+	NativeVotesCallFail_NotWarmup = 31,			/**< CSGO: Match is not in warmup. */
+	NativeVotesCallFail_NeedsTen = 32,			/**< CSGO: Vote requires 10 players. */
+	NativeVotesCallFail_RoundEnded = 33,		/**< CSGO: Vote can't succeed after round has ended. */
 };
 
 enum NativeVotesKickType
