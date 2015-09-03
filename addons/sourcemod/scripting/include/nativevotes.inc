@@ -203,7 +203,7 @@ enum NativeVotesCallFailType
 	NativeVotesCallFail_MatchPaused = 29,		/**< CSGO: Match is already paused. */
 	NativeVotesCallFail_NotPaused = 30,			/**< CSGO: Match is not paused. */
 	NativeVotesCallFail_NotWarmup = 31,			/**< CSGO: Match is not in warmup. */
-	NativeVotesCallFail_NeedsTen = 32,			/**< CSGO: Vote requires 10 players. */
+	NativeVotesCallFail_MinPlayers = 32,		/**< CSGO: Vote requires 10 players. */
 	NativeVotesCallFail_RoundEnded = 33,		/**< CSGO: Vote can't succeed after round has ended. */
 };
 

@@ -256,26 +256,36 @@ enum
 // CSGO VoteFail / CallVoteFail reasons
 enum
 {
-	VOTE_FAILED_GENERIC,
-	VOTE_FAILED_TRANSITIONING_PLAYERS,
-	VOTE_FAILED_RATE_EXCEEDED,
-	VOTE_FAILED_YES_MUST_EXCEED_NO,
-	VOTE_FAILED_QUORUM_FAILURE,
-	VOTE_FAILED_ISSUE_DISABLED,
-	VOTE_FAILED_MAP_NOT_FOUND,
-	VOTE_FAILED_MAP_NAME_REQUIRED,
-	VOTE_FAILED_FAILED_RECENTLY,
-	VOTE_FAILED_TEAM_CANT_CALL,
-	VOTE_FAILED_WAITINGFORPLAYERS,
-	VOTE_FAILED_PLAYERNOTFOUND,
-	VOTE_FAILED_CANNOT_KICK_ADMIN,
-	VOTE_FAILED_SCRAMBLE_IN_PROGRESS = 14,
-	VOTE_FAILED_SPECTATOR,
-	VOTE_FAILED_NEXTLEVEL_SET,
-	VOTE_FAILED_MAP_NOT_VALID,
-	VOTE_FAILED_CANNOT_KICK_FOR_TIME,
-	VOTE_FAILED_CANNOT_KICK_DURING_ROUND,
-	VOTE_FAILED_MODIFICATION_ALREADY_ACTIVE,
+	CSGO_VOTE_FAILED_GENERIC,
+	CSGO_VOTE_FAILED_TRANSITIONING_PLAYERS,
+	CSGO_VOTE_FAILED_RATE_EXCEEDED,
+	CSGO_VOTE_FAILED_YES_MUST_EXCEED_NO,
+	CSGO_VOTE_FAILED_QUORUM_FAILURE,
+	CSGO_VOTE_FAILED_ISSUE_DISABLED,
+	CSGO_VOTE_FAILED_MAP_NOT_FOUND,
+	CSGO_VOTE_FAILED_MAP_NAME_REQUIRED,
+	CSGO_VOTE_FAILED_FAILED_RECENTLY,
+	CSGO_VOTE_FAILED_FAILED_RECENTLY_KICK,
+	CSGO_VOTE_FAILED_FAILED_RECENTLY_MAP,
+	CSGO_VOTE_FAILED_FAILED_RECENTLY_SWAP,
+	CSGO_VOTE_FAILED_FAILED_RECENTLY_SCRAMBLE,
+	CSGO_VOTE_FAILED_FAILED_RECENTLY_RESTART,
+	CSGO_VOTE_FAILED_TEAM_CANT_CALL,
+	CSGO_VOTE_FAILED_WARMUP,
+	CSGO_VOTE_FAILED_PLAYERNOTFOUND,
+	CSGO_VOTE_FAILED_CANNOT_KICK_ADMIN,
+	CSGO_VOTE_FAILED_SCRAMBLE_IN_PROGRESS,
+	CSGO_VOTE_FAILED_SWAP_IN_PROGRESS,
+	CSGO_VOTE_FAILED_SPECTATOR,
+	CSGO_VOTE_FAILED_NEXTLEVEL_SET,
+	CSGO_VOTE_FAILED_UNKNOWN1,
+	CSGO_VOTE_FAILED_SURRENDER_ABANDON,
+	CSGO_VOTE_FAILED_UNKNOWN2,
+	CSGO_VOTE_FAILED_PAUSED,
+	CSGO_VOTE_FAILED_NOT_PAUSED,
+	CSGO_VOTE_FAILED_NOT_WARMUP,
+	CSGO_VOTE_FAILED_MIN_PLAYERS,
+	CSGO_VOTE_FAILED_ROUND_ENDED,
 }
 
 
@@ -619,12 +629,14 @@ void Game_DisplayRawVoteFail(int[] clients, int numClients, NativeVotesFailType 
 		
 		case Engine_CSGO:
 		{
-			CSGO_VoteFail(clients, numClients, reason, team);
+			int reasonType = VoteFailTypeToInt(reason);
+			CSGO_VoteFail(clients, numClients, reasonType, team);
 		}
 		
 		case Engine_TF2:
 		{
-			TF2_VoteFail(clients, numClients, reason, team);
+			int reasonType = VoteFailTypeToInt(reason);
+			TF2_VoteFail(clients, numClients, reasonType, team);
 		}
 	}
 	
@@ -744,21 +756,24 @@ void Game_DisplayRawVotePassCustom(const char[] translation, int team, int clien
 
 void Game_DisplayCallVoteFail(int client, NativeVotesCallFailType reason, int time)
 {
+	
+	int reasonType = VoteCallFailTypeToInt(reason);
+	
 	switch (g_EngineVersion)
 	{
 		case Engine_Left4Dead, Engine_Left4Dead2:
 		{
-			L4DL4D2_CallVoteFail(client, reason);
+			L4DL4D2_CallVoteFail(client, reasonType);
 		}
 		
 		case Engine_CSGO:
 		{
-			CSGO_CallVoteFail(client, reason, time);
+			CSGO_CallVoteFail(client, reasonType, time);
 		}
 		
 		case Engine_TF2:
 		{
-			TF2_CallVoteFail(client, reason, time);
+			TF2_CallVoteFail(client, reasonType, time);
 		}
 	}
 	
@@ -1069,139 +1084,6 @@ bool Game_AreDisabledIssuesHidden()
 	return true;
 }
 
-stock int Game_VoteCallFailTypeToInt(NativeVotesCallFailType failType)
-{
-	switch (g_EngineVersion)
-	{
-		case Engine_Left4Dead, Engine_Left4Dead2:
-		{
-			switch (failType)
-			{
-				case NativeVotesCallFail_Generic:
-				{
-					return VOTE_FAILED_GENERIC;
-				}
-				
-				case NativeVotesCallFail_Loading:
-				{
-					return VOTE_FAILED_TRANSITIONING_PLAYERS;
-				}
-				
-				case NativeVotesCallFail_Recent:
-				{
-					return VOTE_FAILED_FAILED_RECENTLY;
-				}
-			}
-		}
-		
-		case Engine_TF2:
-		{
-			switch (failType)
-			{
-				case NativeVotesCallFail_Generic:
-				{
-					return VOTE_FAILED_GENERIC;
-				}
-				
-				case NativeVotesCallFail_Loading:
-				{
-					return VOTE_FAILED_TRANSITIONING_PLAYERS;
-				}
-				
-				case NativeVotesCallFail_Recent:
-				{
-					return VOTE_FAILED_FAILED_RECENTLY;
-				}
-				
-				case NativeVotesCallFail_Disabled:
-				{
-					return VOTE_FAILED_ISSUE_DISABLED;
-				}
-				
-				case NativeVotesCallFail_MapNotFound:
-				{
-					return VOTE_FAILED_MAP_NOT_FOUND;
-				}
-				
-				case NativeVotesCallFail_SpecifyMap:
-				{
-					return VOTE_FAILED_MAP_NAME_REQUIRED;
-				}
-				
-				case NativeVotesCallFail_Failed:
-				{
-					return VOTE_FAILED_FAILED_RECENTLY;
-				}
-				
-				case NativeVotesCallFail_WrongTeam:
-				{
-					return VOTE_FAILED_TEAM_CANT_CALL;
-				}
-				
-				case NativeVotesCallFail_Waiting:
-				{
-					return VOTE_FAILED_WAITINGFORPLAYERS;
-				}
-				
-				case NativeVotesCallFail_PlayerNotFound:
-				{
-					return VOTE_FAILED_PLAYERNOTFOUND;
-				}
-				
-				case NativeVotesCallFail_CantKickAdmin:
-				{
-					return VOTE_FAILED_CANNOT_KICK_ADMIN;
-				}
-				
-				case NativeVotesCallFail_ScramblePending:
-				{
-					return VOTE_FAILED_SCRAMBLE_IN_PROGRESS;
-				}
-				
-				case NativeVotesCallFail_Spectators:
-				{
-					return VOTE_FAILED_SPECTATOR;
-				}
-				
-				case NativeVotesCallFail_LevelSet:
-				{
-					return VOTE_FAILED_NEXTLEVEL_SET;
-				}
-				
-				case NativeVotesCallFail_MapNotValid:
-				{
-					return VOTE_FAILED_MAP_NOT_VALID;
-				}
-				
-				case NativeVotesCallFail_KickTime:
-				{
-					return VOTE_FAILED_CANNOT_KICK_FOR_TIME;
-				}
-				
-				case NativeVotesCallFail_KickDuringRound:
-				{
-					return VOTE_FAILED_CANNOT_KICK_DURING_ROUND;
-				}
-				
-				case NativeVotesCallFail_AlreadyActive:
-				{
-					return VOTE_FAILED_MODIFICATION_ALREADY_ACTIVE;
-				}
-			}
-		}
-		
-		case Engine_CSGO:
-		{
-			switch (failType)
-			{
-				//TODO: POPULATE AND FIX
-			}				
-		}
-	}
-	
-	return VOTE_FAILED_GENERIC;
-}
-
 // All games shared functions
 
 //----------------------------------------------------------------------------
@@ -1330,6 +1212,283 @@ static NativeVotesPassType VoteTypeToVotePass(NativeVotesType voteType)
 	}
 	
 	return passType;
+}
+
+// In case we find more types later
+static int VoteFailTypeToInt(NativeVotesFailType failType)
+{
+	return view_as<int>(failType);
+}
+
+static int VoteCallFailTypeToInt(NativeVotesCallFailType failType)
+{
+	switch (g_EngineVersion)
+	{
+		case Engine_Left4Dead, Engine_Left4Dead2:
+		{
+			switch (failType)
+			{
+				case NativeVotesCallFail_Generic:
+				{
+					return VOTE_FAILED_GENERIC;
+				}
+				
+				case NativeVotesCallFail_Loading:
+				{
+					return VOTE_FAILED_TRANSITIONING_PLAYERS;
+				}
+				
+				case NativeVotesCallFail_Recent:
+				{
+					return VOTE_FAILED_FAILED_RECENTLY;
+				}
+			}
+		}
+		
+		case Engine_TF2:
+		{
+			switch (failType)
+			{
+				case NativeVotesCallFail_Generic:
+				{
+					return VOTE_FAILED_GENERIC;
+				}
+				
+				case NativeVotesCallFail_Loading:
+				{
+					return VOTE_FAILED_TRANSITIONING_PLAYERS;
+				}
+				
+				case NativeVotesCallFail_Recent:
+				{
+					return VOTE_FAILED_FAILED_RECENTLY;
+				}
+				
+				case NativeVotesCallFail_Disabled:
+				{
+					return VOTE_FAILED_ISSUE_DISABLED;
+				}
+				
+				case NativeVotesCallFail_MapNotFound:
+				{
+					return VOTE_FAILED_MAP_NOT_FOUND;
+				}
+				
+				case NativeVotesCallFail_SpecifyMap:
+				{
+					return VOTE_FAILED_MAP_NAME_REQUIRED;
+				}
+				
+				case NativeVotesCallFail_Failed:
+				{
+					return VOTE_FAILED_FAILED_RECENTLY;
+				}
+				
+				case NativeVotesCallFail_WrongTeam:
+				{
+					return VOTE_FAILED_TEAM_CANT_CALL;
+				}
+				
+				case NativeVotesCallFail_Waiting:
+				{
+					return VOTE_FAILED_WAITINGFORPLAYERS;
+				}
+				
+				case NativeVotesCallFail_PlayerNotFound:
+				{
+					return VOTE_FAILED_PLAYERNOTFOUND;
+				}
+				
+				case NativeVotesCallFail_CantKickAdmin:
+				{
+					return VOTE_FAILED_CANNOT_KICK_ADMIN;
+				}
+				
+				case NativeVotesCallFail_ScramblePending:
+				{
+					return VOTE_FAILED_SCRAMBLE_IN_PROGRESS;
+				}
+				
+				case NativeVotesCallFail_Spectators:
+				{
+					return VOTE_FAILED_SPECTATOR;
+				}
+				
+				case NativeVotesCallFail_LevelSet:
+				{
+					return VOTE_FAILED_NEXTLEVEL_SET;
+				}
+				
+				case NativeVotesCallFail_MapNotValid:
+				{
+					return VOTE_FAILED_MAP_NOT_VALID;
+				}
+				
+				case NativeVotesCallFail_KickTime:
+				{
+					return VOTE_FAILED_CANNOT_KICK_FOR_TIME;
+				}
+				
+				case NativeVotesCallFail_KickDuringRound:
+				{
+					return VOTE_FAILED_CANNOT_KICK_DURING_ROUND;
+				}
+				
+				case NativeVotesCallFail_AlreadyActive:
+				{
+					return VOTE_FAILED_MODIFICATION_ALREADY_ACTIVE;
+				}
+			}
+		}
+		
+		case Engine_CSGO:
+		{
+			switch (failType)
+			{
+				case NativeVotesCallFail_Generic:
+				{
+					return CSGO_VOTE_FAILED_GENERIC;
+				}
+				
+				case NativeVotesCallFail_Loading:
+				{
+					return CSGO_VOTE_FAILED_TRANSITIONING_PLAYERS;
+				}
+				
+				case NativeVotesCallFail_Recent:
+				{
+					return CSGO_VOTE_FAILED_RATE_EXCEEDED;
+				}
+				
+				case NativeVotesCallFail_Disabled:
+				{
+					return CSGO_VOTE_FAILED_ISSUE_DISABLED;
+				}
+				
+				case NativeVotesCallFail_MapNotFound:
+				{
+					return CSGO_VOTE_FAILED_MAP_NOT_FOUND;
+				}
+				
+				case NativeVotesCallFail_SpecifyMap:
+				{
+					return CSGO_VOTE_FAILED_MAP_NAME_REQUIRED;
+				}
+				
+				case NativeVotesCallFail_Failed:
+				{
+					return CSGO_VOTE_FAILED_FAILED_RECENTLY;
+				}
+				
+				case NativeVotesCallFail_WrongTeam:
+				{
+					return CSGO_VOTE_FAILED_TEAM_CANT_CALL;
+				}
+				
+				case NativeVotesCallFail_Warmup:
+				{
+					return CSGO_VOTE_FAILED_WARMUP;
+				}
+				
+				case NativeVotesCallFail_PlayerNotFound:
+				{
+					return CSGO_VOTE_FAILED_PLAYERNOTFOUND;
+				}
+				
+				case NativeVotesCallFail_CantKickAdmin:
+				{
+					return CSGO_VOTE_FAILED_CANNOT_KICK_ADMIN;
+				}
+				
+				case NativeVotesCallFail_ScramblePending:
+				{
+					return CSGO_VOTE_FAILED_SCRAMBLE_IN_PROGRESS;
+				}
+				
+				case NativeVotesCallFail_Spectators:
+				{
+					return CSGO_VOTE_FAILED_SPECTATOR;
+				}
+				
+				case NativeVotesCallFail_LevelSet:
+				{
+					return CSGO_VOTE_FAILED_NEXTLEVEL_SET;
+				}
+				
+				case NativeVotesCallFail_KickFailed:
+				{
+					return CSGO_VOTE_FAILED_FAILED_RECENTLY_KICK;
+				}
+				
+				case NativeVotesCallFail_MapFailed:
+				{
+					return CSGO_VOTE_FAILED_FAILED_RECENTLY_MAP;
+				}
+				
+				case NativeVotesCallFail_SwapFailed:
+				{
+					return CSGO_VOTE_FAILED_FAILED_RECENTLY_SWAP;
+				}
+				
+				case NativeVotesCallFail_ScrambleFailed:
+				{
+					return CSGO_VOTE_FAILED_FAILED_RECENTLY_SCRAMBLE;
+				}
+				
+				case NativeVotesCallFail_RestartFailed:
+				{
+					return CSGO_VOTE_FAILED_FAILED_RECENTLY_RESTART;
+				}
+				
+				case NativeVotesCallFail_SwapPending:
+				{
+					return CSGO_VOTE_FAILED_SWAP_IN_PROGRESS;
+				}
+				
+				case NativeVotesCallFail_Unknown2:
+				{
+					return CSGO_VOTE_FAILED_UNKNOWN1;
+				}
+				
+				case NativeVotesCallFail_CantSurrender:
+				{
+					return CSGO_VOTE_FAILED_SURRENDER_ABANDON;
+				}
+				
+				case NativeVotesCallFail_Unknown3:
+				{
+					return CSGO_VOTE_FAILED_UNKNOWN2;
+				}
+				
+				case NativeVotesCallFail_MatchPaused:
+				{
+					return CSGO_VOTE_FAILED_PAUSED;
+				}
+				
+				case NativeVotesCallFail_NotPaused:
+				{
+					return CSGO_VOTE_FAILED_NOT_PAUSED;
+				}
+				
+				case NativeVotesCallFail_NotWarmup:
+				{
+					return CSGO_VOTE_FAILED_NOT_WARMUP;
+				}
+				
+				case NativeVotesCallFail_MinPlayers:
+				{
+					return CSGO_VOTE_FAILED_MIN_PLAYERS;
+				}
+				
+				case NativeVotesCallFail_RoundEnded:
+				{
+					return CSGO_VOTE_FAILED_ROUND_ENDED;
+				}
+			}				
+		}
+	}
+	
+	return VOTE_FAILED_GENERIC;
 }
 
 static void GetEngineVersionName(EngineVersion version, char[] printName, int maxlength)
@@ -1496,11 +1655,11 @@ static void L4DL4D2_UpdateClientCount(int num_clients)
 	}
 }
 
-static void L4DL4D2_CallVoteFail(int client, NativeVotesCallFailType reason)
+static void L4DL4D2_CallVoteFail(int client, int reason)
 {
 	BfWrite callVoteFail = UserMessageToBfWrite(StartMessageOne("CallVoteFailed", client, USERMSG_RELIABLE));
 
-	callVoteFail.WriteByte(view_as<int>(reason));
+	callVoteFail.WriteByte(reason);
 	
 	EndMessage();
 }
@@ -2175,41 +2334,41 @@ static void TF2_VotePass(const char[] translation, const char[] details, int tea
 	EndMessage();
 }
 
-static void CSGO_VoteFail(int[] clients, int numClients, NativeVotesFailType reason, int team)
+static void CSGO_VoteFail(int[] clients, int numClients, int reason, int team)
 {
 	Protobuf voteFailed = UserMessageToProtobuf(StartMessage("VoteFailed", clients, numClients, USERMSG_RELIABLE));
 	
 	voteFailed.SetInt("team", team);
-	voteFailed.SetInt("reason", view_as<int>(reason));
+	voteFailed.SetInt("reason", reason);
 
 	EndMessage();
 }
 
-static void TF2_VoteFail(int[] clients, int numClients, NativeVotesFailType reason, int team)
+static void TF2_VoteFail(int[] clients, int numClients, int reason, int team)
 {
 	BfWrite voteFailed = UserMessageToBfWrite(StartMessage("VoteFailed", clients, numClients, USERMSG_RELIABLE));
 	
 	voteFailed.WriteByte(team);
-	voteFailed.WriteByte(view_as<int>(reason));
+	voteFailed.WriteByte(reason);
 
 	EndMessage();
 }
 
-static void CSGO_CallVoteFail(int client, NativeVotesCallFailType reason, int time)
+static void CSGO_CallVoteFail(int client, int reason, int time)
 {
 	Protobuf callVoteFail = UserMessageToProtobuf(StartMessageOne("CallVoteFailed", client, USERMSG_RELIABLE));
 
-	callVoteFail.SetInt("reason", view_as<int>(reason));
+	callVoteFail.SetInt("reason", reason);
 	callVoteFail.SetInt("time", time);
 
 	EndMessage();
 }
 
-static void TF2_CallVoteFail(int client, NativeVotesCallFailType reason, int time)
+static void TF2_CallVoteFail(int client, int reason, int time)
 {
 	BfWrite callVoteFail = UserMessageToBfWrite(StartMessageOne("CallVoteFailed", client, USERMSG_RELIABLE));
 
-	callVoteFail.WriteByte(view_as<int>(reason));
+	callVoteFail.WriteByte(reason);
 	callVoteFail.WriteShort(time);
 
 	EndMessage();
