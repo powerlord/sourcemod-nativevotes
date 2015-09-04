@@ -229,24 +229,51 @@ enum
 #define CSGO_VOTE_NEXTLEVEL_EXTEND_PASSED	"#SFUI_vote_passed_nextlevel_extend"
 #define CSGO_VOTE_NEXTLEVEL_PASSED			"#SFUI_vote_passed_nextlevel"
 
-// User vote to scramble teams.  Can be immediate or end of round.
+// User vote to scramble teams.
 #define CSGO_VOTE_SCRAMBLE_START			"#SFUI_vote_scramble_teams"
 #define CSGO_VOTE_SCRAMBLE_PASSED 			"#SFUI_vote_passed_scramble_teams"
 
+// User vote to swap teams.
 #define CSGO_VOTE_SWAPTEAMS_START			"#SFUI_vote_swap_teams"
 #define CSGO_VOTE_SWAPTEAMS_PASSED 			"#SFUI_vote_passed_swap_teams"
 
+// User vote to surrender
 #define CSGO_VOTE_SURRENDER_START			"#SFUI_vote_surrender"
-#define CSGO_VOTE_SURRENDER_OTHERTEAM		"#SFUI_otherteam_vote_surrender"
+#define CSGO_VOTE_SURRENDER_OTHERTEAM		"#SFUI_otherteam_vote_continue_or_surrender"
 #define CSGO_VOTE_SURRENDER_PASSED			"#SFUI_vote_passed_surrender"
 
+// User vote to rematch
 #define CSGO_VOTE_REMATCH_START				"#SFUI_vote_rematch"
-#define CSGO_VOTE_REMATCH_OTHERTEAM			"#SFUI_vote_rematch"
 #define CSGO_VOTE_REMATCH_PASSED			"#SFUI_vote_passed_rematch"
 
+// User vote to continue match with bots
 #define CSGO_VOTE_CONTINUE_START			"#SFUI_vote_continue"
-#define CSGO_VOTE_CONTINUE_OTHERTEAM			"#SFUI_otherteam_vote_continue_or_surrender"
+#define CSGO_VOTE_CONTINUE_OTHERTEAM		"#SFUI_otherteam_vote_continue_or_surrender"
 #define CSGO_VOTE_CONTINUE_PASSED			"#SFUI_vote_passed_continue"
+
+// User vote to pause game
+#define CSGO_VOTE_PAUSE_START				"#SFUI_Vote_pause_match"
+#define CSGO_VOTE_PAUSE_PASSED				"#SFUI_vote_passed_pause_match"
+
+// User vote to unpause game
+#define CSGO_VOTE_UNPAUSE_START				"#SFUI_Vote_unpause_match"
+#define CSGO_VOTE_UNPAUSE_PASSED			"#SFUI_vote_passed_unpause_match"
+
+// User vote to load backups
+#define CSGO_VOTE_LOADBACKUP_START			"#SFUI_Vote_loadbackup"
+#define CSGO_VOTE_LOADBACKUP_PASSED			"#SFUI_vote_passed_loadbackup"
+
+// User vote to start match
+#define CSGO_VOTE_READY_START				"#SFUI_Vote_ready_for_match"
+#define CSGO_VOTE_READY_PASSED				"#SFUI_vote_passed_ready_for_match"
+
+// User vote to delay match start
+#define CSGO_VOTE_NOTREADY_START			"#SFUI_Vote_not_ready_for_match"
+#define CSGO_VOTE_NOTREADY_PASSED			"#SFUI_vote_passed_not_ready_for_match"
+
+// User vote to start round
+#define CSGO_VOTE_ROUND_START				"#SFUI_vote_td_start_round"
+#define CSGO_VOTE_ROUND_PASSED				"#SFUI_vote_passed_td_start_round"
 
 #define CSGO_VOTE_UNIMPLEMENTED_OTHERTEAM	"#SFUI_otherteam_vote_unimplemented"
 
