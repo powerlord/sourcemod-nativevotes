@@ -263,8 +263,7 @@ public void OnConfigsExecuted()
 		}
 	}
 	
-	g_NextMapList.Clear();
-	
+	CreateNextVote();
 	SetupTimeleftTimer();
 	
 	g_TotalRounds = 0;
@@ -341,16 +340,16 @@ public Action Command_SetNextmap(int client, int args)
 	}
 
 	char map[PLATFORM_MAX_PATH];
+	char displayName[PLATFORM_MAX_PATH];
 	GetCmdArg(1, map, sizeof(map));
 
-	if (FindMap(map, sizeof(map)) == FindMap_NotFound)
+	if (FindMap(map, displayName, sizeof(displayName)) == FindMap_NotFound)
 	{
 		ReplyToCommand(client, "[SM] %t", "Map was not found", map);
 		return Plugin_Handled;
 	}
 	
-	char displayName[PLATFORM_MAX_PATH];
-	GetMapDisplayName(map, displayName, sizeof(displayName));
+	GetMapDisplayName(displayName, displayName, sizeof(displayName));
 	
 	ShowActivity(client, "%t", "Changed Next Map", displayName);
 	LogAction(client, -1, "\"%L\" changed nextmap to \"%s\"", client, map);
@@ -664,15 +663,9 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 		/* Smaller of the two - It should be impossible for nominations to exceed the size though (cvar changed mid-map?) */
 		int nominationsToAdd = nominateCount >= voteSize ? voteSize : nominateCount;
 		
-		if (g_NextMapList.Length == 0)
-		{
-			CreateNextVote();
-		}
-		
-		char displayName[PLATFORM_MAX_PATH];
 		for (int i=0; i<nominationsToAdd; i++)
 		{
-			
+			char displayName[PLATFORM_MAX_PATH];
 			g_NominateList.GetString(i, map, sizeof(map));
 			GetMapDisplayName(map, displayName, sizeof(displayName));
 			
@@ -725,6 +718,7 @@ void InitiateVote(MapChange when, ArrayList inputlist=null)
 			count++;
 			
 			/* Insert the map and increment our count */
+			char displayName[PLATFORM_MAX_PATH];
 			GetMapDisplayName(map, displayName, sizeof(displayName));
 			if (g_NativeVotes)
 			{
@@ -1284,18 +1278,22 @@ bool RemoveStringFromArray(ArrayList array, char[] str)
 
 void CreateNextVote()
 {
+	g_NextMapList.Clear();
+	
 	char map[PLATFORM_MAX_PATH];
+	// tempMaps is a resolved map list
 	ArrayList tempMaps = new ArrayList(ByteCountToCells(PLATFORM_MAX_PATH));
 	
 	for (int i = 0; i < g_MapList.Length; i++)
 	{
 		g_MapList.GetString(i, map, sizeof(map));
-		if (FindMap(map, sizeof(map)) != FindMap_NotFound)
+		if (FindMap(map, map, sizeof(map)) != FindMap_NotFound)
 		{
 			tempMaps.PushString(map);
 		}
 	}
 	
+	//GetCurrentMap always returns a resolved map
 	GetCurrentMap(map, sizeof(map));
 	RemoveStringFromArray(tempMaps, map);
 	
