@@ -2133,6 +2133,8 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 {
 	NativeVotesType voteType = Data_GetType(vote);
 	
+	bool bNoVoteButton = (Data_GetFlags(vote) & MENUFLAG_BUTTON_NOVOTE) == MENUFLAG_BUTTON_NOVOTE;
+	
 	char translation[TRANSLATION_LENGTH];
 	char otherTeamString[TRANSLATION_LENGTH];
 	bool bYesNo = true;
@@ -2188,20 +2190,43 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 		}
 	}
 	
+	int maxCount = Data_GetItemCount(vote);
+	
+	if (!bYesNo && bNoVoteButton && maxCount >= Game_GetMaxItems())
+	{
+		maxCount--;
+	}
+	
 	// According to Source SDK 2013, vote_options is only sent for a multiple choice vote.
 	if (!bYesNo)
 	{
 		Event optionsEvent = CreateEvent("vote_options");
 		
-		int maxCount = Data_GetItemCount(vote);
+		int start = 0;
 		
-		for (int i = 0; i < maxCount; i++)
+		if (bNoVoteButton)
+		{
+			start = 1;
+			char option[8];
+			Format(option, sizeof(option), "%s1", TF2CSGO_VOTE_PREFIX);
+			
+			char display[TRANSLATION_LENGTH];
+			Format(display, sizeof(display), "%T", "No Vote", LANG_SERVER);
+			optionsEvent.SetString(option, display);
+		}
+		
+		for (int i = start; i < maxCount; i++)
 		{
 			char option[8];
 			Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, i+1);
 			
 			char display[TRANSLATION_LENGTH];
-			Data_GetItemDisplay(vote, i, display, sizeof(display));
+			int item = i;
+			if (start == 1)
+			{
+				item--;
+			}
+			Data_GetItemDisplay(vote, item, display, sizeof(display));
 			optionsEvent.SetString(option, display);
 		}
 		optionsEvent.SetInt("count", maxCount);
@@ -2216,8 +2241,7 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 	}
 	
 	MenuAction actions = Data_GetActions(vote);
-	int maxCount = Data_GetItemCount(vote);
-	
+
 	for (int i = 0; i < num_clients; ++i)
 	{
 		g_newMenuTitle[0] = '\0';
@@ -2231,45 +2255,53 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 		
 		g_curDisplayClient = 0;
 		
-		/*
-		Event optionsEvent = CreateEvent("vote_options");
-		for (int j = 0; j < maxCount; j++)
-		{
-			char option[8];
-			Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, j+1);
-			
-			char display[TRANSLATION_LENGTH];
-			Data_GetItemDisplay(vote, j, display, TRANSLATION_LENGTH);
-			optionsEvent.SetString(option, display);
-		}
-		SetEventInt(optionsEvent, "count", maxCount);
-		optionsEvent.Fire();
-		*/
-	
-		if (!bYesNo && actions & MenuAction_DisplayItem)
+		if (!bYesNo)
 		{
 			Event optionsEvent = CreateEvent("vote_options");
 			
-			for (int j = 0; j < maxCount; j++)
+			int start = 0;
+			
+			if (bNoVoteButton)
+			{
+				start = 1;
+				char option[8];
+				Format(option, sizeof(option), "%s1", TF2CSGO_VOTE_PREFIX);
+				
+				char display[TRANSLATION_LENGTH];
+				Format(display, sizeof(display), "%T", "No Vote", clients[i]);
+				optionsEvent.SetString(option, display);
+			}
+			
+			for (int j = start; j < maxCount; j++)
 			{
 				Action changeItem = Plugin_Continue;
-				g_curItemClient = clients[i];
-				g_newMenuItem[0] = '\0';
 				
-				changeItem = DoAction(vote, MenuAction_DisplayItem, clients[i], j);
-				g_curItemClient = 0;
+				int item = j;
+				if (start == 1)
+				{
+					item--;
+				}
+
+				if (actions & MenuAction_DisplayItem)
+				{
+					g_curItemClient = clients[i];
+					g_newMenuItem[0] = '\0';
+					
+					changeItem = DoAction(vote, MenuAction_DisplayItem, clients[i], item);
+					g_curItemClient = 0;
+				}
 				
 				char option[8];
 				Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, j+1);
-				
 				char display[TRANSLATION_LENGTH];
+
 				if (changeItem == Plugin_Changed)
 				{
 					strcopy(display, TRANSLATION_LENGTH, g_newMenuItem);
 				}
 				else
 				{
-					Data_GetItemDisplay(vote, j, display, sizeof(display));
+					Data_GetItemDisplay(vote, item, display, sizeof(display));
 				}
 				optionsEvent.SetString(option, display);
 			}

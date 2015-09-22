@@ -168,6 +168,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("NativeVotes_GetMaxItems", Native_GetMaxItems);
 	CreateNative("NativeVotes_SetOptionFlags", Native_SetOptionFlags);
 	CreateNative("NativeVotes_GetOptionFlags", Native_GetOptionFlags);
+	CreateNative("NativeVotes_SetNoVoteButton", Native_SetNoVoteButton);
 	CreateNative("NativeVotes_Cancel", Native_Cancel);
 	CreateNative("NativeVotes_SetResultCallback", Native_SetResultCallback);
 	CreateNative("NativeVotes_CheckVoteDelay", Native_CheckVoteDelay);
@@ -216,6 +217,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("NativeVote.DisplayFail", Native_DisplayFail);
 	CreateNative("NativeVote.OptionFlags.set", Native_SetOptionFlags);
 	CreateNative("NativeVote.OptionFlags.get", Native_GetOptionFlags);
+	CreateNative("NativeVote.NoVoteButton.set", Native_SetNoVoteButton);
 	CreateNative("NativeVote.VoteResultCallback.set", Native_SetResultCallback);
 	CreateNative("NativeVote.ItemCount.get", Native_GetItemCount);
 	CreateNative("NativeVote.VoteType.get", Native_GetType);
@@ -533,6 +535,12 @@ void OnVoteSelect(NativeVote vote, int client, int item)
 		/* Check by our item count, NOT the vote array size */
 		if (item < g_Items)
 		{
+			// Return if they chose "No Vote", which is always position 0
+			if (Data_GetFlags(vote) & MENUFLAG_BUTTON_NOVOTE && item == 0)
+			{
+				return;
+			}
+			
 			Game_ClientSelectedItem(vote, client, item);
 			
 			g_ClientVotes[client] = item;
@@ -1699,7 +1707,37 @@ public int Native_SetOptionFlags(Handle plugin, int numParams)
 	
 	int flags = GetNativeCell(2);
 	
+	// This is an ORed group of flags to strip the ones we don't support
+	flags &= (MENUFLAG_BUTTON_NOVOTE);
+	
 	Data_SetFlags(vote, flags);
+}
+
+// native bool NativeVotes_SetNoVoteButton(Handle vote, bool button);
+public int Native_SetNoVoteButton(Handle plugin, int numParams)
+{
+	NativeVote vote = GetNativeCell(1);
+	if (vote == null)
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "NativeVotes handle %x is invalid", vote);
+	}
+
+	int flags = Data_GetFlags(vote);
+	
+	if (GetNativeCell(2))
+	{
+		flags |= MENUFLAG_BUTTON_NOVOTE;
+	}
+	else
+	{
+		flags &= ~MENUFLAG_BUTTON_NOVOTE;
+	}
+	
+	Data_SetFlags(vote, flags);
+	
+	int newflags = Data_GetFlags(vote);
+	
+	return (flags == newflags);
 }
 
 // native NativeVotes_Cancel();

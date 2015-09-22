@@ -187,6 +187,17 @@ int Data_GetFlags(KeyValues vote)
 
 void Data_SetFlags(KeyValues vote, int flags)
 {
+	// Strip novote if this is a YesNo vote
+	if (flags & MENUFLAG_BUTTON_NOVOTE)
+	{
+		NativeVotesType voteType = Data_GetType(vote);
+		
+		if (voteType != NativeVotesType_Custom_Mult && voteType != NativeVotesType_Custom_YesNo)
+		{
+			flags &= ~MENUFLAG_BUTTON_NOVOTE;
+		}
+	}
+	
 	vote.SetNum("flags", flags);
 }
 

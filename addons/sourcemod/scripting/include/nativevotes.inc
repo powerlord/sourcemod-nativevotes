@@ -462,10 +462,17 @@ methodmap NativeVote < KeyValues
 	//
 	// If a certain bit is not supported, it will be stripped before being set.
 	//
-	// NOTE: This is currently unused, but reserved for future use.
+	// NOTE: Only MENUFLAG_BUTTON_NOVOTE is supported by NativeVotes
 	property int OptionFlags {
 		public native get();
 		public native set(int value);
+	}
+	
+	// Sets whether or not the vote has a "no vote" button in slot 1 for
+	// multiple choice votes.
+	// By default, votes do not have a no vote button.
+	property bool NoVoteButton {
+		public native set(bool value);
 	}
 	
 	// Sets an advanced vote handling callback.  If this callback is set,
@@ -695,7 +702,7 @@ native int NativeVotes_GetMaxItems();
  *
  * If a certain bit is not supported, it will be stripped before being set.
  * 
- * NOTE: This is currently unused, but reserved for future use.
+ * NOTE: Only MENUFLAG_BUTTON_NOVOTE is supported by NativeVotes
  *
  * @param vote				Vote Handle.
  * @param flags				A new bitstring of MENUFLAG bits.
@@ -706,13 +713,25 @@ native void NativeVotes_SetOptionFlags(Handle vote, int flags);
 /**
  * Retrieves a vote's option flags.
  *
- * NOTE: This is currently unused, but reserved for future use.
+ * NOTE: Only MENUFLAG_BUTTON_NOVOTE is supported by NativeVotes
  *
  * @param vote				Vote Handle.
  * @return					A bitstring of MENUFLAG bits.
  * @error					Invalid Handle.
  */
 native int NativeVotes_GetOptionFlags(Handle vote);
+
+/**
+ * Sets whether or not the vote has a "no vote" button in slot 1 for
+ * multiple choice votes.
+ * By default, votes do not have a no vote button.
+ * 
+ * @param vote		NativeVotes Handle
+ * @param button		True to enable the button, false to remove it.
+ * @return			True if allowed; false on failure.
+ * @error			Invalid Handle.
+ */
+native bool NativeVotes_SetNoVoteButton(Handle vote, bool button);
 
 /**
  * Cancels the vote in progress.
@@ -1479,6 +1498,7 @@ public void __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_GetMaxItems");
 	MarkNativeAsOptional("NativeVotes_SetOptionFlags");
 	MarkNativeAsOptional("NativeVotes_GetOptionFlags");
+	MarkNativeAsOptional("NativeVotes_SetNoVoteButton");
 	MarkNativeAsOptional("NativeVotes_Cancel");
 	MarkNativeAsOptional("NativeVotes_SetResultCallback");
 	MarkNativeAsOptional("NativeVotes_CheckVoteDelay");
@@ -1493,7 +1513,6 @@ public void __pl_nativevotes_SetNTVOptional()
 	MarkNativeAsOptional("NativeVotes_DisplayPass");
 	MarkNativeAsOptional("NativeVotes_DisplayPassCustomToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayPassEx");
-	//MarkNativeAsOptional("NativeVotes_DisplayRawPass");
 	MarkNativeAsOptional("NativeVotes_DisplayRawPassToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayRawPassCustomToOne");
 	MarkNativeAsOptional("NativeVotes_DisplayFail");
