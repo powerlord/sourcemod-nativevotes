@@ -53,6 +53,8 @@ public void OnPluginStart()
 	RegAdminCmd("votemult", Cmd_TestMult, ADMFLAG_VOTE, "Test Multiple Choice votes");
 	RegAdminCmd("voteyesnocustom", Cmd_TestYesNoCustom, ADMFLAG_VOTE, "Test Multiple Choice vote with Custom Display text");
 	RegAdminCmd("votemultcustom", Cmd_TestMultCustom, ADMFLAG_VOTE, "Test Multiple Choice vote with Custom Display text");
+	RegAdminCmd("votenovote", Cmd_TestNoVote, ADMFLAG_VOTE, "Test Multiple Choice vote with \"No Vote\" option");
+	RegAdminCmd("votenovotecustom", Cmd_TestNoVoteCustom, ADMFLAG_VOTE, "Test Multiple Choice vote with \"No Vote\" option and Custom Display text");
 }
 
 public Action Cmd_TestYesNo(int client, int args)
@@ -369,5 +371,67 @@ public int MultCustomHandler(NativeVote vote, MenuAction action, int param1, int
 	}
 	
 	return 0;
+}
+
+public Action Cmd_TestNoVote(int client, int args)
+{
+	if (!NativeVotes_IsVoteTypeSupported(NativeVotesType_Custom_Mult))
+	{
+		ReplyToCommand(client, "Game does not support Custom Multiple Choice votes.");
+		return Plugin_Handled;
+	}
+
+	if (!NativeVotes_IsNewVoteAllowed())
+	{
+		int seconds = NativeVotes_CheckVoteDelay();
+		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
+		return Plugin_Handled;
+	}
+	
+	NativeVote vote = new NativeVote(MultHandler, NativeVotesType_Custom_Mult);
+	
+	vote.NoVoteButton = true;
+	vote.Initiator = client;
+	vote.SetDetails("Test Mult Vote with NoVote");
+	vote.AddItem("choice1", "Choice 1");
+	vote.AddItem("choice2", "Choice 2");
+	vote.AddItem("choice3", "Choice 3");
+	vote.AddItem("choice4", "Choice 4");
+	vote.AddItem("choice5", "Choice 5");
+	// 5 is currently the maximum number of choices in any game, but No Vote should make the max 4...
+	vote.DisplayVoteToAll(30);
+	
+	return Plugin_Handled;
+}
+
+public Action Cmd_TestNoVoteCustom(int client, int args)
+{
+	if (!NativeVotes_IsVoteTypeSupported(NativeVotesType_Custom_Mult))
+	{
+		ReplyToCommand(client, "Game does not support Custom Multiple Choice votes.");
+		return Plugin_Handled;
+	}
+
+	if (!NativeVotes_IsNewVoteAllowed())
+	{
+		int seconds = NativeVotes_CheckVoteDelay();
+		ReplyToCommand(client, "Vote is not allowed for %d more seconds", seconds);
+		return Plugin_Handled;
+	}
+	
+	NativeVote vote = new NativeVote(MultCustomHandler, NativeVotesType_Custom_Mult, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display|MenuAction_DisplayItem);
+
+	vote.NoVoteButton = true;
+	vote.Initiator = client;
+	vote.SetDetails("Test Mult Vote");
+	vote.AddItem("choice1", "Choice 1");
+	vote.AddItem("choice2", "Choice 2");
+	vote.AddItem("choice3", "Choice 3");
+	vote.AddItem("choice4", "Choice 4");
+	vote.AddItem("choice5", "Choice 5");
+	// 5 is currently the maximum number of choices in any game, but No Vote should make the max 4...
+	vote.DisplayVoteToAll(30);
+	
+	return Plugin_Handled;
 }
 
