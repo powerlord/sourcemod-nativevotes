@@ -1268,7 +1268,7 @@ bool Internal_RedrawToClient(int client, bool revotes)
 	DataPack data;
 	
 	CreateDataTimer(VOTE_DELAY_TIME, RedrawTimer, data, TIMER_FLAG_NO_MAPCHANGE);
-	data.WriteCell(client);
+	data.WriteCell(GetClientUserId(client));
 	data.WriteCell(view_as<int>(g_hCurVote));
 	
 	return true;
@@ -1276,11 +1276,21 @@ bool Internal_RedrawToClient(int client, bool revotes)
 
 public Action RedrawTimer(Handle timer, DataPack data)
 {
+	if (g_hCurVote == null)
+	{
+		return Plugin_Stop;
+	}
+	
 	ResetPack(data);
-	int client = data.ReadCell();
+	int client = GetClientOfUserId(data.ReadCell());
+	if (client == 0)
+	{
+		return Plugin_Stop;
+	}
+	
 	NativeVote vote = view_as<NativeVote>(data.ReadCell());
 	
-	if (Internal_IsVoteInProgress() && !Internal_IsCancelling())
+	if (Internal_IsVoteInProgress() && !Internal_IsCancelling() && vote == g_hCurVote)
 	{
 		Game_DisplayVoteToOne(vote, client);
 	}
