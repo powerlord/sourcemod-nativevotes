@@ -47,7 +47,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	CreateConVar("nativevotestest_version", VERSION, "NativeVotes Vote Tester version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	CreateConVar("nativevotestest_version", VERSION, "NativeVotes Vote Tester version", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 
 	RegAdminCmd("voteyesno", Cmd_TestYesNo, ADMFLAG_VOTE, "Test Yes/No votes");
 	RegAdminCmd("votemult", Cmd_TestMult, ADMFLAG_VOTE, "Test Multiple Choice votes");

@@ -52,8 +52,8 @@ public Plugin myinfo = {
 
 public void OnPluginStart()
 {
-	CreateConVar("nativevotes_votemanagertest_version", VERSION, "NativeVotes VoteManager Test version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
-	g_Cvar_Enabled = CreateConVar("nativevotes_votemanagertest_enable", "1", "Enable NativeVotes VoteManager Test?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
+	CreateConVar("nativevotes_votemanagertest_version", VERSION, "NativeVotes VoteManager Test version", FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
+	g_Cvar_Enabled = CreateConVar("nativevotes_votemanagertest_enable", "1", "Enable NativeVotes VoteManager Test?", FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 	HookConVarChange(g_Cvar_Enabled, EnabledChanged);
 }
 
