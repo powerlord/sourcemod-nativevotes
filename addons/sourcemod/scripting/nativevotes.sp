@@ -276,6 +276,9 @@ public void OnClientDisconnect_Post(int client)
 		return;
 	}
 
+	/* Wipe out their vote if they had one.  We have to make sure the
+	 * newly connected client is not allowed to vote.
+	 */
 	int item = g_ClientVotes[client];
 	if (item >= VOTE_PENDING)
 	{
@@ -285,19 +288,15 @@ public void OnClientDisconnect_Post(int client)
 		}
 		
 		g_ClientVotes[client] = VOTE_NOT_VOTING;
-		
-		g_TotalClients--;
-		
-		Game_UpdateClientCount(g_TotalClients);
-		Game_UpdateVoteCounts(g_hVotes, g_TotalClients);
-		BuildVoteLeaders();
-		DrawHintProgress();
-		
-		if (item == VOTE_PENDING)
-		{
-			DecrementPlayerCount();
-		}
 	}
+	
+	CancelClientVote(g_hCurVote, client, MenuCancel_Disconnected);
+}
+
+void CancelClientVote(NativeVote vote, int client, int reason)
+{
+	OnCancel(vote, client, reason);
+	OnClientEnd();
 }
 
 public Action Command_CallVote(int client, const char[] command, int argc)
@@ -518,13 +517,33 @@ public Action Command_Vote(int client, const char[] command, int argc)
 	
 	int item = Game_ParseVote(option);
 	
+	bool cancel;
+
 	if (item == NATIVEVOTES_VOTE_INVALID)
 	{
-		return Plugin_Handled;
+		cancel = true;
 	}
 	
-	OnVoteSelect(g_hCurVote, client, item);
+	if (Data_GetFlags(g_hCurVote) & MENUFLAG_BUTTON_NOVOTE && item == 0)
+	{
+		cancel = true;
+	}
 
+	/*
+	 * If they choose no vote or the vote is invalid (typed command), then
+	 * treat it as no vote and adjust the numbers.
+	 */
+	if (cancel)
+	{
+		OnCancel(g_hCurVote, client, MenuCancel_Exit);
+	}
+	else
+	{
+		OnVoteSelect(g_hCurVote, client, item);
+	}
+
+	OnClientEnd();
+	
 	return Plugin_Handled;
 }
 
@@ -535,12 +554,6 @@ void OnVoteSelect(NativeVote vote, int client, int item)
 		/* Check by our item count, NOT the vote array size */
 		if (item < g_Items)
 		{
-			// Return if they chose "No Vote", which is always position 0
-			if (Data_GetFlags(vote) & MENUFLAG_BUTTON_NOVOTE && item == 0)
-			{
-				return;
-			}
-			
 			Game_ClientSelectedItem(vote, client, item);
 			
 			g_ClientVotes[client] = item;
@@ -597,7 +610,6 @@ void OnVoteSelect(NativeVote vote, int client, int item)
 			DrawHintProgress();
 			
 			OnSelect(g_hCurVote, client, item);
-			DecrementPlayerCount();
 		}
 	}
 }
@@ -644,6 +656,16 @@ void OnVoteCancel(NativeVote vote, int reason)
 {
 	// Always called
 	DoAction(vote, MenuAction_VoteCancel, reason, 0);
+}
+
+void OnCancel(NativeVote vote, int client, int reason)
+{
+	DoAction(vote, MenuAction_Cancel, client, reason);
+}
+
+void OnClientEnd()
+{
+	DecrementPlayerCount();
 }
 
 Action DoAction(NativeVote vote, MenuAction action, int param1, int param2, Action def_res = Plugin_Continue)
