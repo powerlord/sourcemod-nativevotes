@@ -256,7 +256,7 @@ public void OnPluginStart()
 		AddCommandListener(Command_CallVote, "callvote");
 		
 		// None is type 0, which has no overrides
-		// As of 2015-02-27, there are 9 votes for a total of 18 private forwards created here.
+		// As of 2015-09-28, there are 10 votes for a total of 20 private forwards created here.
 		for (int i = 1; i < sizeof(g_CallVotes); i++)
 		{
 			g_CallVotes[i][CallVote_Forward] = CreateForward(ET_Hook, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);

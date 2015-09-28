@@ -110,6 +110,8 @@
 #define TF2_VOTE_STRING_AUTOBALANCE			"TeamAutoBalance" 
 #define TF2_VOTE_STRING_CLASSLIMIT			"ClassLimits"
 
+#define TF2_VOTE_STRING_EXTEND				"Extend" // Check this!
+
 // Menu items for votes
 #define TF2_VOTE_MENU_RESTART				"#TF_RestartGame"
 #define TF2_VOTE_MENU_KICK					"#TF_Kick"
@@ -122,6 +124,7 @@
 #define TF2_VOTE_MENU_AUTOBALANCE_OFF		"#TF_TeamAutoBalance_Disable"
 #define TF2_VOTE_MENU_CLASSLIMIT_ON			"#TF_ClassLimit_Enable"
 #define TF2_VOTE_MENU_CLASSLIMIT_OFF			"#TF_ClassLimit_Disable"
+#define TF2_VOTE_MENU_EXTEND				"#TF_Extend" // Check this!
 
 // User vote to kick user.
 #define TF2_VOTE_KICK_IDLE_START			"#TF_vote_kick_player_idle"
@@ -176,6 +179,9 @@
 // User vote to disable classlimits
 #define TF2_VOTE_CLASSLIMITS_DISABLE_START	"#TF_vote_classlimits_disable"
 #define TF2_VOTE_CLASSLIMITS_DISABLE_PASSED	"#TF_vote_passed_classlimits_disable"
+
+// Use vote to extend map.  Check this!
+#define TF2_VOTE_EXTEND_START				"#TF_vote_extend"
 
 // While not a vote string, it works just as well.
 #define TF2_VOTE_CUSTOM					"#TF_playerid_noteam"
@@ -320,6 +326,7 @@ enum
 // Generic functions
 // 
 
+// This is deprecated in NativeVotes 1.1
 enum
 {
 	ValveVote_Kick = 0,
@@ -346,6 +353,7 @@ static ConVar g_Cvar_MvM_VoteChallenge_Enabled;
 static ConVar g_Cvar_VoteAutoBalance_Enabled;
 static ConVar g_Cvar_VoteClassLimits_Enabled;
 static ConVar g_Cvar_MvM_VoteClassLimits_Enabled;
+static ConVar g_Cvar_VoteExtend_Enabled;
 
 static ConVar g_Cvar_ClassLimit;
 static ConVar g_Cvar_AutoBalance;
@@ -398,6 +406,7 @@ void Game_InitializeCvars()
 			g_Cvar_VoteAutoBalance_Enabled = FindConVar("sv_vote_issue_autobalance_allowed");
 			g_Cvar_VoteClassLimits_Enabled = FindConVar("sv_vote_issue_classlimits_allowed");
 			g_Cvar_MvM_VoteClassLimits_Enabled = FindConVar("sv_vote_issue_classlimits_allowed_mvm");
+			g_Cvar_VoteExtend_Enabled = FindConVar("sv_vote_issue_extend_allowed"); // Check this value
 			
 			g_Cvar_ClassLimit = FindConVar("tf_classlimit");
 			g_Cvar_AutoBalance = FindConVar("mp_autoteambalance");
@@ -1230,6 +1239,11 @@ static NativeVotesPassType VoteTypeToVotePass(NativeVotesType voteType)
 		case NativeVotesType_ClassLimitsOff:
 		{
 			passType = NativeVotesPass_ClassLimitsOff;
+		}
+		
+		case NativeVotesType_Extend:
+		{
+			passType = NativeVotesPass_Extend;
 		}
 		
 		default:
@@ -2529,7 +2543,7 @@ static bool TF2_CheckVoteType(NativeVotesType voteType)
 		NativeVotesType_ChgLevel, NativeVotesType_NextLevel, NativeVotesType_ScrambleNow, NativeVotesType_ScrambleEnd,
 		NativeVotesType_ChgMission, NativeVotesType_StartRound, NativeVotesType_Eternaween,
 		NativeVotesType_AutoBalanceOn, NativeVotesType_AutoBalanceOff,
-		NativeVotesType_ClassLimitsOn, NativeVotesType_ClassLimitsOff:
+		NativeVotesType_ClassLimitsOn, NativeVotesType_ClassLimitsOff, NativeVotesType_Extend:
 		{
 			return true;
 		}
@@ -2656,6 +2670,11 @@ static bool TF2_VoteTypeToTranslation(NativeVotesType voteType, char[] translati
 		case NativeVotesType_ClassLimitsOff:
 		{
 			strcopy(translation, maxlength, TF2_VOTE_CLASSLIMITS_DISABLE_START);
+		}
+		
+		case NativeVotesType_Extend:
+		{
+			strcopy(translation, maxlength, TF2_VOTE_EXTEND_START);
 		}
 		
 		default:
@@ -2794,6 +2813,9 @@ static void TF2_AddDefaultVotes(ArrayList hVoteTypes, bool bHideDisabledVotes)
 		
 		// AutoBalance
 		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_AutoBalance, globalEnable && g_Cvar_VoteAutoBalance_Enabled.BoolValue);
+		
+		// Extend
+		VoteTypeSet(hVoteTypes, bHideDisabledVotes, NativeVotesOverride_Extend, globalEnable && g_Cvar_VoteExtend_Enabled.BoolValue);
 	}
 	
 }
@@ -3134,6 +3156,11 @@ static stock bool TF2_VoteTypeToVoteString(NativeVotesType voteType, char[] vote
 			strcopy(voteString, maxlength, TF2_VOTE_STRING_CLASSLIMIT_OFF);
 			valid = true;
 		}
+		
+		case NativeVotesType_Extend:
+		{
+			strcopy(voteString, maxlength, TF2_VOTE_STRING_EXTEND);
+		}
 	}
 	
 	return valid;
@@ -3189,6 +3216,10 @@ static stock NativeVotesType TF2_VoteStringToVoteType(const char[] voteString)
 			voteType = NativeVotesType_ClassLimitsOn;
 		}
 	}
+	else if (StrEqual(voteString, TF2_VOTE_STRING_EXTEND, false))
+	{
+		voteType = NativeVotesType_Extend;
+	}
 	
 	return voteType;
 }
@@ -3237,6 +3268,11 @@ static stock NativeVotesOverride TF2_VoteTypeToVoteOverride(NativeVotesType vote
 		case NativeVotesType_ClassLimitsOn, NativeVotesType_ClassLimitsOff:
 		{
 			overrideType = NativeVotesOverride_ClassLimits;
+		}
+		
+		case NativeVotesType_Extend:
+		{
+			overrideType = NativeVotesOverride_Extend;
 		}
 	}
 	
@@ -3293,6 +3329,11 @@ static stock NativeVotesType TF2_VoteOverrideToVoteType(NativeVotesOverride over
 		{
 			voteType = NativeVotesType_ClassLimitsOn;
 		}
+		
+		case NativeVotesOverride_Extend:
+		{
+			voteType = NativeVotesType_Extend;
+		}
 	}
 	
 	return voteType;
@@ -3333,6 +3374,10 @@ static stock NativeVotesOverride TF2_VoteStringToVoteOverride(const char[] voteS
 	else if (StrEqual(voteString, TF2_VOTE_STRING_CLASSLIMIT, false))
 	{
 		overrideType = NativeVotesOverride_ClassLimits;
+	}
+	else if (StrEqual(voteString, TF2_VOTE_STRING_EXTEND, false))
+	{
+		overrideType = NativeVotesOverride_Extend;
 	}
 	
 #if defined LOG
@@ -3393,6 +3438,11 @@ static stock bool TF2_OverrideTypeToVoteString(NativeVotesOverride overrideType,
 		{
 			strcopy(voteString, maxlength, TF2_VOTE_STRING_CLASSLIMIT);
 			valid = true;
+		}
+		
+		case NativeVotesOverride_Extend:
+		{
+			strcopy(voteString, maxlength, TF2_VOTE_STRING_EXTEND);
 		}
 	}
 	
@@ -3464,6 +3514,11 @@ static stock bool TF2_OverrideTypeToTranslationString(NativeVotesOverride overri
 				strcopy(translationString, maxlength, TF2_VOTE_MENU_CLASSLIMIT_ON);
 			}
 			valid = true;
+		}
+		
+		case NativeVotesOverride_Extend:
+		{
+			strcopy(translationString, maxlength, TF2_VOTE_MENU_EXTEND);
 		}
 	}
 	

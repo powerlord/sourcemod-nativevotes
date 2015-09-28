@@ -113,6 +113,7 @@ enum NativeVotesType
 	NativeVotesType_AutoBalanceOff,	/**< TF2: Yes/No, details are ignored */
 	NativeVotesType_ClassLimitsOn,	/**< TF2: Yes/No, details are ignored */
 	NativeVotesType_ClassLimitsOff,	/**< TF2: Yes/No, details are ignored */
+	NativeVotesType_Extend,			/**< TF2: Yes/No, details are ignored */
 };
 
 enum NativeVotesPassType
@@ -236,6 +237,7 @@ enum NativeVotesOverride
 	NativeVotesOverride_Eternaween,
 	NativeVotesOverride_AutoBalance,
 	NativeVotesOverride_ClassLimits,
+	NativeVotesOverride_Extend,
 }
 
 methodmap NativeVote < KeyValues
