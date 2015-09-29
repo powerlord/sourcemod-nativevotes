@@ -110,21 +110,22 @@
 #define TF2_VOTE_STRING_AUTOBALANCE			"TeamAutoBalance" 
 #define TF2_VOTE_STRING_CLASSLIMIT			"ClassLimits"
 
-#define TF2_VOTE_STRING_EXTEND				"Extend" // Check this!
+// New as of 2015-09-24
+#define TF2_VOTE_STRING_EXTEND				"ExtendLevel"
 
 // Menu items for votes
-#define TF2_VOTE_MENU_RESTART				"#TF_RestartGame"
-#define TF2_VOTE_MENU_KICK					"#TF_Kick"
-#define TF2_VOTE_MENU_CHANGELEVEL			"#TF_ChangeLevel"
-#define TF2_VOTE_MENU_NEXTLEVEL				"#TF_NextLevel"
-#define TF2_VOTE_MENU_SCRAMBLE				"#TF_ScrambleTeams"
-#define TF2_VOTE_MENU_CHANGEMISSION			"#TF_ChangeMission"
-#define TF2_VOTE_MENU_ETERNAWEEN			"#TF_Eternaween"
-#define TF2_VOTE_MENU_AUTOBALANCE_ON			"#TF_TeamAutoBalance_Enable"
-#define TF2_VOTE_MENU_AUTOBALANCE_OFF		"#TF_TeamAutoBalance_Disable"
-#define TF2_VOTE_MENU_CLASSLIMIT_ON			"#TF_ClassLimit_Enable"
-#define TF2_VOTE_MENU_CLASSLIMIT_OFF			"#TF_ClassLimit_Disable"
-#define TF2_VOTE_MENU_EXTEND				"#TF_Extend" // Check this!
+#define TF2_VOTE_MENU_RESTART				"#Vote_RestartGame"
+#define TF2_VOTE_MENU_KICK					"#Vote_Kick"
+#define TF2_VOTE_MENU_CHANGELEVEL			"#Vote_ChangeLevel"
+#define TF2_VOTE_MENU_NEXTLEVEL				"#Vote_NextLevel"
+#define TF2_VOTE_MENU_SCRAMBLE				"#Vote_ScrambleTeams"
+#define TF2_VOTE_MENU_CHANGEMISSION			"#Vote_ChangeMission"
+#define TF2_VOTE_MENU_ETERNAWEEN			"#Vote_Eternaween"
+#define TF2_VOTE_MENU_AUTOBALANCE_ON			"#Vote_TeamAutoBalance_Enable"
+#define TF2_VOTE_MENU_AUTOBALANCE_OFF		"#Vote_TeamAutoBalance_Disable"
+#define TF2_VOTE_MENU_CLASSLIMIT_ON			"#Vote_ClassLimit_Enable"
+#define TF2_VOTE_MENU_CLASSLIMIT_OFF			"#Vote_ClassLimit_Disable"
+#define TF2_VOTE_MENU_EXTEND				"#Vote_ExtendLevel"
 
 // User vote to kick user.
 #define TF2_VOTE_KICK_IDLE_START			"#TF_vote_kick_player_idle"
@@ -144,7 +145,7 @@
 // User vote to change next level.
 #define TF2_VOTE_NEXTLEVEL_SINGLE_START		"#TF_vote_nextlevel"
 #define TF2_VOTE_NEXTLEVEL_MULTIPLE_START	"#TF_vote_nextlevel_choices" // Started by server
-#define TF2_VOTE_NEXTLEVEL_EXTEND_PASSED		"#TF_vote_passed_nextlevel_extend"
+#define TF2_VOTE_NEXTLEVEL_EXTEND_PASSED		"#TF_vote_passed_nextlevel_extend" // Also used for extend vote
 #define TF2_VOTE_NEXTLEVEL_PASSED			"#TF_vote_passed_nextlevel"
 
 // User vote to scramble teams.  Can be immediate or end of round.
@@ -180,8 +181,8 @@
 #define TF2_VOTE_CLASSLIMITS_DISABLE_START	"#TF_vote_classlimits_disable"
 #define TF2_VOTE_CLASSLIMITS_DISABLE_PASSED	"#TF_vote_passed_classlimits_disable"
 
-// Use vote to extend map.  Check this!
-#define TF2_VOTE_EXTEND_START				"#TF_vote_extend"
+// Use vote to extend map.
+#define TF2_VOTE_EXTEND_START				"#TF_vote_extendlevel"
 
 // While not a vote string, it works just as well.
 #define TF2_VOTE_CUSTOM					"#TF_playerid_noteam"
@@ -406,7 +407,7 @@ void Game_InitializeCvars()
 			g_Cvar_VoteAutoBalance_Enabled = FindConVar("sv_vote_issue_autobalance_allowed");
 			g_Cvar_VoteClassLimits_Enabled = FindConVar("sv_vote_issue_classlimits_allowed");
 			g_Cvar_MvM_VoteClassLimits_Enabled = FindConVar("sv_vote_issue_classlimits_allowed_mvm");
-			g_Cvar_VoteExtend_Enabled = FindConVar("sv_vote_issue_extend_allowed"); // Check this value
+			g_Cvar_VoteExtend_Enabled = FindConVar("sv_vote_issue_extendlevel_allowed");
 			
 			g_Cvar_ClassLimit = FindConVar("tf_classlimit");
 			g_Cvar_AutoBalance = FindConVar("mp_autoteambalance");
@@ -2222,22 +2223,20 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 	int maxCount = Data_GetItemCount(vote);
 	
 	// According to Source SDK 2013, vote_options is only sent for a multiple choice vote.
-	if (!bYesNo)
+	// As of 2015-09-28, vote_options is sent for all votes in TF2
+	Event optionsEvent = CreateEvent("vote_options");
+	
+	for (int i = 0; i < maxCount; i++)
 	{
-		Event optionsEvent = CreateEvent("vote_options");
+		char option[8];
+		Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, i+1);
 		
-		for (int i = 0; i < maxCount; i++)
-		{
-			char option[8];
-			Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, i+1);
-			
-			char display[TRANSLATION_LENGTH];
-			Data_GetItemDisplay(vote, i, display, sizeof(display));
-			optionsEvent.SetString(option, display);
-		}
-		optionsEvent.SetInt("count", maxCount);
-		optionsEvent.Fire();
+		char display[TRANSLATION_LENGTH];
+		Data_GetItemDisplay(vote, i, display, sizeof(display));
+		optionsEvent.SetString(option, display);
 	}
+	optionsEvent.SetInt("count", maxCount);
+	optionsEvent.Fire();
 	
 	// Moved to mimic SourceSDK2013's server/vote_controller.cpp
 	// For whatever reason, while the other props are set first, this one's set after the vote_options event
