@@ -2262,7 +2262,7 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 		
 		if (!bYesNo)
 		{
-			Event optionsEvent = CreateEvent("vote_options");
+			optionsEvent = CreateEvent("vote_options");
 			
 			int start = 0;
 			
