@@ -507,7 +507,7 @@ public void OnMapEnd()
 public Action Command_Vote(int client, const char[] command, int argc)
 {
 	// If we're not running a vote, return the vote control back to the server
-	if (!Internal_IsVoteInProgress() && g_ClientVotes[client] != VOTE_PENDING)
+	if (!Internal_IsVoteInProgress() || g_ClientVotes[client] != VOTE_PENDING)
 	{
 		return Plugin_Continue;
 	}
