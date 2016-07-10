@@ -8,7 +8,7 @@ addons:
       - g++-multilib
 
 install:
-  - wget http://www.sourcemod.net/smdrop/1.8/sourcemod-1.8.0-git5697-linux.tar.gz -O /tmp/sourcemod.tar.gz
+  - wget http://www.sourcemod.net/smdrop/1.8/sourcemod-1.8.0-git5919-linux.tar.gz -O /tmp/sourcemod.tar.gz
   - tar -xzvf /tmp/sourcemod.tar.gz
 
 before_script:

@@ -2036,8 +2036,7 @@ static void L4D2_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 		SetEntProp(g_VoteController, Prop_Send, "m_votesYes", 0);
 		SetEntProp(g_VoteController, Prop_Send, "m_votesNo", 0);
 		SetEntProp(g_VoteController, Prop_Send, "m_potentialVotes", num_clients);
-		// TODO: Need to look these values up
-		SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", 0); // For now set to 0 to block ingame votes
+		SetEntProp(g_VoteController, Prop_Send, "m_activeIssueIndex", 0); // Set to 0 to block ingame votes
 	}
 }
 
@@ -2154,8 +2153,9 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 	if (bNoVoteButton)
 	{
 		int max = Game_GetMaxItems();
-		if (Data_GetItemCount(vote) >= max)
+		if (Data_GetItemCount(vote) == max)
 		{
+			// item must be removed before No Vote is added to prevent it from being blocked
 			Data_RemoveItem(vote, max-1);
 		}
 		
@@ -2172,6 +2172,8 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 	
 	char details[MAX_VOTE_DETAILS_LENGTH];
 	
+	// voteIndex is used by the CVoteController, which we're not using.
+	// -1 means no vote in progress, so any other value should work.
 	//int voteIndex = TF2CSGO_GetVoteType(voteType);
 	int voteIndex = 0;
 	
@@ -2210,6 +2212,7 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 	{
 		SetEntProp(g_VoteController, Prop_Send, "m_bIsYesNoVote", bYesNo);
 		
+		// CSGO gets very cranky if you try setting this
 		if (g_EngineVersion == Engine_TF2)
 			SetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex", voteIndex);
 			
@@ -2220,23 +2223,29 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 		}
 	}
 	
-	int maxCount = Data_GetItemCount(vote);
-	
 	// According to Source SDK 2013, vote_options is only sent for a multiple choice vote.
-	// As of 2015-09-28, vote_options is sent for all votes in TF2
-	Event optionsEvent = CreateEvent("vote_options");
-	
-	for (int i = 0; i < maxCount; i++)
+	// As of 2015-09-28, vote_options is sent for all votes in TF2 despite Yes/No being
+	// translated in the UI itself.
+	// As of 2016-07-10, we send this only when we're doing Yes/No votes as we handle
+	// multiple choice votes separately later.
+	if (bYesNo)
 	{
-		char option[8];
-		Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, i+1);
+		int itemCount = Data_GetItemCount(vote);
 		
-		char display[TRANSLATION_LENGTH];
-		Data_GetItemDisplay(vote, i, display, sizeof(display));
-		optionsEvent.SetString(option, display);
+		Event optionsEvent = CreateEvent("vote_options");
+		
+		for (int i = 0; i < itemCount; i++)
+		{
+			char option[8];
+			Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, i+1);
+			
+			char display[TRANSLATION_LENGTH];
+			Data_GetItemDisplay(vote, i, display, sizeof(display));
+			optionsEvent.SetString(option, display);
+		}
+		optionsEvent.SetInt("count", itemCount);
+		optionsEvent.Fire();
 	}
-	optionsEvent.SetInt("count", maxCount);
-	optionsEvent.Fire();
 	
 	// Moved to mimic SourceSDK2013's server/vote_controller.cpp
 	// For whatever reason, while the other props are set first, this one's set after the vote_options event
@@ -2244,7 +2253,7 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 	{
 		SetEntProp(g_VoteController, Prop_Send, "m_nPotentialVotes", num_clients);
 	}
-	
+
 	MenuAction actions = Data_GetActions(vote);
 
 	for (int i = 0; i < num_clients; ++i)
@@ -2262,50 +2271,7 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 		
 		if (!bYesNo)
 		{
-			optionsEvent = CreateEvent("vote_options");
-			
-			int start = 0;
-			
-			if (bNoVoteButton)
-			{
-				start = 1;
-				char option[8];
-				Format(option, sizeof(option), "%s1", TF2CSGO_VOTE_PREFIX);
-				
-				char display[TRANSLATION_LENGTH];
-				Format(display, sizeof(display), "%T", "No Vote", clients[i]);
-				optionsEvent.SetString(option, display);
-			}
-			
-			for (int j = start; j < maxCount; j++)
-			{
-				Action changeItem = Plugin_Continue;
-				
-				if (actions & MenuAction_DisplayItem)
-				{
-					g_curItemClient = clients[i];
-					g_newMenuItem[0] = '\0';
-					
-					changeItem = DoAction(vote, MenuAction_DisplayItem, clients[i], j);
-					g_curItemClient = 0;
-				}
-				
-				char option[8];
-				Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, j+1);
-				char display[TRANSLATION_LENGTH];
-
-				if (changeItem == Plugin_Changed)
-				{
-					strcopy(display, TRANSLATION_LENGTH, g_newMenuItem);
-				}
-				else
-				{
-					Data_GetItemDisplay(vote, j, display, sizeof(display));
-				}
-				optionsEvent.SetString(option, display);
-			}
-			optionsEvent.SetInt("count", maxCount);
-			optionsEvent.Fire();
+			TF2CSGO_SendOptionsToClient(vote, clients[i]);
 		}
 		
 		Handle voteStart = StartMessageOne("VoteStart", clients[i], USERMSG_RELIABLE);
@@ -2349,6 +2315,59 @@ static void TF2CSGO_DisplayVote(NativeVote vote, int[] clients, int num_clients)
 	
 	g_curDisplayClient = 0;
 	
+}
+
+static void TF2CSGO_SendOptionsToClient(NativeVote vote, int client)
+{
+	Event optionsEvent = CreateEvent("vote_options");
+	
+	MenuAction actions = Data_GetActions(vote);
+	bool bNoVoteButton = (Data_GetFlags(vote) & MENUFLAG_BUTTON_NOVOTE) == MENUFLAG_BUTTON_NOVOTE;
+
+	int start = 0;
+	
+	if (bNoVoteButton)
+	{
+		start = 1;
+		char option[8];
+		Format(option, sizeof(option), "%s1", TF2CSGO_VOTE_PREFIX);
+		
+		char display[TRANSLATION_LENGTH];
+		Format(display, sizeof(display), "%T", "No Vote", client);
+		optionsEvent.SetString(option, display);
+	}
+	
+	int itemCount = Data_GetItemCount(vote);
+	
+	for (int i = start; i < itemCount; i++)
+	{
+		Action changeItem = Plugin_Continue;
+		
+		if (actions & MenuAction_DisplayItem)
+		{
+			g_curItemClient = client;
+			g_newMenuItem[0] = '\0';
+			
+			changeItem = DoAction(vote, MenuAction_DisplayItem, client, i);
+			g_curItemClient = 0;
+		}
+		
+		char option[8];
+		Format(option, sizeof(option), "%s%d", TF2CSGO_VOTE_PREFIX, i+1);
+		char display[TRANSLATION_LENGTH];
+
+		if (changeItem == Plugin_Changed)
+		{
+			strcopy(display, TRANSLATION_LENGTH, g_newMenuItem);
+		}
+		else
+		{
+			Data_GetItemDisplay(vote, i, display, sizeof(display));
+		}
+		optionsEvent.SetString(option, display);
+	}
+	optionsEvent.SetInt("count", itemCount);
+	optionsEvent.FireToClient(client);
 }
 
 static void CSGO_VotePass(const char[] translation, const char[] details, int team, int client=0)
@@ -3508,4 +3527,30 @@ static stock bool TF2_OverrideTypeToTranslationString(NativeVotesOverride overri
 	}
 	
 	return valid;
+}
+
+stock bool Game_IsVoteTypeCustom(NativeVotesType voteType)
+{
+	switch(voteType)
+	{
+		case NativeVotesType_Custom_YesNo, NativeVotesType_Custom_Mult:
+		{
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+stock bool Game_IsVoteTypeYesNo(NativeVotesType voteType)
+{
+	switch(voteType)
+	{
+		case NativeVotesType_Custom_Mult, NativeVotesType_NextLevelMult:
+		{
+			return false;
+		}
+	}
+	
+	return true;
 }
