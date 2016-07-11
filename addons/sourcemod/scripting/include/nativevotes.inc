@@ -431,7 +431,7 @@ methodmap NativeVote < KeyValues
 				continue;
 				
 			SetGlobalTransTarget(i);
-			VFormat(buffer, sizeof(buffer), fmt, 2);
+			VFormat(buffer, sizeof(buffer), fmt, 3);
 			this.DisplayPassCustomToOne(i, "%s", buffer);
 		}
 	}
