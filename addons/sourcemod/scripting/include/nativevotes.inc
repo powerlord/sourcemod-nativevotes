@@ -1431,6 +1431,24 @@ native void NativeVotes_UnregisterVoteCommand(NativeVotesOverride overrideType, 
 native void NativeVotes_DisplayCallVoteFail(int client, NativeVotesCallFailType reason, int time=0);
 
 /**
+ * Register an alternative map list to use instead of the core map list.
+ * This only works on games that support vote commands (i.e. TF2)
+ *
+ * This callback will be called the frame after OnConfigsExecuted every map change.
+ * 
+ * It is recommended that a nominations plugin be in charge of this.
+ *
+ * The StringMap should use display name as the key and the mapcycle-style name as the value
+ * Note: These can be things that aren't maps for votes like UMC's group vote
+ *
+ * @param client		The client viewing the map list
+ * @param mapList 		StringMap of maps.
+ *						By default, this will contain the default mapcycle from the mapcyclefile.
+ * @return				Plugin_Changed if you added/changed the list, Plugin_Continue otherwise.
+ */
+forward Action NativeVotes_OverrideMaps(StringMap mapList);
+
+/**
  * Redraws the vote title from inside a MenuAction_Display callback
  * Not supported on L4D
  * 

@@ -37,16 +37,16 @@
 #include <sdktools>
 
 #pragma semicolon 1
-
 #pragma newdecls required
 
 #include "include/nativevotes.inc"
+#include "include/implodeexplode.inc"
 
 EngineVersion g_EngineVersion = Engine_Unknown;
 
 #include "nativevotes/data-keyvalues.sp"
 
-#define VERSION 							"1.1.0 beta 3"
+#define VERSION 							"1.1.0 beta 5"
 
 #define LOGTAG "NV"
 
@@ -59,7 +59,7 @@ EngineVersion g_EngineVersion = Engine_Unknown;
 #define VOTE_NOT_VOTING 					-2
 #define VOTE_PENDING 						-1
 
-#define MAX_VOTE_ISSUES					20
+#define MAX_VOTE_ISSUES						20
 #define VOTE_STRING_SIZE					32
 
 //----------------------------------------------------------------------------
@@ -72,7 +72,7 @@ EngineVersion g_EngineVersion = Engine_Unknown;
 
 #define MAX_CALLVOTE_SIZE					128
 
-#define LOG
+//#define LOG
 
 //----------------------------------------------------------------------------
 // Global Variables
@@ -111,6 +111,17 @@ int g_TimeLeft;
 int g_ClientVotes[MAXPLAYERS+1];
 bool g_bRevoting[MAXPLAYERS+1];
 char g_LeaderList[1024];
+
+// Map list stuffs
+
+#define STRINGTABLE_NAME					"ServerMapCycle"
+#define STRINGTABLE_ITEM					"ServerMapCycle"
+#define MAP_STRING_CACHE_SIZE				PLATFORM_MAX_PATH * 256
+
+// Forward
+Handle g_OverrideMaps;
+
+StringMap g_MapOverrides;
 
 enum CallVoteForwards
 {
@@ -262,11 +273,70 @@ public void OnPluginStart()
 			g_CallVotes[i][CallVote_Forward] = CreateForward(ET_Hook, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
 			g_CallVotes[i][CallVote_Vis] = CreateForward(ET_Hook, Param_Cell, Param_Cell);
 		}
+		
+		g_OverrideMaps = CreateGlobalForward("NativeVotes_OverrideMaps", ET_Hook, Param_Cell);
 	}
 	
 	g_hVotes = new ArrayList(1, Game_GetMaxItems());
 	
 	AutoExecConfig(true, "nativevotes");
+}
+
+public void OnConfigsExecuted()
+{
+	// Map list stuffs
+	if (g_MapOverrides != null)
+		delete g_MapOverrides;
+	
+	// Delay a frame to allow other plugins to do OnConfigsExecuted first
+	RequestFrame(ProcessMapList);
+}
+
+public void ProcessMapList(any data)
+{
+	int stringTableIndex = FindStringTable(STRINGTABLE_NAME);
+	int stringIndex = FindStringIndex(stringTableIndex, STRINGTABLE_ITEM);
+
+	StringMap overrideList = new StringMap();
+	
+	// Maplist resets every map
+	int length = GetStringTableDataLength(stringTableIndex, stringIndex);
+	char[] mapData = new char[length];
+	GetStringTableData(stringTableIndex, stringIndex, mapData, length);
+
+	int last = strlen(mapData);
+	// We'll get an extra blank entry if we don't do this
+	if (mapData[last-1] == '\n')
+	{
+		mapData[last-1] = '\0';
+	}	
+	
+	ExplodeStringToStringMap(mapData, "\n", overrideList, PLATFORM_MAX_PATH, ImplodePart_Key);
+
+	Action mapResult = Plugin_Continue;
+	Call_StartForward(g_OverrideMaps);
+	Call_PushCell(overrideList);
+	Call_Finish(mapResult);
+
+	if (mapResult == Plugin_Changed && overrideList.Size > 0)
+	{
+		g_MapOverrides = overrideList;
+		
+		char newMapData[MAP_STRING_CACHE_SIZE];
+		int newLength = ImplodeStringMapToString(overrideList, "\n", newMapData, sizeof(newMapData), ImplodePart_Key);
+		if (newLength < MAP_STRING_CACHE_SIZE && newMapData[newLength-1] != '\n')
+		{
+			// do this to avoid a StrCat
+			strcopy(newMapData[newLength-1], MAP_STRING_CACHE_SIZE, "\n");
+		}
+			
+		SetStringTableData(stringTableIndex, stringIndex, newMapData, sizeof(newMapData));
+	}
+	else
+	{
+		delete overrideList;
+	}
+
 }
 
 public void OnClientDisconnect_Post(int client)
@@ -408,26 +478,45 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 			
 			NativeVotesKickType kickType = NativeVotesKickType_None;
 			
-			if (voteType == NativeVotesType_Kick)
+			switch (voteType)
 			{
-				char param1[20];
-				GetCmdArg(2, param1, sizeof(param1));
-				
-				kickType = Game_GetKickType(param1, target);
-				
-				int targetClient = GetClientOfUserId(target);
-				
-				if (targetClient < 1 || targetClient > MaxClients || !IsClientInGame(targetClient))
+				case NativeVotesType_Kick:
 				{
-					return Plugin_Continue;
+					char param1[20];
+					GetCmdArg(2, param1, sizeof(param1));
+					
+					kickType = Game_GetKickType(param1, target);
+					
+					int targetClient = GetClientOfUserId(target);
+					
+					if (targetClient < 1 || targetClient > MaxClients || !IsClientInGame(targetClient))
+					{
+						return Plugin_Continue;
+					}
+	
+					GetClientName(targetClient, argument, sizeof(argument));
+					
 				}
-
-				GetClientName(targetClient, argument, sizeof(argument));
 				
-			}
-			else
-			{
-				GetCmdArg(2, argument, sizeof(argument));
+				case NativeVotesType_ChgLevel, NativeVotesType_NextLevel:
+				{
+					if (g_MapOverrides == null)
+					{
+						GetCmdArg(2, argument, sizeof(argument));
+					}
+					else
+					{
+						char map[PLATFORM_MAX_PATH];
+					
+						GetCmdArg(2, map, sizeof(map));
+						g_MapOverrides.GetString(map, argument, sizeof(argument));
+					}
+				}
+				
+				default:
+				{
+					GetCmdArg(2, argument, sizeof(argument));
+				}
 			}
 
 #if defined LOG
@@ -449,7 +538,7 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 
 }
 
-int FindVoteInArray(ArrayList myArray, NativeVotesOverride value)
+stock int FindVoteInArray(ArrayList myArray, NativeVotesOverride value)
 {
 	int size = myArray.Length;
 	for (int i = 0; i < size; i++)
@@ -464,6 +553,19 @@ int FindVoteInArray(ArrayList myArray, NativeVotesOverride value)
 	}
 	
 	return -1;
+}
+
+stock bool IsVoteEnabled(ArrayList myArray, NativeVotesOverride value)
+{
+	int pos = FindVoteInArray(myArray, value);
+	if (pos > -1)
+	{
+		int voteType[CallVoteListData];
+		myArray.GetArray(pos, voteType[0], sizeof(voteType));
+		if (voteType[CallVoteList_VoteEnabled])
+			return true;
+	}
+	return false;
 }
 
 public void OnVoteDelayChange(ConVar convar, const char[] oldValue, const char[] newValue)

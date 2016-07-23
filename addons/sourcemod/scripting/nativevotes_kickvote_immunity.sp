@@ -35,20 +35,23 @@
  */
 #include <sourcemod>
 #include <sdktools>
-#undef REQUIRE_PLUGIN
+
 #include <nativevotes>
+
 #pragma semicolon 1
+#pragma newdecls required
 
-#define VERSION "2.0.0"
+#define VERSION "3.0.0"
 
-new Handle:g_Cvar_Votes;
-new Handle:g_Cvar_KickVote;
-new Handle:g_Cvar_KickVoteMvM;
+ConVar g_Cvar_Votes;
+ConVar g_Cvar_KickVote;
+ConVar g_Cvar_KickVoteMvM;
 
-new bool:g_bNativeVotes = false;
-new bool:g_bRegistered = false;
+bool g_bRegistered = false;
 
-public Plugin:myinfo = {
+bool g_bMapActive = false;
+
+public Plugin myinfo = {
 	name			= "NativeVotes Kick Vote Immunity",
 	author			= "Powerlord",
 	description		= "Causes TF2 kick votes to fail against people who the current user can't target.",
@@ -56,7 +59,7 @@ public Plugin:myinfo = {
 	url				= "https://forums.alliedmods.net/showthread.php?t=208008"
 };
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	g_Cvar_Votes = FindConVar("sv_allow_votes");
 	g_Cvar_KickVote = FindConVar("sv_vote_issue_kick_allowed");
@@ -67,120 +70,98 @@ public OnPluginStart()
 	HookConVarChange(g_Cvar_KickVoteMvM, Cvar_CheckEnable);
 	
 	LoadTranslations("common.phrases");
-	CreateConVar("nativevotes_kickvote_immunity_version", VERSION, "NativeVotes Kickvote Immunity version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
+	CreateConVar("nativevotes_kickvote_immunity_version", VERSION, "NativeVotes Kickvote Immunity version", FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
 }
 
-public OnAllPluginsLoaded()
+public void OnAllPluginsLoaded()
 {
-	if (LibraryExists("nativevotes") && GetFeatureStatus(FeatureType_Native, "NativeVotes_DisplayCallVoteFail") == FeatureStatus_Available)
+	if (GetFeatureStatus(FeatureType_Native, "NativeVotes_AreVoteCommandsSupported") != FeatureStatus_Available)
 	{
-		
-		g_bNativeVotes = true;		
-		CheckEnable();
+		SetFailState("Requires NativeVotes 1.1 or newer");
 	}
 }
 
-public OnPluginEnd()
+public void OnConfigsExecuted()
 {
-	if (g_bNativeVotes)
-	{
-		UnregisterVoteCommand();
-	}
+	g_bMapActive = true;
+	CheckStatus();
 }
 
-public OnLibraryAdded(const String:name[])
+public void OnMapEnd()
 {
-	if (StrEqual(name, "nativevotes") && GetFeatureStatus(FeatureType_Native, "NativeVotes_DisplayCallVoteFail") == FeatureStatus_Available)
-	{
-		g_bNativeVotes = true;
-		CheckEnable();
-	}
+	g_bMapActive = false;
 }
 
-public OnLibraryRemoved(const String:name[])
+public void OnPluginEnd()
 {
-	if (StrEqual(name, "nativevotes"))
-	{
-		g_bNativeVotes = false;
-		g_bRegistered = false;
-	}
+	UnregisterVoteCommand();
 }
 
-RegisterVoteCommand()
+void RegisterVoteCommand()
 {
-	if (g_bNativeVotes && !g_bRegistered && GetFeatureStatus(FeatureType_Native, "NativeVotes_DisplayCallVoteFail") == FeatureStatus_Available )
+	if (!g_bRegistered &&
+		NativeVotes_AreVoteCommandsSupported())
 	{
-		NativeVotes_RegisterVoteCommand("Kick", KickVoteHandler);
+		NativeVotes_RegisterVoteCommand(NativeVotesOverride_Kick, KickVoteHandler);
 		g_bRegistered = true;
 	}
 }
 
-UnregisterVoteCommand()
+void UnregisterVoteCommand()
 {
-	if (g_bNativeVotes && g_bRegistered)
+	if (g_bRegistered)
 	{
-		NativeVotes_UnregisterVoteCommand("Kick", KickVoteHandler);
+		NativeVotes_UnregisterVoteCommand(NativeVotesOverride_Kick, KickVoteHandler);
 		g_bRegistered = false;
 	}
 }
 
-public Cvar_CheckEnable(Handle:convar, const String:oldValue[], const String:newValue[])
+public void Cvar_CheckEnable(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	if (GetConVarBool(convar))
+	if (!g_bMapActive)
+		return;
+		
+	CheckStatus();
+}
+
+void CheckStatus()
+{
+	bool bIsMvM = IsMvM();
+	if (g_bRegistered)
 	{
-		CheckEnable();
+		if (!g_Cvar_Votes.BoolValue || 
+			(bIsMvM && !g_Cvar_KickVoteMvM.BoolValue) ||
+			(!bIsMvM && !g_Cvar_KickVote.BoolValue)
+		)
+		{
+			LogMessage("Disabling.");
+			UnregisterVoteCommand();
+		}
 	}
 	else
 	{
-		CheckDisable();
-	}
-}
-
-CheckEnable()
-{
-	if (g_bNativeVotes)
-	{
-		new bool:bVotes = GetConVarBool(g_Cvar_Votes);
-		new bool:bIsMvM = IsMvM();
-		if (!g_bRegistered)
+		if (g_Cvar_Votes.BoolValue &&
+			((bIsMvM && g_Cvar_KickVoteMvM.BoolValue) ||
+			(!bIsMvM && g_Cvar_KickVote.BoolValue))
+		)
 		{
-			if (bVotes && ((bIsMvM && GetConVarBool(g_Cvar_KickVoteMvM)) || (!bIsMvM && GetConVarBool(g_Cvar_KickVote))))
-			{
-				LogMessage("Enabling.");
-				RegisterVoteCommand();
-			}
+			LogMessage("Enabling.");
+			RegisterVoteCommand();
 		}
 	}
 }
 
-CheckDisable()
+stock bool IsMvM()
 {
-	if (g_bNativeVotes)
-	{
-		new bool:bVotes = GetConVarBool(g_Cvar_Votes);
-		new bool:bIsMvM = IsMvM();
-		if (g_bRegistered)
-		{
-			if (!bVotes || (bIsMvM && !GetConVarBool(g_Cvar_KickVoteMvM)) || (!bIsMvM && !GetConVarBool(g_Cvar_KickVote)))
-			{
-				LogMessage("Disabling.");
-				UnregisterVoteCommand();
-			}
-		}
-	}
+	return view_as<bool>(GameRules_GetProp("m_bPlayingMannVsMachine"));
 }
 
-stock bool:IsMvM()
-{
-	return bool:GameRules_GetProp("m_bPlayingMannVsMachine");
-}
-
-public Action:KickVoteHandler(client, const String:voteCommand[], const String:voteArgument[], NativeVotesKickType:kickType, target)
+public Action KickVoteHandler(int client, NativeVotesOverride overrideType, const char[] voteArgument, NativeVotesKickType kickType, int target)
 {
 	if (!CanUserTarget(client, target))
 	{
 		NativeVotes_DisplayCallVoteFail(client, NativeVotesCallFail_CantKickAdmin);
-		PrintToChat(client, "%t \"%N\"", "Unable to target", target);
+		PrintToChat(client, "%t", "Unable to target");
 		return Plugin_Stop;
 	}
 		

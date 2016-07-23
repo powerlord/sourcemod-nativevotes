@@ -4,8 +4,9 @@
  * SourceMod NativeVotes Mapchooser Plugin
  * Creates a map vote at appropriate times, setting sm_nextmap to the winning
  * vote
+ * Updated with NativeVotes support
  *
- * NativeVotes (C) 2011-2014 Ross Bemrose (Powerlord). All rights reserved.
+ * NativeVotes (C)2011-2016 Ross Bemrose (Powerlord). All rights reserved.
  * SourceMod (C)2004-2008 AlliedModders LLC.  All rights reserved.
  * =============================================================================
  *
@@ -33,7 +34,6 @@
  * Version: $Id$
  */
  
-#pragma semicolon 1
 #include <sourcemod>
 #include <mapchooser>
 #include <nextmap>
@@ -42,6 +42,7 @@
 #include <nativevotes>
 #define REQUIRE_PLUGIN
 
+#pragma semicolon 1
 #pragma newdecls required
 
 #define VERSION "1.8.0"
