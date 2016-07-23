@@ -116,7 +116,7 @@ char g_LeaderList[1024];
 
 #define STRINGTABLE_NAME					"ServerMapCycle"
 #define STRINGTABLE_ITEM					"ServerMapCycle"
-#define MAP_STRING_CACHE_SIZE				PLATFORM_MAX_PATH * 256
+//#define MAP_STRING_CACHE_SIZE				PLATFORM_MAX_PATH * 256
 
 // Forward
 Handle g_OverrideMaps;
@@ -288,11 +288,12 @@ public void OnConfigsExecuted()
 	if (g_MapOverrides != null)
 		delete g_MapOverrides;
 	
-	// Delay a frame to allow other plugins to do OnConfigsExecuted first
-	RequestFrame(ProcessMapList);
+	// Delay 1 second to allow plugins to both execute OnConfigsExecuted
+	// and allow the server to load workshop maps
+	CreateTimer(1.0, Timer_ProcessMapList, TIMER_FLAG_NO_MAPCHANGE);
 }
 
-public void ProcessMapList(any data)
+public Action Timer_ProcessMapList(Handle timer, any data)
 {
 	int stringTableIndex = FindStringTable(STRINGTABLE_NAME);
 	int stringIndex = FindStringIndex(stringTableIndex, STRINGTABLE_ITEM);
@@ -304,12 +305,8 @@ public void ProcessMapList(any data)
 	char[] mapData = new char[length];
 	GetStringTableData(stringTableIndex, stringIndex, mapData, length);
 
-	int last = strlen(mapData);
 	// We'll get an extra blank entry if we don't do this
-	if (mapData[last-1] == '\n')
-	{
-		mapData[last-1] = '\0';
-	}	
+	TrimString(mapData);
 	
 	ExplodeStringToStringMap(mapData, "\n", overrideList, PLATFORM_MAX_PATH, ImplodePart_Key);
 
@@ -320,23 +317,27 @@ public void ProcessMapList(any data)
 
 	if (mapResult == Plugin_Changed && overrideList.Size > 0)
 	{
+#if defined LOG
+		LogMessage("Overridding map list with %d maps", overrideList.Size);
+#endif 
+		
 		g_MapOverrides = overrideList;
 		
-		char newMapData[MAP_STRING_CACHE_SIZE];
-		int newLength = ImplodeStringMapToString(overrideList, "\n", newMapData, sizeof(newMapData), ImplodePart_Key);
-		if (newLength < MAP_STRING_CACHE_SIZE && newMapData[newLength-1] != '\n')
+		int maxLength = PLATFORM_MAX_PATH * overrideList.Size;
+		char[] newMapData = new char[maxLength];
+		int newLength = ImplodeStringMapToString(overrideList, "\n", newMapData, maxLength, ImplodePart_Key);
+		if (newLength < maxLength && newMapData[newLength] != '\n')
 		{
 			// do this to avoid a StrCat
-			strcopy(newMapData[newLength-1], MAP_STRING_CACHE_SIZE, "\n");
+			newLength += strcopy(newMapData[newLength], maxLength, "\n") + 1;
 		}
-			
-		SetStringTableData(stringTableIndex, stringIndex, newMapData, sizeof(newMapData));
+		
+		SetStringTableData(stringTableIndex, stringIndex, newMapData, newLength);
 	}
 	else
 	{
 		delete overrideList;
 	}
-
 }
 
 public void OnClientDisconnect_Post(int client)

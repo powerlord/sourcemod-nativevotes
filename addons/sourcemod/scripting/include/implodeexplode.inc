@@ -258,5 +258,8 @@ stock int ImplodeStringMapToString(StringMap strings, const char[] join, char[] 
 			}
 		}
 	}
+	
+	delete snapshot;
+	
 	return total;
 }

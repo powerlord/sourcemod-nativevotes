@@ -600,6 +600,12 @@ public Action Menu_Nominate(int client, NativeVotesOverride overrideType, const 
 
 public Action NativeVotes_OverrideMaps(StringMap mapList)
 {
+	if (g_mapTrie.Size == 0)
+	{
+		LogMessage("No maps loaded yet.");
+		return Plugin_Continue;
+	}
+	
 	// We don't care about the current list, replace it with our own
 	mapList.Clear();
 	
@@ -625,6 +631,8 @@ public Action NativeVotes_OverrideMaps(StringMap mapList)
 		// Display name first
 		mapList.SetString(displayName, map);
 	}
+	
+	delete snapshot;
 	
 	if (mapList.Size > 0)
 	{
