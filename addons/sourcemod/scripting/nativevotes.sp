@@ -290,7 +290,8 @@ public void OnConfigsExecuted()
 	
 	// Delay 1 second to allow plugins to both execute OnConfigsExecuted
 	// and allow the server to load workshop maps
-	CreateTimer(1.0, Timer_ProcessMapList, TIMER_FLAG_NO_MAPCHANGE);
+	if (Game_AreVoteCommandsSupported())
+		CreateTimer(1.0, Timer_ProcessMapList, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action Timer_ProcessMapList(Handle timer, any data)
