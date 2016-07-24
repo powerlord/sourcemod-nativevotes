@@ -43,7 +43,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define VERSION "1.8.0 beta 2"
+#define VERSION "1.8.0 beta 3"
 
 public Plugin myinfo =
 {
@@ -161,7 +161,7 @@ public void OnConfigsExecuted()
 		}
 	}
 	
-	BuildMapMenu();
+	delete g_MapMenu;
 }
 
 public void OnNominationRemoved(const char[] map, int owner)
@@ -370,6 +370,10 @@ Action Internal_CommandNominate(int client, const char[] mapname, bool isVoteMen
 
 void AttemptNominate(int client)
 {
+	if (g_MapMenu == null)
+	{
+		BuildMapMenu();
+	}
 	g_MapMenu.SetTitle("%T", "Nominate Title", client);
 	g_MapMenu.Display(client, MENU_TIME_FOREVER);
 	
@@ -378,8 +382,6 @@ void AttemptNominate(int client)
 
 void BuildMapMenu()
 {
-	delete g_MapMenu;
-	
 	g_mapTrie.Clear();
 	
 	g_MapMenu = new Menu(Handler_MapSelectMenu, MENU_ACTIONS_DEFAULT|MenuAction_DrawItem|MenuAction_DisplayItem);
@@ -600,9 +602,14 @@ public Action Menu_Nominate(int client, NativeVotesOverride overrideType, const 
 
 public Action NativeVotes_OverrideMaps(StringMap mapList)
 {
+	if (g_MapMenu == null)
+	{
+		BuildMapMenu();
+	}
+	
 	if (g_mapTrie.Size == 0)
 	{
-		LogMessage("No maps loaded yet.");
+		LogMessage("No maps loaded.");
 		return Plugin_Continue;
 	}
 	

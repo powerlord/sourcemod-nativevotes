@@ -1434,7 +1434,7 @@ native void NativeVotes_DisplayCallVoteFail(int client, NativeVotesCallFailType 
  * Register an alternative map list to use instead of the core map list.
  * This only works on games that support vote commands (i.e. TF2)
  *
- * This callback will be called the frame after OnConfigsExecuted every map change.
+ * This callback will be called the first time a user opens the vote menu
  * 
  * It is recommended that a nominations plugin be in charge of this.
  *

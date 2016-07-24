@@ -46,7 +46,7 @@ EngineVersion g_EngineVersion = Engine_Unknown;
 
 #include "nativevotes/data-keyvalues.sp"
 
-#define VERSION 							"1.1.0 beta 6"
+#define VERSION 							"1.1.0 beta 7"
 
 #define LOGTAG "NV"
 
@@ -121,6 +121,7 @@ char g_LeaderList[1024];
 // Forward
 Handle g_OverrideMaps;
 StringMap g_MapOverrides;
+bool g_OverridesSet;
 bool g_OverrideNextCallVote[MAXPLAYERS + 1];
 
 enum CallVoteForwards
@@ -282,19 +283,29 @@ public void OnPluginStart()
 	AutoExecConfig(true, "nativevotes");
 }
 
-public void OnConfigsExecuted()
+public void OnMapStart()
 {
 	// Map list stuffs
 	if (g_MapOverrides != null)
 		delete g_MapOverrides;
 		
-	// Delay 1 second to allow plugins to both execute OnConfigsExecuted
-	// and allow the server to load workshop maps
-	if (Game_AreVoteCommandsSupported())
-		CreateTimer(1.0, Timer_ProcessMapList, TIMER_FLAG_NO_MAPCHANGE);
+	g_OverridesSet = false;
 }
 
-public Action Timer_ProcessMapList(Handle timer, any data)
+public Action Timer_RetryCallVote(Handle timer, any data)
+{
+	int client = GetClientOfUserId(data);
+	
+	if (client == 0)
+	{
+		return Plugin_Stop;
+	}
+	
+	FakeClientCommand(client, "callvote");
+	return Plugin_Stop;
+}
+
+public void ProcessMapList()
 {
 	int stringTableIndex = FindStringTable(STRINGTABLE_NAME);
 	int stringIndex = FindStringIndex(stringTableIndex, STRINGTABLE_ITEM);
@@ -391,6 +402,19 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 		// No args means that we need to return a CallVoteSetup usermessage
 		case 0:
 		{
+			if (!g_OverridesSet	&& Game_AreVoteCommandsSupported())
+			{
+				g_OverridesSet = true;
+				ProcessMapList();
+
+#if defined LOG
+				LogMessage("Delaying to allow stringtable time to network");
+#endif
+				// Force it to reissue the callvote command so that the map list gets networked
+				CreateTimer(0.1, Timer_RetryCallVote, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
+				return Plugin_Handled;
+			}
+
 			ArrayList hVoteTypes = new ArrayList(view_as<int>(CallVoteListData)); // Stores arrays of CallVoteListData
 			
 			Game_AddDefaultVotes(hVoteTypes);
