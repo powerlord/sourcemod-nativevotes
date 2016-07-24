@@ -46,7 +46,7 @@ EngineVersion g_EngineVersion = Engine_Unknown;
 
 #include "nativevotes/data-keyvalues.sp"
 
-#define VERSION 							"1.1.0 beta 5"
+#define VERSION 							"1.1.0 beta 6"
 
 #define LOGTAG "NV"
 
@@ -120,8 +120,8 @@ char g_LeaderList[1024];
 
 // Forward
 Handle g_OverrideMaps;
-
 StringMap g_MapOverrides;
+bool g_OverrideNextCallVote[MAXPLAYERS + 1];
 
 enum CallVoteForwards
 {
@@ -287,7 +287,7 @@ public void OnConfigsExecuted()
 	// Map list stuffs
 	if (g_MapOverrides != null)
 		delete g_MapOverrides;
-	
+		
 	// Delay 1 second to allow plugins to both execute OnConfigsExecuted
 	// and allow the server to load workshop maps
 	if (Game_AreVoteCommandsSupported())
@@ -373,6 +373,12 @@ void CancelClientVote(NativeVote vote, int client, int reason)
 
 public Action Command_CallVote(int client, const char[] command, int argc)
 {
+	if (g_OverrideNextCallVote[client])
+	{
+		g_OverrideNextCallVote[client] = false;
+		return Plugin_Continue;
+	}
+	
 	if (Internal_IsVoteInProgress() || Game_IsVoteInProgress())
 	{
 		return Plugin_Handled;
@@ -451,8 +457,25 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 			
 			NativeVotesOverride overrideType = Game_VoteStringToVoteOverride(voteCommand);
 			
+			char argument[PLATFORM_MAX_PATH];
+			
 			if (GetForwardFunctionCount(g_CallVotes[overrideType][CallVote_Forward]) == 0)
 			{
+				
+				if (g_MapOverrides != null && 
+					(overrideType == NativeVotesOverride_ChgLevel ||
+					overrideType == NativeVotesOverride_NextLevel))
+				{
+					char map[PLATFORM_MAX_PATH];
+					
+					GetCmdArg(2, map, sizeof(map));
+					g_MapOverrides.GetString(map, argument, sizeof(argument));
+
+					g_OverrideNextCallVote[client] = true;
+					FakeClientCommandEx(client, "callvote %s %s", voteCommand, argument);
+					return Plugin_Handled;
+				}
+				
 #if defined LOG
 				LogMessage("We don't have a handler for %s, passing back to server", voteCommand);
 #endif
@@ -471,9 +494,7 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 			{
 				return result;
 			}
-			
-			char argument[MAX_VOTE_DETAILS_LENGTH];
-			
+					
 			NativeVotesType voteType = Game_VoteStringToVoteType(voteCommand);
 			
 			int target = 0;
@@ -497,7 +518,6 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 					}
 	
 					GetClientName(targetClient, argument, sizeof(argument));
-					
 				}
 				
 				case NativeVotesType_ChgLevel, NativeVotesType_NextLevel:
