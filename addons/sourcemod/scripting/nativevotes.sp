@@ -46,7 +46,7 @@ EngineVersion g_EngineVersion = Engine_Unknown;
 
 #include "nativevotes/data-keyvalues.sp"
 
-#define VERSION 							"1.1.0 beta 7"
+#define VERSION 							"1.1.0 beta 8"
 
 #define LOGTAG "NV"
 
@@ -330,12 +330,13 @@ public void ProcessMapList()
 	if (mapResult == Plugin_Changed && overrideList.Size > 0)
 	{
 #if defined LOG
-		LogMessage("Overridding map list with %d maps", overrideList.Size);
+		LogMessage("Overriding map list with %d maps", overrideList.Size);
 #endif 
 		
 		g_MapOverrides = overrideList;
 		
-		int maxLength = PLATFORM_MAX_PATH * overrideList.Size;
+		int maxLength = GetStringMapImplodeSize(overrideList, 1, ImplodePart_Key);
+		
 		char[] newMapData = new char[maxLength];
 		int newLength = ImplodeStringMapToString(overrideList, "\n", newMapData, maxLength, ImplodePart_Key);
 		if (newLength < maxLength && newMapData[newLength] != '\n')

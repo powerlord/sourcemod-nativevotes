@@ -74,6 +74,43 @@ stock int ExplodeStringToArrayList(const char[] text, const char[] split, ArrayL
 }
 
 /**
+ * Get the size of a string needed to store all the keys, values, or both of a StringMap
+ *
+ * @param strings					An ArrayList of strings.
+ * @param joinLength				The length of the join string to insert between each string.
+ * @param valueMaxLength			Maximum length for value strings, defaults to PLATFORM_MAX_PATH. Used temporarily.
+ * @return							Length this StringMap would take to be represented
+ */
+stock int GetArrayListImplodeSize(ArrayList strings, int joinLength, int valueMaxLength=PLATFORM_MAX_PATH)
+{
+	if (strings == null)
+	{
+		ThrowError("ArrayList is not initialized.");
+	}
+
+	int numStrings = 0;
+	int size = 0;
+	
+	numStrings = strings.Length;
+
+	for (int i=0; i<numStrings; i++)
+	{
+		char[] item = new char[valueMaxLength];
+		strings.GetString(i, item, valueMaxLength);
+		size += strlen(item);
+
+		if (i != numStrings-1)
+		{
+			size += joinLength;
+		}
+	}
+	// for string terminator
+	size += 1;
+	
+	return size;
+}
+
+/**
  * Joins an ArrayList of strings into one string, with a "join" string inserted in
  * between each given string.  This function complements ExplodeStringToArrayList.
  *
@@ -183,6 +220,68 @@ stock static void AssignExplodeStringMap(StringMap buffers, const char[] item, i
 			buffers.SetString(inner[0], inner[1]);
 		}
 	}
+}
+
+/**
+ * Get the size of a string needed to store all the keys, values, or both of a StringMap
+ *
+ * @param strings					A StringMap of strings.
+ * @param joinLength				The length of the join string to insert between each string.
+ * @param part						Which part you want to turn into a list (keys, values, or both)
+ * @param keyValueSeparatorLength	Required for ImplodePart_Both, keys and values are separated with it.
+ * @param valueMaxLength			Maximum length for value strings, defaults to PLATFORM_MAX_PATH. Used temporarily for non ImplodePart_Key implodes.
+ * @return							Length this StringMap would take to be represented
+ */
+stock int GetStringMapImplodeSize(StringMap strings, int joinLength, ImplodePart part, int keyValueSeparatorLength=0, int valueMaxLength=PLATFORM_MAX_PATH)
+{
+	if (strings == null)
+	{
+		ThrowError("StringMap is not initialized.");
+	}
+	
+	int numStrings = 0;
+	int size = 0;
+	
+	numStrings = strings.Size;
+
+	StringMapSnapshot snapshot = strings.Snapshot();
+	
+	for (int i=0; i<numStrings; i++)
+	{
+		int len = snapshot.KeyBufferSize(i);
+		
+		if (part != ImplodePart_Value)
+		{
+			// subtract 1 for the nul terminator
+			size += len-1;
+		}
+		
+		if (part == ImplodePart_Both)
+		{
+			size += keyValueSeparatorLength;
+		}
+
+		if (part != ImplodePart_Key)
+		{
+			char[] key = new char[len];
+			snapshot.GetKey(i, key, len);
+			
+			char[] value = new char[valueMaxLength];
+			strings.GetString(key, value, valueMaxLength);
+			size += strlen(value);
+		}
+
+		if (i != numStrings-1)
+		{
+			size += joinLength;
+		}
+	}
+	// for string terminator
+	size += 1;
+	
+	delete snapshot;
+	
+	return size;
 }
 
 /**

@@ -43,7 +43,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define VERSION "1.8.0 beta 3"
+#define VERSION "1.8.0 beta 4"
 
 public Plugin myinfo =
 {
@@ -365,7 +365,7 @@ Action Internal_CommandNominate(int client, const char[] mapname, bool isVoteMen
 	GetClientName(client, name, sizeof(name));
 	PrintToChatAll("[SM] %t", "Map Nominated", name, displayName);
 	
-	return Plugin_Continue;
+	return Plugin_Handled;
 }
 
 void AttemptNominate(int client)
