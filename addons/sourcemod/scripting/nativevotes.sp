@@ -46,7 +46,7 @@ EngineVersion g_EngineVersion = Engine_Unknown;
 
 #include "nativevotes/data-keyvalues.sp"
 
-#define VERSION 							"1.1.0 beta 8"
+#define VERSION 							"1.1.1"
 
 #define LOGTAG "NV"
 
@@ -821,7 +821,7 @@ Action DoAction(NativeVote vote, MenuAction action, int param1, int param2, Acti
 {
 	Action res = def_res;
 
-	Handle handler = Data_GetHandler(vote);
+	Handle handler = CloneHandle(Data_GetHandler(vote));
 #if defined LOG
 	LogMessage("Calling Menu forward for vote: %d, handler: %d, action: %d, param1: %d, param2: %d", vote, handler, action, param1, param2);
 #endif
@@ -831,6 +831,7 @@ Action DoAction(NativeVote vote, MenuAction action, int param1, int param2, Acti
 	Call_PushCell(param1);
 	Call_PushCell(param2);
 	Call_Finish(res);
+	delete handler;
 	return res;
 }
 
